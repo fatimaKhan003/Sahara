@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal, Alert } fro
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE } from '../../api';
 
 const ForgotPassScreen = () => {
   const navigation = useNavigation();
@@ -44,7 +45,7 @@ const ForgotPassScreen = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.18.133:5000/api/reset-password", {
+      const response = await fetch(`${API_BASE}/api/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, oldPassword, newPassword }),

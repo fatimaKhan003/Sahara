@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from "../../api";
 
 const ConfirmMedicationScreen = () => {
   const navigation = useNavigation();
@@ -64,7 +65,7 @@ const ConfirmMedicationScreen = () => {
     });
 
     const response = await fetch(
-      "http://192.168.18.133:5000/api/medications/save-medications",
+      `${API_BASE}/api/medications/save-medications`,
       {
         method: "POST",
         body: formData

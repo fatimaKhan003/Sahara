@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE } from '../../api';
 const LoginScreen = () => {
   const navigation = useNavigation();
   const [passwordVisible, setPasswordVisible] = useState(false); 
@@ -18,7 +19,7 @@ const LoginScreen = () => {
   }
 
   try {
-    const response = await fetch("http://192.168.18.133:5000/api/login", {
+    const response = await fetch(`${API_BASE}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

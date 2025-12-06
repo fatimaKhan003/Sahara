@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity
 } from "react-native";
+import { API_BASE } from "../../api";
 
 const MedicationDetailScreen = () => {
   const route = useRoute<any>();
@@ -23,7 +24,7 @@ const MedicationDetailScreen = () => {
   const [time, setTime] = useState(med.time);
   const [status, setStatus] = useState(med.status);
   const [imageUri, setImageUri] = useState(
-    med.imageUri ? `http://192.168.18.133:5000${med.imageUri}` : null
+    med.imageUri ? `${API_BASE}${med.imageUri}` : null
   );
   const [loading, setLoading] = useState(false);
 
@@ -67,7 +68,7 @@ const MedicationDetailScreen = () => {
         } as any);
       }
 
-      const res = await fetch(`http://192.168.18.133:5000/api/medications/${med._id}`, {
+      const res = await fetch(`${API_BASE}/api/medications/${med._id}`, {
         method: "PATCH",
         headers: {
           "Accept": "application/json",
@@ -106,7 +107,7 @@ const MedicationDetailScreen = () => {
         onPress: async () => {
           try {
             await fetch(
-              `http://192.168.18.133:5000/api/medications/${med._id}`,
+              `${API_BASE}/api/medications/${med._id}`,
               { method: "DELETE" }
             );
 

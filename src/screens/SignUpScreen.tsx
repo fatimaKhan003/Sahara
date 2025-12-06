@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal } from 'reac
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE } from "../../api";
 
 const SignUpScreen = () => {
   const navigation = useNavigation();
@@ -40,7 +41,7 @@ const validatePassword = (password) => {
     return;
   }
   try {
-    const response = await fetch("http://192.168.18.133:5000/api/signup", {
+    const response = await fetch(`${API_BASE}/api/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),

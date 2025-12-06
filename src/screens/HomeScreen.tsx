@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_BASE } from "../../api";
 const HomeScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +77,7 @@ const HomeScreen = () => {
         setUser(parsedUser);
 
         const response = await fetch(
-          `http://192.168.18.133:5000/api/medications/${parsedUser._id}`
+          `${API_BASE}/api/medications/${parsedUser._id}`
         );
 
         const meds = await response.json();
@@ -138,7 +139,7 @@ const HomeScreen = () => {
   const updateStatus = async (id: string, status: string) => {
     try {
       const res = await fetch(
-        `http://192.168.18.133:5000/api/medications/update-status/${id}`,
+        `${API_BASE}/api/medications/update-status/${id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -159,7 +160,7 @@ const HomeScreen = () => {
 
   const deleteMedication = async (id: string) => {
     try {
-      await fetch(`http://192.168.18.133:5000/api/medications/${id}`, {
+      await fetch(`${API_BASE}/api/medications/${id}`, {
         method: "DELETE",
       });
 
