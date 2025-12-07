@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import i18n from "../i18n";
+import i18n, { changeLanguage } from "../i18n";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -17,13 +18,17 @@ import * as ImagePicker from "expo-image-picker";
 import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE } from "../../api";
+import { containsUrdu, getTextDirection } from "../utils/textUtils";
+
 const HomeScreen = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [medications, setMedications] = useState<any[]>([]);
   const navigation = useNavigation<any>();
   const [selectedTab, setSelectedTab] = useState("all");
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   // ================= WEEK ================= 
 
@@ -38,7 +43,22 @@ const HomeScreen = () => {
     getStartOfWeek(new Date())
   );
 
-  const days = ["M", "T", "W", "T", "F", "S", "S"];
+  const days = [
+    t("home.days.monday"),
+    t("home.days.tuesday"),
+    t("home.days.wednesday"),
+    t("home.days.thursday"),
+    t("home.days.friday"),
+    t("home.days.saturday"),
+    t("home.days.sunday"),
+  ];
+
+  // ================= Language Switcher =================
+  const handleLanguageChange = async () => {
+    const newLang = currentLanguage === "en" ? "ur" : "en";
+    await changeLanguage(newLang);
+    setCurrentLanguage(newLang);
+  };
 
   const getWeekDates = (startDate: Date) => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -135,6 +155,17 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Update language state when i18n language changes
+  useEffect(() => {
+    const updateLanguage = () => {
+      setCurrentLanguage(i18n.language);
+    };
+    i18n.on("languageChanged", updateLanguage);
+    return () => {
+      i18n.off("languageChanged", updateLanguage);
+    };
+  }, []);
+
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -153,7 +184,7 @@ const HomeScreen = () => {
         prev.map((m) => (m._id === updated._id ? updated : m))
       );
     } catch (error) {
-      Alert.alert("Error", "Failed to update status");
+      Alert.alert(t("common.error") || "Error", t("medication.updateError"));
     }
   };
 
@@ -166,7 +197,7 @@ const HomeScreen = () => {
 
       setMedications((prev) => prev.filter((m) => m._id !== id));
     } catch (error) {
-      Alert.alert("Error", "Failed to delete medication");
+      Alert.alert(t("common.error") || "Error", t("medication.deleteError"));
     }
   };
 
@@ -243,38 +274,57 @@ const goToDetail = (med: any) => {
   </TouchableOpacity>
 
   <View style={{ flex: 1 }}>
-    <Text style={styles.helloText}>Hello, {user?.name}</Text>
-    <Text style={styles.welcomeText}>Welcome back!</Text>
+    <Text 
+      style={[
+        styles.helloText,
+        (currentLanguage === 'ur' || (user?.name && containsUrdu(user.name))) && styles.urduText
+      ]}
+    >
+      {t("common.hello")}, {user?.name}
+    </Text>
+    <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
   </View>
 
-  <TouchableOpacity
-    onPress={() =>
-      Alert.alert(
-        "Logout",
-        "Are you sure you want to exit?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Yes",
-            onPress: async () => {
-              await AsyncStorage.removeItem("user");
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "OnboardingScreen" }],
-              });
+  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+    <TouchableOpacity
+      onPress={handleLanguageChange}
+      style={styles.languageButton}
+    >
+      <Ionicons name="language" size={24} color="#007AFF" />
+      <Text style={styles.languageText}>
+        {currentLanguage === "en" ? "اردو" : "EN"}
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() =>
+        Alert.alert(
+          t("home.logoutConfirm"),
+          t("home.logoutMessage"),
+          [
+            { text: t("common.cancel"), style: "cancel" },
+            {
+              text: t("common.yes"),
+              onPress: async () => {
+                await AsyncStorage.removeItem("user");
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "OnboardingScreen" }],
+                });
+              },
+              style: "destructive",
             },
-            style: "destructive",
-          },
-        ]
-      )
-    }
-  >
-    <Ionicons name="log-out-outline" size={28} color="#007AFF" />
-  </TouchableOpacity>
+          ]
+        )
+      }
+    >
+      <Ionicons name="log-out-outline" size={28} color="#007AFF" />
+    </TouchableOpacity>
+  </View>
 </View>
 
       <Text style={styles.todayText}>
-        Today, {new Date().toDateString()}
+        {t("common.today")}, {new Date().toDateString()}
       </Text>
 
       <View style={styles.weekNav}>
@@ -323,9 +373,9 @@ const goToDetail = (med: any) => {
       </View>
       <View style={styles.tabs}>
         {[
-          { key: "all", label: "All", count: totalCount },
-          { key: "taken", label: "Taken", count: takenCount },
-          { key: "missed", label: "Missed", count: missedCount },
+          { key: "all", label: t("home.all"), count: totalCount },
+          { key: "taken", label: t("home.taken"), count: takenCount },
+          { key: "missed", label: t("home.missed"), count: missedCount },
         ].map((tab) => (
           <TouchableOpacity
             key={tab.key}
@@ -370,7 +420,7 @@ const goToDetail = (med: any) => {
       <Text>{med.frequency}</Text>
 
       {med.status === "missed" && (
-        <Text style={styles.missed}>MISSED</Text>
+        <Text style={styles.missed}>{t("home.missed").toUpperCase()}</Text>
       )}
 
       {med.status !== "taken" && (
@@ -378,7 +428,7 @@ const goToDetail = (med: any) => {
           style={styles.takeButton}
           onPress={() => updateStatus(med._id, "taken")}
         >
-          <Text style={{ color: "#fff" }}>Take</Text>
+          <Text style={{ color: "#fff" }}>{t("home.take")}</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -391,7 +441,7 @@ const goToDetail = (med: any) => {
         onPress={() => navigation.navigate("ScanPrescriptionScreen")}
       >
         <Ionicons name="add" size={20} color="#fff" />
-        <Text style={styles.addButtonText}>Add Medication</Text>
+        <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
       </TouchableOpacity>
         </ScrollView>
   </SafeAreaView>
@@ -407,6 +457,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   avatar: { width: 70, height: 70, borderRadius: 35, marginRight: 15 },
   helloText: { fontSize: 22, fontWeight: "700" },
+  urduText: { 
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
   welcomeText: { fontSize: 16, color: "gray" },
   todayText: { fontSize: 18, marginTop: 20 },
 
@@ -499,6 +553,20 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "#fff",
     marginLeft: 8,
+    fontWeight: "600",
+  },
+  languageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+  },
+  languageText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: "#007AFF",
     fontWeight: "600",
   },
 });

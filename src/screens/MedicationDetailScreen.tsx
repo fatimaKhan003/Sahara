@@ -11,9 +11,11 @@ import {
   TextInput,
   TouchableOpacity
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
 
 const MedicationDetailScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { med, onUpdate } = route.params;
@@ -86,11 +88,11 @@ const MedicationDetailScreen = () => {
 
       if (onUpdate) onUpdate(updated);
 
-      Alert.alert("Success", "Medication updated successfully", [
-        { text: "OK", onPress: () => navigation.goBack() },
+      Alert.alert(t("common.success"), t("medication.updateSuccess"), [
+        { text: t("common.ok"), onPress: () => navigation.goBack() },
       ]);
     } catch (err) {
-      Alert.alert("Error", "Failed to update medication");
+      Alert.alert(t("common.error"), t("medication.updateError"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -99,10 +101,10 @@ const MedicationDetailScreen = () => {
 
   //================= DELETE MED ================= 
   const deleteMedication = async () => {
-    Alert.alert("Delete Medication", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("medication.deleteConfirm"), t("medication.deleteMessage"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("common.delete"),
         style: "destructive",
         onPress: async () => {
           try {
@@ -113,11 +115,11 @@ const MedicationDetailScreen = () => {
 
             if (onUpdate) onUpdate(null);
 
-            Alert.alert("Deleted", "Medication deleted successfully", [
-              { text: "OK", onPress: () => navigation.goBack() },
+            Alert.alert(t("common.success"), t("medication.deleteSuccess"), [
+              { text: t("common.ok"), onPress: () => navigation.goBack() },
             ]);
           } catch (err) {
-            Alert.alert("Error", "Failed to delete medication");
+            Alert.alert(t("common.error"), t("medication.deleteError"));
             console.error(err);
           }
         },
@@ -138,31 +140,31 @@ const MedicationDetailScreen = () => {
           }}
           style={styles.medImage}
         />
-        <Text style={styles.changeImageText}>Change Image</Text>
+        <Text style={styles.changeImageText}>{t("medication.changeImage")}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.label}>Name</Text>
+      <Text style={styles.label}>{t("common.name")}</Text>
       <TextInput style={styles.input} value={name} onChangeText={setName} />
 
-      <Text style={styles.label}>Dose</Text>
+      <Text style={styles.label}>{t("medication.dose")}</Text>
       <TextInput style={styles.input} value={dose} onChangeText={setDose} />
 
-      <Text style={styles.label}>Frequency</Text>
+      <Text style={styles.label}>{t("medication.frequency")}</Text>
       <TextInput style={styles.input} value={frequency} onChangeText={setFrequency} />
 
-      <Text style={styles.label}>Time</Text>
+      <Text style={styles.label}>{t("medication.time")}</Text>
       <TextInput style={styles.input} value={time} onChangeText={setTime} />
 
-      <Text style={styles.label}>Status</Text>
+      <Text style={styles.label}>{t("medication.status")}</Text>
       <TextInput style={styles.input} value={status} onChangeText={setStatus} />
 
       <TouchableOpacity style={styles.updateButton} onPress={updateMedication}>
-        <Text style={{ color: "#fff", fontWeight: "bold" }}>Update Medication</Text>
+        <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("medication.updateMedication")}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.deleteButton} onPress={deleteMedication}>
         <Ionicons name="trash-outline" size={20} color="#fff" />
-        <Text style={{ color: "#fff", fontWeight: "bold", marginLeft: 5 }}>Delete</Text>
+        <Text style={{ color: "#fff", fontWeight: "bold", marginLeft: 5 }}>{t("common.delete")}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
