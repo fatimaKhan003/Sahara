@@ -10,32 +10,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-
-const slides = [
-  {
-    id: '1',
-    title: 'Scan your prescriptions',
-    subtitle:
-      'Take control of your well-being with effortless entry of medical prescriptions using our medical OCR feature.',
-    image: require('../assets/IntroScreenPic.png'),
-  },
-  {
-    id: '2',
-    title: 'Advanced reminders, Easy use',
-    subtitle:
-      'Stay on track with ease and peace of mind, ensuring you never miss a dose.',
-    image: require('../assets/onboarding2.png'),
-  },
-  {
-    id: '3',
-    title: 'For yourself, family and friends',
-    subtitle:
-      'Easily manage medication for everyone you care about with an efficient caregiver dashboard.',
-    image: require('../assets/onboarding3.png'),
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 const OnboardingScreen = () => {
+  const { t } = useTranslation();
+  
+  const slides = [
+    {
+      id: '1',
+      title: t('onboarding.slide1.title'),
+      subtitle: t('onboarding.slide1.subtitle'),
+      image: require('../assets/IntroScreenPic.png'),
+    },
+    {
+      id: '2',
+      title: t('onboarding.slide2.title'),
+      subtitle: t('onboarding.slide2.subtitle'),
+      image: require('../assets/onboarding2.png'),
+    },
+    {
+      id: '3',
+      title: t('onboarding.slide3.title'),
+      subtitle: t('onboarding.slide3.subtitle'),
+      image: require('../assets/onboarding3.png'),
+    },
+  ];
+
   const navigation = useNavigation();
   const route = useRoute();
   const { width } = useWindowDimensions();
@@ -79,7 +79,7 @@ const OnboardingScreen = () => {
 
       {currentIndex < slides.length - 1 && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </TouchableOpacity>
       )}
 
@@ -113,15 +113,15 @@ const OnboardingScreen = () => {
       {currentIndex === slides.length - 1 ? (
         <View style={styles.bottomButtons}>
           <TouchableOpacity style={styles.primaryButton} onPress={handleCreateAccount}>
-            <Text style={styles.primaryText}>Create an account</Text>
+            <Text style={styles.primaryText}>{t('common.createAccount')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton} onPress={handleLogin}>
-            <Text style={styles.secondaryText}>Login</Text>
+            <Text style={styles.secondaryText}>{t('common.login')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextText}>Next</Text>
+          <Text style={styles.nextText}>{t('common.next')}</Text>
         </TouchableOpacity>
       )}
     </View>
