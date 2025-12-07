@@ -47,3 +47,6 @@ Backend/uploads/*
 
 # android studio files
 .idea/
+
+# pycache
+OCR/__pycache__/
