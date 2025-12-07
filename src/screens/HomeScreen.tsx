@@ -18,7 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE } from "../../api";
-import { containsUrdu, getTextDirection } from "../utils/textUtils";
+import { containsUrdu } from "../utils/textUtils";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -29,8 +29,7 @@ const HomeScreen = () => {
   const navigation = useNavigation<any>();
   const [selectedTab, setSelectedTab] = useState("all");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-
-  // ================= WEEK ================= 
+  const [darkMode, setDarkMode] = useState(false); // new dark mode state
 
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
@@ -39,9 +38,7 @@ const HomeScreen = () => {
     return new Date(d.setDate(diff));
   };
 
-  const [currentWeekStart, setCurrentWeekStart] = useState(
-    getStartOfWeek(new Date())
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
 
   const days = [
     t("home.days.monday"),
@@ -53,7 +50,6 @@ const HomeScreen = () => {
     t("home.days.sunday"),
   ];
 
-  // ================= Language Switcher =================
   const handleLanguageChange = async () => {
     const newLang = currentLanguage === "en" ? "ur" : "en";
     await changeLanguage(newLang);
@@ -68,10 +64,7 @@ const HomeScreen = () => {
     });
   };
 
-  const weekDates = useMemo(
-    () => getWeekDates(currentWeekStart),
-    [currentWeekStart]
-  );
+  const weekDates = useMemo(() => getWeekDates(currentWeekStart), [currentWeekStart]);
 
   const goToPrevWeek = () => {
     const newDate = new Date(currentWeekStart);
@@ -85,8 +78,6 @@ const HomeScreen = () => {
     setCurrentWeekStart(newDate);
   };
 
-  // ================= Fetching users and meds ================= 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -96,10 +87,7 @@ const HomeScreen = () => {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
 
-        const response = await fetch(
-          `${API_BASE}/api/medications/${parsedUser._id}`
-        );
-
+        const response = await fetch(`${API_BASE}/api/medications/${parsedUser._id}`);
         const meds = await response.json();
         setMedications(Array.isArray(meds) ? meds : []);
       } catch (err) {
@@ -108,25 +96,15 @@ const HomeScreen = () => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  // ================= Status ================= 
-
   const totalCount = medications.length;
-  const takenCount = medications.filter(
-    (m) => m.status === "taken"
-  ).length;
-  const missedCount = medications.filter(
-    (m) => m.status === "missed"
-  ).length;
-
-  // ================= Auto mark missed ================= 
+  const takenCount = medications.filter((m) => m.status === "taken").length;
+  const missedCount = medications.filter((m) => m.status === "missed").length;
 
   const checkMissedMeds = () => {
     const now = new Date();
-
     setMedications((prev) =>
       prev.map((med) => {
         if (med.status === "pending" && med.time) {
@@ -155,56 +133,38 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update language state when i18n language changes
   useEffect(() => {
-    const updateLanguage = () => {
-      setCurrentLanguage(i18n.language);
-    };
+    const updateLanguage = () => setCurrentLanguage(i18n.language);
     i18n.on("languageChanged", updateLanguage);
-    return () => {
-      i18n.off("languageChanged", updateLanguage);
-    };
+    return () => i18n.off("languageChanged", updateLanguage);
   }, []);
-
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/medications/update-status/${id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/medications/update-status/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
 
       const updated = await res.json();
-
-      setMedications((prev) =>
-        prev.map((m) => (m._id === updated._id ? updated : m))
-      );
+      setMedications((prev) => prev.map((m) => (m._id === updated._id ? updated : m)));
     } catch (error) {
       Alert.alert(t("common.error") || "Error", t("medication.updateError"));
     }
   };
 
-
   const deleteMedication = async (id: string) => {
     try {
-      await fetch(`${API_BASE}/api/medications/${id}`, {
-        method: "DELETE",
-      });
-
+      await fetch(`${API_BASE}/api/medications/${id}`, { method: "DELETE" });
       setMedications((prev) => prev.filter((m) => m._id !== id));
     } catch (error) {
       Alert.alert(t("common.error") || "Error", t("medication.deleteError"));
     }
   };
 
-
   const handleChangeProfileImage = async () => {
-    const { status } =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -216,7 +176,6 @@ const HomeScreen = () => {
 
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-
       const updatedUser = { ...user, profileImage: uri };
       setUser(updatedUser);
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
@@ -236,220 +195,144 @@ const HomeScreen = () => {
       </View>
     );
   }
-const goToDetail = (med: any) => {
-  navigation.navigate("MedicationDetailScreen", {
-    med,
-    onUpdate: (updatedMed: any) => {
-      if(!updatedMed)
-      {
-        setMedications((prev)=>prev.filter((m)=>m._id!==med._id));
-      }
-      else{
-        setMedications((prev) =>
-        prev.map((m) => (m._id === updatedMed._id ? updatedMed : m))
-      );
-      }
-      
-    },
+
+  const goToDetail = (med: any) => {
+    navigation.navigate("MedicationDetailScreen", {
+      med,
+      onUpdate: (updatedMed: any) => {
+        if (!updatedMed) {
+          setMedications((prev) => prev.filter((m) => m._id !== med._id));
+        } else {
+          setMedications((prev) =>
+            prev.map((m) => (m._id === updatedMed._id ? updatedMed : m))
+          );
+        }
+      },
+    });
+  };
+
+  // ======================= Dynamic Colors =====================
+  const dynamicStyles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF", padding: 20 },
+    text: { color: darkMode ? "#E5E5E5" : "#333" },
+    subText: { color: darkMode ? "#A0A0A0" : "gray" },
+    medBox: { backgroundColor: darkMode ? "#2C2C2C" : "#fff" },
+    takenText: { color: darkMode ? "#34C759" : "#34C759" },
+    missedText: { color: darkMode ? "#FF6B6B" : "red" },
+    tabBg: { backgroundColor: darkMode ? "#3A3A3A" : "#eee" },
+    activeTabBg: { backgroundColor: darkMode ? "#007AFF" : "#007AFF" },
+    activeTabText: { color: "#fff" },
   });
-};
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F6F8FF" }}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 30 }}
-      showsVerticalScrollIndicator={false}
-    >
-<View style={styles.header}>
-  <TouchableOpacity onPress={handleChangeProfileImage}>
-    <Image
-      source={{
-        uri:
-          user?.profileImage ||
-          "https://cdn-icons-png.flaticon.com/512/147/147144.png",
-      }}
-      style={styles.avatar}
-    />
-  </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1, backgroundColor: dynamicStyles.container.backgroundColor }}>
+      <ScrollView style={dynamicStyles.container} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleChangeProfileImage}>
+            <Image
+              source={{ uri: user?.profileImage || "https://cdn-icons-png.flaticon.com/512/147/147144.png" }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
 
-  <View style={{ flex: 1 }}>
-    <Text 
-      style={[
-        styles.helloText,
-        (currentLanguage === 'ur' || (user?.name && containsUrdu(user.name))) && styles.urduText
-      ]}
-    >
-      {t("common.hello")}, {user?.name}
-    </Text>
-    <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
-  </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.helloText, (currentLanguage === 'ur' || (user?.name && containsUrdu(user.name))) && styles.urduText, { color: dynamicStyles.text.color }]}>
+              {t("common.hello")}, {user?.name}
+            </Text>
+            <Text style={[styles.welcomeText, { color: dynamicStyles.subText.color }]}>{t("common.welcomeBack")}</Text>
+          </View>
 
-  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-    <TouchableOpacity
-      onPress={handleLanguageChange}
-      style={styles.languageButton}
-    >
-      <Ionicons name="language" size={24} color="#007AFF" />
-      <Text style={styles.languageText}>
-        {currentLanguage === "en" ? "اردو" : "EN"}
-      </Text>
-    </TouchableOpacity>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <TouchableOpacity onPress={handleLanguageChange} style={styles.languageButton}>
+              <Ionicons name="language" size={24} color="#007AFF" />
+              <Text style={styles.languageText}>{currentLanguage === "en" ? "اردو" : "EN"}</Text>
+            </TouchableOpacity>
 
-    <TouchableOpacity
-      onPress={() =>
-        Alert.alert(
-          t("home.logoutConfirm"),
-          t("home.logoutMessage"),
-          [
-            { text: t("common.cancel"), style: "cancel" },
-            {
-              text: t("common.yes"),
-              onPress: async () => {
-                await AsyncStorage.removeItem("user");
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "OnboardingScreen" }],
-                });
-              },
-              style: "destructive",
-            },
-          ]
-        )
-      }
-    >
-      <Ionicons name="log-out-outline" size={28} color="#007AFF" />
-    </TouchableOpacity>
-  </View>
-</View>
+            <TouchableOpacity onPress={() => {
+              Alert.alert(
+                t("home.logoutConfirm"),
+                t("home.logoutMessage"),
+                [
+                  { text: t("common.cancel"), style: "cancel" },
+                  { text: t("common.yes"), onPress: async () => {
+                      await AsyncStorage.removeItem("user");
+                      navigation.reset({ index: 0, routes: [{ name: "OnboardingScreen" }] });
+                    }, style: "destructive" },
+                ]
+              );
+            }}>
+              <Ionicons name="log-out-outline" size={28} color="#007AFF" />
+            </TouchableOpacity>
 
-      <Text style={styles.todayText}>
-        {t("common.today")}, {new Date().toDateString()}
-      </Text>
+            {/* Dark Mode Toggle */}
+            <TouchableOpacity onPress={() => setDarkMode(!darkMode)}>
+              <Ionicons name={darkMode ? "moon" : "sunny"} size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      <View style={styles.weekNav}>
-        <TouchableOpacity onPress={goToPrevWeek}>
-          <Ionicons name="chevron-back" size={22} />
-        </TouchableOpacity>
+        <Text style={[styles.todayText, { color: dynamicStyles.text.color }]}>{t("common.today")}, {new Date().toDateString()}</Text>
 
-        <TouchableOpacity onPress={goToNextWeek}>
-          <Ionicons name="chevron-forward" size={22} />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.weekNav}>
+          <TouchableOpacity onPress={goToPrevWeek}><Ionicons name="chevron-back" size={22} color={dynamicStyles.text.color} /></TouchableOpacity>
+          <TouchableOpacity onPress={goToNextWeek}><Ionicons name="chevron-forward" size={22} color={dynamicStyles.text.color} /></TouchableOpacity>
+        </View>
 
-      <View style={styles.calendarRow}>
-        {weekDates.map((date, index) => {
-          const selected =
-            date.toDateString() === selectedDate.toDateString();
+        <View style={styles.calendarRow}>
+          {weekDates.map((date, index) => {
+            const selected = date.toDateString() === selectedDate.toDateString();
+            return (
+              <TouchableOpacity key={index} onPress={() => setSelectedDate(date)} style={[styles.dayContainer, selected && styles.selectedDay]}>
+                <Text style={[styles.dayText, selected ? styles.selectedDayText : { color: dynamicStyles.text.color }]}>{days[index]}</Text>
+                <Text style={[styles.dateText, selected ? styles.selectedDayText : { color: dynamicStyles.text.color }]}>{date.getDate()}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => setSelectedDate(date)}
-              style={[
-                styles.dayContainer,
-                selected && styles.selectedDay,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.dayText,
-                  selected && styles.selectedDayText,
-                ]}
-              >
-                {days[index]}
-              </Text>
-              <Text
-                style={[
-                  styles.dateText,
-                  selected && styles.selectedDayText,
-                ]}
-              >
-                {date.getDate()}
+        <View style={styles.tabs}>
+          {[
+            { key: "all", label: t("home.all"), count: totalCount },
+            { key: "taken", label: t("home.taken"), count: takenCount },
+            { key: "missed", label: t("home.missed"), count: missedCount },
+          ].map((tab) => (
+            <TouchableOpacity key={tab.key} onPress={() => setSelectedTab(tab.key)}
+              style={[styles.tabButton, { backgroundColor: selectedTab === tab.key ? dynamicStyles.activeTabBg.backgroundColor : dynamicStyles.tabBg.backgroundColor }]}>
+              <Text style={selectedTab === tab.key ? dynamicStyles.activeTabText : { color: dynamicStyles.text.color }}>
+                {tab.label} ({tab.count})
               </Text>
             </TouchableOpacity>
-          );
-        })}
-      </View>
-      <View style={styles.tabs}>
-        {[
-          { key: "all", label: t("home.all"), count: totalCount },
-          { key: "taken", label: t("home.taken"), count: takenCount },
-          { key: "missed", label: t("home.missed"), count: missedCount },
-        ].map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            onPress={() => setSelectedTab(tab.key)}
-            style={[
-              styles.tabButton,
-              selectedTab === tab.key && styles.activeTab,
-            ]}
-          >
-            <Text
-              style={
-                selectedTab === tab.key
-                  ? styles.activeTabText
-                  : styles.tabText
-              }
-            >
-              {tab.label} ({tab.count})
-            </Text>
-          </TouchableOpacity>
+          ))}
+        </View>
+
+        {filteredMeds.map((med) => (
+          <Swipeable key={med._id} renderRightActions={() => (
+            <TouchableOpacity onPress={() => deleteMedication(med._id)} style={styles.deleteBox}>
+              <Ionicons name="trash" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}>
+            <TouchableOpacity style={[styles.savedMedContainer, { backgroundColor: dynamicStyles.medBox.backgroundColor }]} onPress={() => goToDetail(med)}>
+              <Text style={[styles.medName, { color: dynamicStyles.text.color }]}>{med.name}</Text>
+              <Text style={{ color: dynamicStyles.text.color }}>{med.dose}</Text>
+              <Text style={{ color: dynamicStyles.text.color }}>{med.frequency}</Text>
+              {med.status === "missed" && <Text style={[styles.missed, { color: dynamicStyles.missedText.color }]}>{t("home.missed").toUpperCase()}</Text>}
+              {med.status !== "taken" && <TouchableOpacity style={styles.takeButton} onPress={() => updateStatus(med._id, "taken")}><Text style={{ color: "#fff" }}>{t("home.take")}</Text></TouchableOpacity>}
+            </TouchableOpacity>
+          </Swipeable>
         ))}
-      </View>
-{filteredMeds.map((med) => (
-  <Swipeable
-    key={med._id}
-    renderRightActions={() => (
-      <TouchableOpacity
-        onPress={() => deleteMedication(med._id)}
-        style={styles.deleteBox}
-      >
-        <Ionicons name="trash" size={24} color="#fff" />
-      </TouchableOpacity>
-    )}
-  >
-    <TouchableOpacity
-      style={styles.savedMedContainer}
-      onPress={() =>
-        goToDetail(med) }>
-      
-    
-      <Text style={styles.medName}>{med.name}</Text>
-      <Text>{med.dose}</Text>
-      <Text>{med.frequency}</Text>
 
-      {med.status === "missed" && (
-        <Text style={styles.missed}>{t("home.missed").toUpperCase()}</Text>
-      )}
-
-      {med.status !== "taken" && (
-        <TouchableOpacity
-          style={styles.takeButton}
-          onPress={() => updateStatus(med._id, "taken")}
-        >
-          <Text style={{ color: "#fff" }}>{t("home.take")}</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("ScanPrescriptionScreen")}>
+          <Ionicons name="add" size={20} color="#fff" />
+          <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
         </TouchableOpacity>
-      )}
-    </TouchableOpacity>
-  </Swipeable>
-))}
 
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate("ScanPrescriptionScreen")}
-      >
-        <Ionicons name="add" size={20} color="#fff" />
-        <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
-      </TouchableOpacity>
-        </ScrollView>
-  </SafeAreaView>
-
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 export default HomeScreen;
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F6F8FF", padding: 20 },

@@ -17,19 +17,40 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // POST: save medication -----------------------------------
+<<<<<<< HEAD
+router.post("/save-medications", upload.single("image"), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    let { medicines } = req.body;
+=======
 router.post("/save-medications", async (req, res) => {
   try {
     const { userId, medicines, imageUri } = req.body;
+>>>>>>> development
 
     if (!userId || !medicines) {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
+<<<<<<< HEAD
+    // Only parse if medicines is a string (sent as JSON string from React Native)
+    if (typeof medicines === "string") {
+      medicines = JSON.parse(medicines);
+    }
+
+    // Save the uploaded image path if it exists
+    const imageUri = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const savedMeds = await Medication.insertMany(
+      medicines.map((med) => {
+        if (!med.time) throw new Error(`Time is required for medication ${med.name}`);
+=======
     const savedMeds = await Medication.insertMany(
       medicines.map((med) => {
         if (!med.time) {
           throw new Error(`Time is required for medication ${med.name}`);
         }
+>>>>>>> development
         return {
           user: userId,
           name: med.name,
@@ -50,6 +71,10 @@ router.post("/save-medications", async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> development
 // GET: get user's medications -----------------------------------
 router.get("/:userId", async (req, res) => {
   try {
