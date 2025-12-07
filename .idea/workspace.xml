@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="87ec5f7f-b0d8-466f-bfc8-fcb94b656a71" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/ConfirmMedicationScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ConfirmMedicationScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/ForgotPassScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ForgotPassScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/HomeScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/HomeScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/LoginScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/LoginScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/MedicationDetailScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/MedicationDetailScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/OnboardingScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/OnboardingScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/ScanPrescriptionScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ScanPrescriptionScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/SignUpScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/SignUpScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/SplashScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/SplashScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="36UR4NCOwCJNjOgazjlmWno8PKC" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "feature-translation",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/I T world/OneDrive/Desktop/FYP/Sahara"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="87ec5f7f-b0d8-466f-bfc8-fcb94b656a71" name="Changes" comment="" />
+      <created>1765058974020</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1765058974020</updated>
+    </task>
+    <servers />
+  </component>
+</project>
