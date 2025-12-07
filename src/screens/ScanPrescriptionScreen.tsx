@@ -3,14 +3,16 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 export default function ScanPrescriptionScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Camera permission is required');
+      Alert.alert(t('scan.permissionRequired'), t('scan.cameraPermission'));
       return;
     }
 
@@ -29,7 +31,7 @@ export default function ScanPrescriptionScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Gallery permission is required');
+      Alert.alert(t('scan.permissionRequired'), t('scan.galleryPermission'));
       return;
     }
 
@@ -47,14 +49,14 @@ export default function ScanPrescriptionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Scan Prescription</Text>
+      <Text style={styles.title}>{t('scan.title')}</Text>
       <TouchableOpacity onPress={openCamera} style={styles.button}>
         <Ionicons name="camera" size={30} color="#fff" />
-        <Text style={styles.buttonText}>Take Picture</Text>
+        <Text style={styles.buttonText}>{t('scan.takePicture')}</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={openGallery} style={styles.buttonSecondary}>
         <Ionicons name="images" size={30} color="#1E5AF2" />
-        <Text style={styles.buttonTextSecondary}>Choose from Gallery</Text>
+        <Text style={styles.buttonTextSecondary}>{t('scan.chooseFromGallery')}</Text>
       </TouchableOpacity>
     </View>
   );

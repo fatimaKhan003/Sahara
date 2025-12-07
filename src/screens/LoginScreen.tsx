@@ -1,20 +1,43 @@
 import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../api';
+import i18n, { changeLanguage } from '../i18n';
+
 const LoginScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [passwordVisible, setPasswordVisible] = useState(false); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+
+  // Update language state when i18n language changes
+  useEffect(() => {
+    const updateLanguage = () => {
+      setCurrentLanguage(i18n.language);
+    };
+    i18n.on("languageChanged", updateLanguage);
+    return () => {
+      i18n.off("languageChanged", updateLanguage);
+    };
+  }, []);
+
+  // Language switcher
+  const handleLanguageChange = async () => {
+    const newLang = currentLanguage === "en" ? "ur" : "en";
+    await changeLanguage(newLang);
+    setCurrentLanguage(newLang);
+  };
 
  const handleLogin = async () => {
   if (!email || !password) {
-    alert("Please fill all fields");
+    alert(t("errors.fillAllFields"));
     return;
   }
 
@@ -34,37 +57,50 @@ const LoginScreen = () => {
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
       navigation.replace('HomeScreen');
     } else {
-      alert(data.message || "Invalid credentials");
+      alert(data.message || t("errors.invalidCredentials"));
     }
   } catch (error) {
-    console.error(error);
-    alert("Error connecting to server");
+    console.error('Login error:', error);
+    console.error('API_BASE:', API_BASE);
+    // More detailed error message
+    const errorMessage = error.message || 'Network error';
+    alert(`${t("errors.serverError")}\n\nMake sure the backend server is running.\nAPI: ${API_BASE}\n\nError: ${errorMessage}`);
   }
 };
 
 
   return (
     <View style={styles.container}>
-  
-      <TouchableOpacity style={styles.backButton} onPress={() => {
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        } else {
-          navigation.navigate('OnboardingScreen', { goToLastSlide: true });
-        }
-      }}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backButton} onPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate('OnboardingScreen', { goToLastSlide: true });
+          }
+        }}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
 
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.subtitle}>Fill in the details to Login to your account</Text>
+        <TouchableOpacity
+          onPress={handleLanguageChange}
+          style={styles.languageButton}
+        >
+          <Ionicons name="language" size={20} color="#007AFF" />
+          <Text style={styles.languageText}>
+            {currentLanguage === "en" ? "اردو" : "EN"}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      
+      <Text style={styles.title}>{t("login.title")}</Text>
+      <Text style={styles.subtitle}>{t("login.subtitle")}</Text>
+
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t("common.email")}</Text>
         <View style={styles.inputWrapper}>
           <TextInput
-            placeholder="Enter your email address"
+            placeholder={t("login.enterEmail")}
             style={styles.input}
             placeholderTextColor="#999"
             keyboardType="email-address"
@@ -80,10 +116,10 @@ const LoginScreen = () => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>{t("common.password")}</Text>
         <View style={styles.passwordContainer}>
           <TextInput
-            placeholder="Enter your desired password"
+            placeholder={t("login.enterPassword")}
             style={[styles.input, { flex: 1, borderWidth: 0 }]}
             placeholderTextColor="#999"
             secureTextEntry={!passwordVisible}
@@ -101,20 +137,20 @@ const LoginScreen = () => {
       </View>
 
       <TouchableOpacity style={styles.createButton} onPress={handleLogin}>
-        <Text style={styles.createButtonText}>Login</Text>
+        <Text style={styles.createButtonText}>{t("common.login")}</Text>
       </TouchableOpacity>
 
 
       <View style={styles.signInContainer}>
-        <Text style={styles.signInText}>Forgot your Password? </Text>
+        <Text style={styles.signInText}>{t("login.forgotPassword")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('ForgotPassScreen')}>
-          <Text style={styles.signInLink}> Click Here</Text>
+          <Text style={styles.signInLink}> {t("login.clickHere")}</Text>
         </TouchableOpacity>
       </View>
 <View style={styles.signInContainer}>
-  <Text style={styles.signInText}>Don't have an account? </Text>
+  <Text style={styles.signInText}>{t("login.dontHaveAccount")} </Text>
   <TouchableOpacity onPress={() => navigation.navigate('SignUpScreen')}>
-    <Text style={styles.signInLink}>Sign Up</Text>
+    <Text style={styles.signInLink}>{t("common.signUp")}</Text>
   </TouchableOpacity>
 </View>
 
@@ -129,13 +165,13 @@ const LoginScreen = () => {
             <View style={styles.iconContainer}>
               <Ionicons name="checkmark-circle" size={60} color="green" />
             </View>
-            <Text style={styles.modalTitle}>Login Successful!</Text>
-            <Text style={styles.modalMessage}>Account has been successfully Logged in!</Text>
+            <Text style={styles.modalTitle}>{t("login.successTitle")}</Text>
+            <Text style={styles.modalMessage}>{t("login.successMessage")}</Text>
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.modalButtonText}>OK</Text>
+              <Text style={styles.modalButtonText}>{t("common.ok")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -147,10 +183,33 @@ const LoginScreen = () => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 25, paddingTop: 80 },
-  backButton: { position: 'absolute', top: 60, left: 25 },
-  title: { fontSize: 28, fontWeight: '600', marginBottom: 8, textAlign: 'left' },
-  subtitle: { color: '#777', fontSize: 14, marginBottom: 30 },
+  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 25, paddingTop: 120 },
+  topBar: {
+    position: 'absolute',
+    top: 60,
+    left: 25,
+    right: 25,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  backButton: {},
+  languageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  languageText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  title: { fontSize: 28, fontWeight: '600', marginTop: 20, marginBottom: 8, textAlign: 'left' },
+  subtitle: { color: '#777', fontSize: 14, marginBottom: 40 },
   inputContainer: { marginBottom: 20 },
   label: { fontWeight: '500', marginBottom: 8 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 14 },

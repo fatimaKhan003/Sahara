@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, Image, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 
 type RootStackParamList = {
   SplashScreen: undefined;
@@ -14,6 +15,7 @@ type SplashScreenNavigationProp = NativeStackNavigationProp<
   'SplashScreen'
 >;
 const SplashScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<SplashScreenNavigationProp>();
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -32,7 +34,7 @@ const SplashScreen = () => {
   return (
     <View style={styles.container}>
       <Image source={require('../assets/Logo.png')} style={styles.logo} />
-      <Text style={styles.title}>Sahara</Text>
+      <Text style={styles.title}>{t("splash.title")}</Text>
 
       <View style={styles.progressContainer}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
