@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import './src/i18n'; // Initialize i18n
 
 import ConfirmMedicationScreen from './src/screens/ConfirmMedicationScreen';
 import ForgotPassScreen from './src/screens/ForgotPassScreen';

@@ -12,9 +12,11 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
 
 const ConfirmMedicationScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const { imageUri, backendImageUri, detectedName } = route.params;
@@ -48,13 +50,13 @@ const ConfirmMedicationScreen = () => {
 
   const handleSave = async () => {
   if (!user) {
-    Alert.alert("Error", "User not found");
+    Alert.alert(t("common.error"), t("errors.userNotFoundError"));
     return;
   }
 
   const validMeds = meds.filter((m) => m.name.trim() !== "");
   if (validMeds.length === 0) {
-    Alert.alert("Error", "Please enter at least one medication");
+    Alert.alert(t("common.error"), t("errors.enterAtLeastOne"));
     return;
   }
   validMeds.forEach((med, idx) => {
@@ -80,14 +82,14 @@ const ConfirmMedicationScreen = () => {
     const data = await response.json();
 
     if (response.ok) {
-      Alert.alert("Success", "Medications saved!");
+      Alert.alert(t("common.success") || "Success", t("medication.saveSuccess"));
       navigation.navigate("HomeScreen");
     } else {
-      Alert.alert("Error", data.message || "Could not save medications");
+      Alert.alert(t("common.error"), data.message || t("medication.saveError"));
     }
   } catch (err) {
     console.log(err);
-    Alert.alert("Error", "Failed to save medications. Try again.");
+    Alert.alert(t("common.error"), t("medication.saveError"));
   }
 };
 
@@ -107,38 +109,38 @@ const ConfirmMedicationScreen = () => {
 
       {meds.map((med, idx) => (
         <View key={idx} style={styles.medContainer}>
-          <Text style={styles.label}>Medication {idx + 1}</Text>
+          <Text style={styles.label}>{t("medication.medicationNumber", { number: idx + 1 })}</Text>
 
           <TextInput
-            placeholder="Name"
+            placeholder={t("common.name")}
             style={styles.input}
             value={med.name}
             onChangeText={(text) => updateMed(idx, "name", text)}
           />
 
           <TextInput
-            placeholder="Dose"
+            placeholder={t("medication.dose")}
             style={styles.input}
             value={med.dose}
             onChangeText={(text) => updateMed(idx, "dose", text)}
           />
 
           <TextInput
-            placeholder="Frequency"
+            placeholder={t("medication.frequency")}
             style={styles.input}
             value={med.frequency}
             onChangeText={(text) => updateMed(idx, "frequency", text)}
           />
 
           <TextInput
-            placeholder="Time (e.g. 23:49)"
+            placeholder={t("medication.timePlaceholder")}
             style={styles.input}
             value={med.time}
             onChangeText={(text) => updateMed(idx, "time", text)}
           />
 
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}>
-            <Text>Active</Text>
+            <Text>{t("medication.active")}</Text>
             <Switch
               value={med.isActive}
               onValueChange={(val) => updateMed(idx, "isActive", val)}
@@ -149,11 +151,11 @@ const ConfirmMedicationScreen = () => {
 
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <TouchableOpacity onPress={handleAddMore} style={styles.addButton}>
-          <Text style={{ color: "#fff", fontWeight: "600" }}>+ Add More</Text>
+          <Text style={{ color: "#fff", fontWeight: "600" }}>{t("medication.addMore")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSave} style={styles.addButton}>
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Done</Text>
+          <Text style={{ color: "#fff", fontWeight: "600" }}>{t("common.done")}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

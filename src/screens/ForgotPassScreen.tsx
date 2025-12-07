@@ -2,9 +2,11 @@ import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal, Alert } fro
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../api';
 
 const ForgotPassScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
 
   const [email, setEmail] = useState('');
@@ -27,20 +29,17 @@ const ForgotPassScreen = () => {
 
   const handleResetPassword = async () => {
     if (!email || !oldPassword || !newPassword) {
-      Alert.alert("Error", "Please fill all fields");
+      Alert.alert(t("common.error"), t("errors.fillAllFields"));
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email");
+      Alert.alert(t("common.error"), t("errors.invalidEmail"));
       return;
     }
 
     if (!validatePassword(newPassword)) {
-      Alert.alert(
-        "Weak Password",
-        "New password must contain:\n• 8 characters\n• Uppercase\n• Lowercase\n• Number\n• Special symbol"
-      );
+      Alert.alert(t("common.error"), t("errors.weakPassword"));
       return;
     }
 
@@ -59,12 +58,12 @@ const ForgotPassScreen = () => {
         setOldPassword('');
         setNewPassword('');
       } else {
-        Alert.alert("Error", data.message || "Something went wrong");
+        Alert.alert(t("common.error"), data.message || t("errors.somethingWentWrong"));
       }
 
     } catch (err) {
       console.log(err);
-      Alert.alert("Error", "Could not connect to server");
+      Alert.alert(t("common.error"), t("errors.serverError"));
     }
   };
 
@@ -79,15 +78,15 @@ const ForgotPassScreen = () => {
       }}>
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
-      <Text style={styles.title}>Reset Password</Text>
+      <Text style={styles.title}>{t("forgotPassword.title")}</Text>
       <Text style={styles.subtitle}>
-        Enter your email and old password to update
+        {t("forgotPassword.subtitle")}
       </Text>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t("common.email")}</Text>
         <View style={styles.inputWrapper}>
           <TextInput
-            placeholder="Enter your email"
+            placeholder={t("forgotPassword.enterEmail")}
             style={styles.input}
             placeholderTextColor="#999"
             keyboardType="email-address"
@@ -102,10 +101,10 @@ const ForgotPassScreen = () => {
         </View>
       </View>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Old Password</Text>
+        <Text style={styles.label}>{t("forgotPassword.oldPassword")}</Text>
         <View style={styles.passwordContainer}>
           <TextInput
-            placeholder="Enter your old password"
+            placeholder={t("forgotPassword.enterOldPassword")}
             style={[styles.input, { flex: 1, borderWidth: 0 }]}
             placeholderTextColor="#999"
             secureTextEntry={!oldPassVisible}
@@ -122,10 +121,10 @@ const ForgotPassScreen = () => {
         </View>
       </View>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>New Password</Text>
+        <Text style={styles.label}>{t("forgotPassword.newPassword")}</Text>
         <View style={styles.passwordContainer}>
           <TextInput
-            placeholder="Enter your new password"
+            placeholder={t("forgotPassword.enterNewPassword")}
             style={[styles.input, { flex: 1, borderWidth: 0 }]}
             placeholderTextColor="#999"
             secureTextEntry={!newPassVisible}
@@ -142,28 +141,28 @@ const ForgotPassScreen = () => {
         </View>
       </View>
       <TouchableOpacity style={styles.createButton} onPress={handleResetPassword}>
-        <Text style={styles.createButtonText}>Update Password</Text>
+        <Text style={styles.createButtonText}>{t("forgotPassword.updateButton")}</Text>
       </TouchableOpacity>
       <View style={styles.signInContainer}>
-        <Text style={styles.signInText}>Want to log in? </Text>
+        <Text style={styles.signInText}>{t("forgotPassword.wantToLogin")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
-          <Text style={styles.signInLink}>Login</Text>
+          <Text style={styles.signInLink}>{t("common.login")}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.signInContainer}>
-        <Text style={styles.signInText}>Want to create a new account? </Text>
+        <Text style={styles.signInText}>{t("forgotPassword.wantToSignUp")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignUpScreen')}>
-          <Text style={styles.signInLink}>Sign Up</Text>
+          <Text style={styles.signInLink}>{t("common.signUp")}</Text>
         </TouchableOpacity>
       </View>
       <Modal transparent animationType="fade" visible={modalVisible}>
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Ionicons name="checkmark-circle" size={60} color="green" />
-            <Text style={styles.modalTitle}>Password Updated!</Text>
+            <Text style={styles.modalTitle}>{t("forgotPassword.successTitle")}</Text>
             <Text style={styles.modalMessage}>
-              Your password has been successfully changed.
+              {t("forgotPassword.successMessage")}
             </Text>
             <TouchableOpacity
               style={styles.modalButton}
@@ -172,7 +171,7 @@ const ForgotPassScreen = () => {
                 navigation.navigate('LoginScreen');
               }}
             >
-              <Text style={styles.modalButtonText}>Go to Login</Text>
+              <Text style={styles.modalButtonText}>{t("forgotPassword.goToLogin")}</Text>
             </TouchableOpacity>
           </View>
         </View>
