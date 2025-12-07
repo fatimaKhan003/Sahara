@@ -1,42 +1,53 @@
 import express from "express";
 import Medication from "../models/Medication.js";
 import multer from "multer";
+import axios from "axios";
+import FormData from "form-data";
+import fs from "fs";
+
 const router = express.Router();
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
+
 const upload = multer({ storage });
+
+// POST: save medication -----------------------------------
 router.post("/save-medications", upload.single("image"), async (req, res) => {
   try {
-    const { userId, medicines } = req.body;
+    const { userId } = req.body;
+    let { medicines } = req.body;
 
     if (!userId || !medicines) {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
-    const medsArray = JSON.parse(medicines); 
+    // Only parse if medicines is a string (sent as JSON string from React Native)
+    if (typeof medicines === "string") {
+      medicines = JSON.parse(medicines);
+    }
+
+    // Save the uploaded image path if it exists
     const imageUri = req.file ? `/uploads/${req.file.filename}` : null;
-console.log("Backend received medsArray:", medsArray);
 
     const savedMeds = await Medication.insertMany(
-  medsArray.map((med) => {
-    if (!med.time) {
-      throw new Error(`Time is required for medication ${med.name}`);
-    }
-    return {
-      user: userId,
-      name: med.name,
-      dose: med.dose,
-      frequency: med.frequency,
-      time: med.time,
-      isActive: med.isActive ?? true,
-      imageUri,
-    };
-  })
-);
+      medicines.map((med) => {
+        if (!med.time) throw new Error(`Time is required for medication ${med.name}`);
+        return {
+          user: userId,
+          name: med.name,
+          dose: med.dose,
+          frequency: med.frequency,
+          time: med.time,
+          isActive: med.isActive ?? true,
+          imageUri,
+        };
+      })
+    );
 
     res.status(201).json({ message: "Medications saved successfully", medications: savedMeds });
   } catch (err) {
@@ -44,6 +55,9 @@ console.log("Backend received medsArray:", medsArray);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+// GET: get user's medications -----------------------------------
 router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -54,6 +68,8 @@ router.get("/:userId", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// PATCH: update medication status -----------------------------------
 router.patch("/update-status/:id", async (req, res) => {
   try {
     const { status } = req.body; 
@@ -69,6 +85,8 @@ router.patch("/update-status/:id", async (req, res) => {
     res.status(500).json({ message: "Status update failed" });
   }
 });
+
+// DELETE: delete medication -----------------------------------
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -84,6 +102,8 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ message: "Failed to delete medication" });
   }
 });
+
+// PATCH: update medication details -----------------------------------
 router.patch("/:id", upload.single("image"), async (req, res) => {
   try {
     const { name, dose, frequency, time, status } = req.body;
