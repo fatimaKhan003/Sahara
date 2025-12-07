@@ -3,11 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE } from "../../api";
 import { useTranslation } from 'react-i18next';
 
 export default function ScanPrescriptionScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  
+  // open camera to take picture
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -22,11 +25,35 @@ export default function ScanPrescriptionScreen() {
     });
 
     if (!result.canceled) {
-      navigation.navigate('ConfirmMedicationScreen', {
-        imageUri: result.assets[0].uri,
+      const localUri = result.assets[0].uri;
+
+      const formData = new FormData();
+      formData.append("image", {
+        uri: localUri,
+        name: "prescription.jpg",
+        type: "image/jpeg",
+      });
+
+      // Call OCR API in Node backend
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await resp.json();
+
+      // Navigate with OCR result + uploaded image path from backend
+      navigation.navigate("ConfirmMedicationScreen", {
+        imageUri: localUri,
+        backendImageUri: data.imageUri,
+        detectedName: data.ocrText
       });
     }
+
   };
+
+  // open gallery to select picture
   const openGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -41,10 +68,32 @@ export default function ScanPrescriptionScreen() {
     });
 
     if (!result.canceled) {
-      navigation.navigate('ConfirmMedicationScreen', {
-        imageUri: result.assets[0].uri,
+      const localUri = result.assets[0].uri;
+      
+      const formData = new FormData();
+      formData.append("image", {
+        uri: localUri,
+        name: "prescription.jpg",
+        type: "image/jpeg",
+      });
+
+      // Call OCR API in Node backend
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await resp.json();
+
+      // Navigate with OCR result + uploaded image path from backend
+      navigation.navigate("ConfirmMedicationScreen", {
+        imageUri: localUri,
+        backendImageUri: data.imageUri,
+        detectedName: data.ocrText
       });
     }
+
   };
 
   return (

@@ -44,3 +44,6 @@ yarn-error.*
 # uploaded images
 Backend/uploads/*
 !Backend/uploads/.gitkeep
+
+# android studio files
+.idea/

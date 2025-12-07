@@ -19,9 +19,17 @@ const ConfirmMedicationScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
-  const { imageUri } = route.params;
+  const { imageUri, backendImageUri, detectedName } = route.params;
+
   const [meds, setMeds] = useState([
-    { name: "", dose: "", frequency: "", time: "", isActive: true, status: "pending" }
+    { 
+      name: detectedName || "", 
+      dose: "", 
+      frequency: "", 
+      time: "", 
+      isActive: true, 
+      status: "pending" 
+    }
   ]);
 
   const [user, setUser] = useState(null);
@@ -56,21 +64,18 @@ const ConfirmMedicationScreen = () => {
   });
 
   try {
-    const formData = new FormData();
-    formData.append("userId", user._id);
-    formData.append("medicines", JSON.stringify(validMeds));
-
-    formData.append("image", {
-      uri: imageUri,
-      name: "prescription.jpg",
-      type: "image/jpeg",
-    });
+    const payload = {
+      userId: user._id,
+      medicines: validMeds,
+      imageUri: backendImageUri,
+    };
 
     const response = await fetch(
       `${API_BASE}/api/medications/save-medications`,
       {
         method: "POST",
-        body: formData
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       }
     );
 
