@@ -57,6 +57,7 @@ const ConfirmMedicationScreen = () => {
     const validMeds = meds.filter((m) => m.name.trim() !== "");
     if (validMeds.length === 0) return Alert.alert(t("common.error"), t("errors.enterAtLeastOne"));
 
+<<<<<<< HEAD
     try {
       const formData = new FormData();
       formData.append("userId", user._id);
@@ -68,6 +69,21 @@ const ConfirmMedicationScreen = () => {
           name: "med.jpg",
           type: "image/jpeg",
         });
+=======
+  try {
+    const payload = {
+      userId: user._id,
+      medicines: validMeds,
+      imageUri: backendImageUri,
+    };
+
+    const response = await fetch(
+      `${API_BASE}/api/medications/save-medications`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+>>>>>>> development
       }
 
       const response = await fetch(`${API_BASE}/api/medications/save-medications`, {

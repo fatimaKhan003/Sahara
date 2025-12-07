@@ -17,8 +17,12 @@ import { useTranslation } from 'react-i18next';
 export default function ScanPrescriptionScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+<<<<<<< HEAD
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+=======
+  
+>>>>>>> development
   // open camera to take picture
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -33,6 +37,10 @@ export default function ScanPrescriptionScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
+<<<<<<< HEAD
+=======
+
+>>>>>>> development
       const formData = new FormData();
       formData.append("image", {
         uri: localUri,
@@ -40,18 +48,31 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       });
 
+<<<<<<< HEAD
+=======
+      // Call OCR API in Node backend
+      await new Promise((resolve) => setTimeout(resolve, 100));
+>>>>>>> development
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         body: formData,
       });
+<<<<<<< HEAD
       const data = await resp.json();
 
+=======
+
+      const data = await resp.json();
+
+      // Navigate with OCR result + uploaded image path from backend
+>>>>>>> development
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
         backendImageUri: data.imageUri,
         detectedName: data.ocrText
       });
     }
+
   };
 
   // open gallery to select picture
@@ -68,6 +89,10 @@ export default function ScanPrescriptionScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
+<<<<<<< HEAD
+=======
+      
+>>>>>>> development
       const formData = new FormData();
       formData.append("image", {
         uri: localUri,
@@ -75,18 +100,31 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       });
 
+<<<<<<< HEAD
+=======
+      // Call OCR API in Node backend
+      await new Promise((resolve) => setTimeout(resolve, 100));
+>>>>>>> development
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         body: formData,
       });
+<<<<<<< HEAD
       const data = await resp.json();
 
+=======
+
+      const data = await resp.json();
+
+      // Navigate with OCR result + uploaded image path from backend
+>>>>>>> development
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
         backendImageUri: data.imageUri,
         detectedName: data.ocrText
       });
     }
+
   };
 
   const dynamicStyles = StyleSheet.create({
