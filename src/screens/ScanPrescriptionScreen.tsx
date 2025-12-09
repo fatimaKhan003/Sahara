@@ -17,12 +17,8 @@ import { useTranslation } from 'react-i18next';
 export default function ScanPrescriptionScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-<<<<<<< HEAD
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-=======
-  
->>>>>>> development
   // open camera to take picture
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -30,6 +26,7 @@ export default function ScanPrescriptionScreen() {
       Alert.alert(t('scan.permissionRequired'), t('scan.cameraPermission'));
       return;
     }
+
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: false,
       quality: 0.5,
@@ -37,10 +34,7 @@ export default function ScanPrescriptionScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
-<<<<<<< HEAD
-=======
 
->>>>>>> development
       const formData = new FormData();
       formData.append("image", {
         uri: localUri,
@@ -48,31 +42,21 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       });
 
-<<<<<<< HEAD
-=======
-      // Call OCR API in Node backend
       await new Promise((resolve) => setTimeout(resolve, 100));
->>>>>>> development
+
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         body: formData,
       });
-<<<<<<< HEAD
-      const data = await resp.json();
-
-=======
 
       const data = await resp.json();
 
-      // Navigate with OCR result + uploaded image path from backend
->>>>>>> development
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
         backendImageUri: data.imageUri,
         detectedName: data.ocrText
       });
     }
-
   };
 
   // open gallery to select picture
@@ -82,6 +66,7 @@ export default function ScanPrescriptionScreen() {
       Alert.alert(t('scan.permissionRequired'), t('scan.galleryPermission'));
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.5,
@@ -89,10 +74,7 @@ export default function ScanPrescriptionScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
-<<<<<<< HEAD
-=======
-      
->>>>>>> development
+
       const formData = new FormData();
       formData.append("image", {
         uri: localUri,
@@ -100,31 +82,21 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       });
 
-<<<<<<< HEAD
-=======
-      // Call OCR API in Node backend
       await new Promise((resolve) => setTimeout(resolve, 100));
->>>>>>> development
+
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         body: formData,
       });
-<<<<<<< HEAD
-      const data = await resp.json();
-
-=======
 
       const data = await resp.json();
 
-      // Navigate with OCR result + uploaded image path from backend
->>>>>>> development
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
         backendImageUri: data.imageUri,
         detectedName: data.ocrText
       });
     }
-
   };
 
   const dynamicStyles = StyleSheet.create({
@@ -187,9 +159,11 @@ export default function ScanPrescriptionScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={dynamicStyles.container}>
-        {/* Dark Mode Toggle at Top-Right */}
+
         <View style={dynamicStyles.toggleContainer}>
-          <Text style={dynamicStyles.toggleText}>{isDarkMode ? 'Dark' : 'Light'}</Text>
+          <Text style={dynamicStyles.toggleText}>
+            {isDarkMode ? 'Dark' : 'Light'}
+          </Text>
           <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
         </View>
 
@@ -202,8 +176,11 @@ export default function ScanPrescriptionScreen() {
 
         <TouchableOpacity onPress={openGallery} style={dynamicStyles.buttonSecondary}>
           <Ionicons name="images" size={30} color="#1E5AF2" />
-          <Text style={dynamicStyles.buttonTextSecondary}>{t('scan.chooseFromGallery')}</Text>
+          <Text style={dynamicStyles.buttonTextSecondary}>
+            {t('scan.chooseFromGallery')}
+          </Text>
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );
