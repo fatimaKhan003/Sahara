@@ -23,14 +23,14 @@ const ConfirmMedicationScreen = () => {
   const { imageUri, backendImageUri, detectedName } = route.params;
 
   const [meds, setMeds] = useState([
-    { 
-      name: detectedName || "", 
-      dose: "", 
-      frequency: "", 
-      time: "", 
-      isActive: true, 
-      status: "pending" 
-    }
+    {
+      name: detectedName || "",
+      dose: "",
+      frequency: "",
+      time: "",
+      isActive: true,
+      status: "pending",
+    },
   ]);
 
   const [user, setUser] = useState(null);
@@ -47,17 +47,18 @@ const ConfirmMedicationScreen = () => {
   const handleAddMore = () => {
     setMeds([
       ...meds,
-      { name: "", dose: "", frequency: "", time: "", isActive: true, status: "pending" }
+      { name: "", dose: "", frequency: "", time: "", isActive: true, status: "pending" },
     ]);
   };
 
   const handleSave = async () => {
-    if (!user) return Alert.alert(t("common.error"), t("errors.userNotFoundError"));
+    if (!user)
+      return Alert.alert(t("common.error"), t("errors.userNotFoundError"));
 
     const validMeds = meds.filter((m) => m.name.trim() !== "");
-    if (validMeds.length === 0) return Alert.alert(t("common.error"), t("errors.enterAtLeastOne"));
+    if (validMeds.length === 0)
+      return Alert.alert(t("common.error"), t("errors.enterAtLeastOne"));
 
-<<<<<<< HEAD
     try {
       const formData = new FormData();
       formData.append("userId", user._id);
@@ -69,33 +70,23 @@ const ConfirmMedicationScreen = () => {
           name: "med.jpg",
           type: "image/jpeg",
         });
-=======
-  try {
-    const payload = {
-      userId: user._id,
-      medicines: validMeds,
-      imageUri: backendImageUri,
-    };
-
-    const response = await fetch(
-      `${API_BASE}/api/medications/save-medications`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
->>>>>>> development
+      } else if (backendImageUri) {
+        formData.append("backendImageUri", backendImageUri);
       }
 
-      const response = await fetch(`${API_BASE}/api/medications/save-medications`, {
-        method: "POST",
-        body: formData,
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await fetch(
+        `${API_BASE}/api/medications/save-medications`,
+        {
+          method: "POST",
+          body: formData,
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert(t("common.success") || "Success", t("medication.saveSuccess"));
+        Alert.alert(t("common.success"), t("medication.saveSuccess"));
         navigation.navigate("HomeScreen");
       } else {
         Alert.alert(t("common.error"), data.message || t("medication.saveError"));
@@ -112,9 +103,12 @@ const ConfirmMedicationScreen = () => {
     setMeds(updated);
   };
 
-  // Dynamic styles based on dark/light mode
   const dynamicStyles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: isDarkMode ? "#121212" : "#fff" },
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: isDarkMode ? "#121212" : "#fff",
+    },
     medContainer: {
       borderWidth: 1,
       borderColor: isDarkMode ? "#444" : "#ccc",
@@ -123,7 +117,11 @@ const ConfirmMedicationScreen = () => {
       marginBottom: 15,
       backgroundColor: isDarkMode ? "#1E1E1E" : "#fff",
     },
-    label: { fontWeight: "700", marginBottom: 5, color: isDarkMode ? "#fff" : "#000" },
+    label: {
+      fontWeight: "700",
+      marginBottom: 5,
+      color: isDarkMode ? "#fff" : "#000",
+    },
     input: {
       borderWidth: 1,
       borderColor: isDarkMode ? "#666" : "#ccc",
@@ -148,9 +146,10 @@ const ConfirmMedicationScreen = () => {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView style={dynamicStyles.container}>
-        {/* Dark Mode Toggle */}
         <View style={dynamicStyles.switchContainer}>
-          <Text style={dynamicStyles.switchLabel}>{isDarkMode ? "Dark Mode" : "Light Mode"}</Text>
+          <Text style={dynamicStyles.switchLabel}>
+            {isDarkMode ? "Dark Mode" : "Light Mode"}
+          </Text>
           <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
         </View>
 
@@ -161,7 +160,9 @@ const ConfirmMedicationScreen = () => {
 
         {meds.map((med, idx) => (
           <View key={idx} style={dynamicStyles.medContainer}>
-            <Text style={dynamicStyles.label}>{t("medication.medicationNumber", { number: idx + 1 })}</Text>
+            <Text style={dynamicStyles.label}>
+              {t("medication.medicationNumber", { number: idx + 1 })}
+            </Text>
 
             <TextInput
               placeholder={t("common.name")}
@@ -196,7 +197,9 @@ const ConfirmMedicationScreen = () => {
             />
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}>
-              <Text style={{ color: isDarkMode ? "#fff" : "#000" }}>{t("medication.active")}</Text>
+              <Text style={{ color: isDarkMode ? "#fff" : "#000" }}>
+                {t("medication.active")}
+              </Text>
               <Switch
                 value={med.isActive}
                 onValueChange={(val) => updateMed(idx, "isActive", val)}
@@ -207,7 +210,9 @@ const ConfirmMedicationScreen = () => {
 
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <TouchableOpacity onPress={handleAddMore} style={dynamicStyles.addButton}>
-            <Text style={{ color: "#fff", fontWeight: "600" }}>{t("medication.addMore")}</Text>
+            <Text style={{ color: "#fff", fontWeight: "600" }}>
+              {t("medication.addMore")}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleSave} style={dynamicStyles.addButton}>
