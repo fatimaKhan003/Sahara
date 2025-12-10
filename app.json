@@ -24,7 +24,8 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.Sahara"
     },
     "web": {
       "favicon": "./src/assets/favicon.png"

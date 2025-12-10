@@ -1,4 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +19,7 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (<GestureHandlerRootView style={{flex:1}}>
+    <ThemeProvider>
     <NavigationContainer>
       <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
@@ -36,6 +38,7 @@ export default function App() {
 
       </Stack.Navigator>
     </NavigationContainer>
+    </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
