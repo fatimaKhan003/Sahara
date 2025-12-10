@@ -1,11 +1,13 @@
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE } from "../../api";
 import i18n, { changeLanguage } from '../i18n';
 import { containsUrdu } from '../utils/textUtils';
+import { signInWithGoogle } from '../utils/googleAuth';
 
 const SignUpScreen = () => {
   const { t } = useTranslation();
@@ -17,6 +19,7 @@ const SignUpScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const [darkMode, setDarkMode] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
   useEffect(() => {
     const updateLanguage = () => setCurrentLanguage(i18n.language);
@@ -72,6 +75,47 @@ const SignUpScreen = () => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoadingGoogle(true);
+    try {
+      const googleResult = await signInWithGoogle();
+      
+      if (!googleResult.success) {
+        if (googleResult.error && !googleResult.error.includes('cancelled')) {
+          alert(googleResult.error);
+        }
+        setLoadingGoogle(false);
+        return;
+      }
+
+      // Send Google user data to backend
+      const response = await fetch(`${API_BASE}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          googleId: googleResult.user.googleId,
+          email: googleResult.user.email,
+          name: googleResult.user.name,
+          idToken: googleResult.user.idToken,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        navigation.replace('HomeScreen');
+      } else {
+        alert(data.message || t("errors.somethingWentWrong"));
+      }
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      alert(t("errors.serverError"));
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
   // ========== Dynamic Styles ==========
   const dynamicStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: darkMode ? '#1E1E1E' : '#fff', paddingHorizontal: 25, paddingTop: 120 },
@@ -87,6 +131,11 @@ const SignUpScreen = () => {
     modalContainer: { backgroundColor: darkMode ? '#2C2C2C' : '#fff', width: '80%', borderRadius: 15, padding: 20, alignItems: 'center' },
     modalMessage: { fontSize: 16, color: darkMode ? '#E5E5E5' : '#555', textAlign: 'center', marginBottom: 20 },
     languageButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: darkMode ? '#333' : '#f0f0f0' },
+    dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+    dividerLine: { flex: 1, height: 1, backgroundColor: darkMode ? '#555' : '#ddd' },
+    dividerText: { marginHorizontal: 10, color: darkMode ? '#A0A0A0' : '#777', fontSize: 14 },
+    googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: darkMode ? '#333' : '#fff', borderWidth: 1, borderColor: darkMode ? '#555' : '#ddd', borderRadius: 10, paddingVertical: 15, marginTop: 10 },
+    googleButtonText: { color: darkMode ? '#E5E5E5' : '#000', fontSize: 16, fontWeight: '600', marginLeft: 10 },
   });
 
   return (
@@ -170,6 +219,29 @@ const SignUpScreen = () => {
       {/* Create Account */}
       <TouchableOpacity style={dynamicStyles.createButton} onPress={handleCreateAccount}>
         <Text style={dynamicStyles.createButtonText}>{t("signup.createButton")}</Text>
+      </TouchableOpacity>
+
+      {/* Divider */}
+      <View style={dynamicStyles.dividerContainer}>
+        <View style={dynamicStyles.dividerLine} />
+        <Text style={dynamicStyles.dividerText}>{t("signup.or")}</Text>
+        <View style={dynamicStyles.dividerLine} />
+      </View>
+
+      {/* Google Sign-In button */}
+      <TouchableOpacity 
+        style={dynamicStyles.googleButton} 
+        onPress={handleGoogleSignIn}
+        disabled={loadingGoogle}
+      >
+        {loadingGoogle ? (
+          <ActivityIndicator color={darkMode ? '#E5E5E5' : '#000'} />
+        ) : (
+          <>
+            <Ionicons name="logo-google" size={24} color="#4285F4" />
+            <Text style={dynamicStyles.googleButtonText}>{t("signup.signUpWithGoogle")}</Text>
+          </>
+        )}
       </TouchableOpacity>
 
       {/* Terms */}

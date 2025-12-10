@@ -62,7 +62,9 @@
     "alreadyHaveAccount": "Already have an account?",
     "signIn": "Sign in",
     "successTitle": "Sign Up Completed!",
-    "successMessage": "Account has been created successfully!"
+    "successMessage": "Account has been created successfully!",
+    "or": "OR",
+    "signUpWithGoogle": "Sign up with Google"
   },
   "login": {
     "title": "Login",
@@ -73,22 +75,32 @@
     "clickHere": "Click Here",
     "dontHaveAccount": "Don't have an account?",
     "successTitle": "Login Successful!",
-    "successMessage": "Account has been successfully Logged in!"
+    "successMessage": "Account has been successfully Logged in!",
+    "or": "OR",
+    "signInWithGoogle": "Sign in with Google"
   },
   "forgotPassword": {
     "title": "Reset Password",
-    "subtitle": "Enter your email and old password to update",
+    "subtitle": "Enter your email to receive a password reset link",
+    "resetSubtitle": "Enter the reset token from your email and your new password",
     "enterEmail": "Enter your email",
-    "oldPassword": "Old Password",
-    "enterOldPassword": "Enter your old password",
     "newPassword": "New Password",
     "enterNewPassword": "Enter your new password",
-    "updateButton": "Update Password",
+    "resetToken": "Reset Token",
+    "enterResetToken": "Enter the token from your email",
+    "tokenHelp": "Check your email for the reset token",
+    "sendResetEmail": "Send Reset Email",
+    "updateButton": "Reset Password",
+    "sending": "Sending...",
+    "resetting": "Resetting...",
     "wantToLogin": "Want to log in?",
     "wantToSignUp": "Want to create a new account?",
     "successTitle": "Password Updated!",
     "successMessage": "Your password has been successfully changed.",
-    "goToLogin": "Go to Login"
+    "emailSentTitle": "Email Sent",
+    "emailSentMessage": "If an account with that email exists, a password reset token has been sent. Please check your email.",
+    "goToLogin": "Go to Login",
+    "backToEmail": "Back to Email Step"
   },
   "home": {
     "addMedication": "Add Medication",

@@ -10,18 +10,19 @@ const ForgotPassScreen = () => {
   const navigation = useNavigation();
 
   const [email, setEmail] = useState('');
-  const [oldPassword, setOldPassword] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [oldPassVisible, setOldPassVisible] = useState(false);
+  const [step, setStep] = useState('email'); // 'email' or 'reset'
   const [newPassVisible, setNewPassVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePassword = (password: string) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
 
-  const handleResetPassword = async () => {
-    if (!email || !oldPassword || !newPassword) {
+  const handleSendResetEmail = async () => {
+    if (!email) {
       Alert.alert(t("common.error"), t("errors.fillAllFields"));
       return;
     }
@@ -29,28 +30,62 @@ const ForgotPassScreen = () => {
       Alert.alert(t("common.error"), t("errors.invalidEmail"));
       return;
     }
-    if (!validatePassword(newPassword)) {
-      Alert.alert(t("common.error"), t("errors.weakPassword"));
-      return;
-    }
+    setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/reset-password`, {
+      const response = await fetch(`${API_BASE}/api/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, oldPassword, newPassword }),
+        body: JSON.stringify({ email }),
       });
       const data = await response.json();
       if (response.ok) {
-        setModalVisible(true);
-        setEmail('');
-        setOldPassword('');
-        setNewPassword('');
+        Alert.alert(
+          t("forgotPassword.emailSentTitle"),
+          t("forgotPassword.emailSentMessage"),
+          [{ text: t("common.ok"), onPress: () => setStep('reset') }]
+        );
       } else {
         Alert.alert(t("common.error"), data.message || t("errors.somethingWentWrong"));
       }
     } catch (err) {
       console.log(err);
       Alert.alert(t("common.error"), t("errors.serverError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetToken || !newPassword) {
+      Alert.alert(t("common.error"), t("errors.fillAllFields"));
+      return;
+    }
+    if (!validatePassword(newPassword)) {
+      Alert.alert(t("common.error"), t("errors.weakPassword"));
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resetToken, newPassword }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setModalVisible(true);
+        setEmail('');
+        setResetToken('');
+        setNewPassword('');
+        setStep('email');
+      } else {
+        Alert.alert(t("common.error"), data.message || t("errors.somethingWentWrong"));
+      }
+    } catch (err) {
+      console.log(err);
+      Alert.alert(t("common.error"), t("errors.serverError"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,67 +116,114 @@ const ForgotPassScreen = () => {
       </TouchableOpacity>
 
       <Text style={[styles.title, { color: textColor }]}>{t("forgotPassword.title")}</Text>
-      <Text style={[styles.subtitle, { color: subtitleColor }]}>{t("forgotPassword.subtitle")}</Text>
+      <Text style={[styles.subtitle, { color: subtitleColor }]}>
+        {step === 'email' ? t("forgotPassword.subtitle") : t("forgotPassword.resetSubtitle")}
+      </Text>
 
-      {/* Email */}
-      <View style={styles.inputContainer}>
-        <Text style={[styles.label, { color: textColor }]}>{t("common.email")}</Text>
-        <View style={[styles.inputWrapper, { borderColor, backgroundColor: inputBg }]}>
-          <TextInput
-            placeholder={t("forgotPassword.enterEmail")}
-            style={[styles.input, { color: inputText }]}
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-          {email.length > 0 && (
-            <TouchableOpacity onPress={() => setEmail('')}>
-              <Ionicons name="close-circle" size={20} color="#777" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      {step === 'email' ? (
+        <>
+          {/* Email Input Step */}
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: textColor }]}>{t("common.email")}</Text>
+            <View style={[styles.inputWrapper, { borderColor, backgroundColor: inputBg }]}>
+              <TextInput
+                placeholder={t("forgotPassword.enterEmail")}
+                style={[styles.input, { color: inputText }]}
+                placeholderTextColor="#999"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+              />
+              {email.length > 0 && !loading && (
+                <TouchableOpacity onPress={() => setEmail('')}>
+                  <Ionicons name="close-circle" size={20} color="#777" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
 
-      {/* Old Password */}
-      <View style={styles.inputContainer}>
-        <Text style={[styles.label, { color: textColor }]}>{t("forgotPassword.oldPassword")}</Text>
-        <View style={[styles.passwordContainer, { borderColor, backgroundColor: inputBg }]}>
-          <TextInput
-            placeholder={t("forgotPassword.enterOldPassword")}
-            style={[styles.input, { flex: 1, color: inputText, borderWidth: 0 }]}
-            placeholderTextColor="#999"
-            secureTextEntry={!oldPassVisible}
-            value={oldPassword}
-            onChangeText={setOldPassword}
-          />
-          <TouchableOpacity onPress={() => setOldPassVisible(!oldPassVisible)}>
-            <Ionicons name={oldPassVisible ? "eye-outline" : "eye-off-outline"} size={22} color="#777" />
+          <TouchableOpacity 
+            style={[styles.createButton, loading && { opacity: 0.6 }]} 
+            onPress={handleSendResetEmail}
+            disabled={loading}
+          >
+            {loading ? (
+              <Text style={styles.createButtonText}>{t("forgotPassword.sending")}</Text>
+            ) : (
+              <Text style={styles.createButtonText}>{t("forgotPassword.sendResetEmail")}</Text>
+            )}
           </TouchableOpacity>
-        </View>
-      </View>
+        </>
+      ) : (
+        <>
+          {/* Reset Token and New Password Step */}
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: textColor }]}>{t("forgotPassword.resetToken")}</Text>
+            <View style={[styles.inputWrapper, { borderColor, backgroundColor: inputBg }]}>
+              <TextInput
+                placeholder={t("forgotPassword.enterResetToken")}
+                style={[styles.input, { color: inputText }]}
+                placeholderTextColor="#999"
+                value={resetToken}
+                onChangeText={setResetToken}
+                editable={!loading}
+              />
+              {resetToken.length > 0 && !loading && (
+                <TouchableOpacity onPress={() => setResetToken('')}>
+                  <Ionicons name="close-circle" size={20} color="#777" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={[styles.helpText, { color: subtitleColor }]}>
+              {t("forgotPassword.tokenHelp")}
+            </Text>
+          </View>
 
-      {/* New Password */}
-      <View style={styles.inputContainer}>
-        <Text style={[styles.label, { color: textColor }]}>{t("forgotPassword.newPassword")}</Text>
-        <View style={[styles.passwordContainer, { borderColor, backgroundColor: inputBg }]}>
-          <TextInput
-            placeholder={t("forgotPassword.enterNewPassword")}
-            style={[styles.input, { flex: 1, color: inputText, borderWidth: 0 }]}
-            placeholderTextColor="#999"
-            secureTextEntry={!newPassVisible}
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <TouchableOpacity onPress={() => setNewPassVisible(!newPassVisible)}>
-            <Ionicons name={newPassVisible ? "eye-outline" : "eye-off-outline"} size={22} color="#777" />
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: textColor }]}>{t("forgotPassword.newPassword")}</Text>
+            <View style={[styles.passwordContainer, { borderColor, backgroundColor: inputBg }]}>
+              <TextInput
+                placeholder={t("forgotPassword.enterNewPassword")}
+                style={[styles.input, { flex: 1, color: inputText, borderWidth: 0 }]}
+                placeholderTextColor="#999"
+                secureTextEntry={!newPassVisible}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                editable={!loading}
+              />
+              <TouchableOpacity onPress={() => setNewPassVisible(!newPassVisible)}>
+                <Ionicons name={newPassVisible ? "eye-outline" : "eye-off-outline"} size={22} color="#777" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.createButton, loading && { opacity: 0.6 }]} 
+            onPress={handleResetPassword}
+            disabled={loading}
+          >
+            {loading ? (
+              <Text style={styles.createButtonText}>{t("forgotPassword.resetting")}</Text>
+            ) : (
+              <Text style={styles.createButtonText}>{t("forgotPassword.updateButton")}</Text>
+            )}
           </TouchableOpacity>
-        </View>
-      </View>
 
-      <TouchableOpacity style={styles.createButton} onPress={handleResetPassword}>
-        <Text style={styles.createButtonText}>{t("forgotPassword.updateButton")}</Text>
-      </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ marginTop: 15 }} 
+            onPress={() => {
+              setStep('email');
+              setResetToken('');
+              setNewPassword('');
+            }}
+          >
+            <Text style={[styles.signInLink, { color: secondaryTextColor, textAlign: 'center' }]}>
+              {t("forgotPassword.backToEmail")}
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
 
       <View style={styles.signInContainer}>
         <Text style={[styles.signInText, { color: textColor }]}>{t("forgotPassword.wantToLogin")} </Text>
@@ -204,4 +286,5 @@ const styles = StyleSheet.create({
   modalMessage: { fontSize: 16, textAlign: 'center', marginBottom: 20 },
   modalButton: { backgroundColor: '#3B5BFF', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 25 },
   modalButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  helpText: { fontSize: 12, marginTop: 5, fontStyle: 'italic' },
 });

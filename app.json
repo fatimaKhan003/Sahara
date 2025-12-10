@@ -3,16 +3,18 @@
     "name": "Sahara",
     "slug": "Sahara",
     "version": "1.0.0",
+    "owner": "tayyabatanveer",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "scheme": "com.anonymous.Sahara",
     "splash": {
       "image": "./src/assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.anonymous.Sahara",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to your camera to scan prescriptions.",
@@ -32,6 +34,11 @@
     },
     "plugins": [
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a95499e9-53fe-48de-a364-1baf072b030e"
+      }
+    }
   }
 }

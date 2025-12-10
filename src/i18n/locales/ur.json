@@ -1,8 +1,8 @@
 {
   "common": {
     "welcome": "خوش آمدید",
-    "hello": "ہیلو" ,
-    "welcomeBack": "واپس خوش آمدید!",
+    "hello": "سلام",
+    "welcomeBack": " خوش آمدید!",
     "today": "آج",
     "save": "محفوظ کریں",
     "cancel": "منسوخ کریں",
@@ -62,7 +62,9 @@
     "alreadyHaveAccount": "پہلے سے اکاؤنٹ ہے؟",
     "signIn": "سائن ان",
     "successTitle": "سائن اپ مکمل!",
-    "successMessage": "اکاؤنٹ کامیابی سے بنایا گیا!"
+    "successMessage": "اکاؤنٹ کامیابی سے بنایا گیا!",
+    "or": "یا",
+    "signUpWithGoogle": "گوگل کے ساتھ سائن اپ کریں"
   },
   "login": {
     "title": "لاگ ان",
@@ -73,22 +75,32 @@
     "clickHere": "یہاں کلک کریں",
     "dontHaveAccount": "اکاؤنٹ نہیں ہے؟",
     "successTitle": "لاگ ان کامیاب!",
-    "successMessage": "اکاؤنٹ کامیابی سے لاگ ان ہو گیا!"
+    "successMessage": "اکاؤنٹ کامیابی سے لاگ ان ہو گیا!",
+    "or": "یا",
+    "signInWithGoogle": "گوگل کے ساتھ سائن ان کریں"
   },
   "forgotPassword": {
     "title": "پاس ورڈ ری سیٹ کریں",
-    "subtitle": "اپ ڈیٹ کرنے کے لیے اپنا ای میل اور پرانا پاس ورڈ درج کریں",
+    "subtitle": "پاس ورڈ ری سیٹ لنک حاصل کرنے کے لیے اپنا ای میل درج کریں",
+    "resetSubtitle": "اپنے ای میل سے ری سیٹ ٹوکن اور نیا پاس ورڈ درج کریں",
     "enterEmail": "اپنا ای میل درج کریں",
-    "oldPassword": "پرانا پاس ورڈ",
-    "enterOldPassword": "اپنا پرانا پاس ورڈ درج کریں",
     "newPassword": "نیا پاس ورڈ",
     "enterNewPassword": "اپنا نیا پاس ورڈ درج کریں",
-    "updateButton": "پاس ورڈ اپ ڈیٹ کریں",
+    "resetToken": "ری سیٹ ٹوکن",
+    "enterResetToken": "اپنے ای میل سے ٹوکن درج کریں",
+    "tokenHelp": "ری سیٹ ٹوکن کے لیے اپنا ای میل چیک کریں",
+    "sendResetEmail": "ری سیٹ ای میل بھیجیں",
+    "updateButton": "پاس ورڈ ری سیٹ کریں",
+    "sending": "بھیج رہے ہیں...",
+    "resetting": "ری سیٹ کر رہے ہیں...",
     "wantToLogin": "لاگ ان کرنا چاہتے ہیں؟",
     "wantToSignUp": "نیا اکاؤنٹ بنانا چاہتے ہیں؟",
     "successTitle": "پاس ورڈ اپ ڈیٹ!",
     "successMessage": "آپ کا پاس ورڈ کامیابی سے تبدیل کر دیا گیا ہے۔",
-    "goToLogin": "لاگ ان پر جائیں"
+    "emailSentTitle": "ای میل بھیج دی گئی",
+    "emailSentMessage": "اگر اس ای میل کے ساتھ اکاؤنٹ موجود ہے تو پاس ورڈ ری سیٹ ٹوکن بھیج دیا گیا ہے۔ براہ کرم اپنا ای میل چیک کریں۔",
+    "goToLogin": "لاگ ان پر جائیں",
+    "backToEmail": "ای میل مرحلے پر واپس جائیں"
   },
   "home": {
     "addMedication": "دوائی شامل کریں",
