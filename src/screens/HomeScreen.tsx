@@ -264,8 +264,16 @@ const HomeScreen = () => {
         {/* Today */}
         <Text style={[styles.todayText, { color: dynamicStyles.text.color }]}>{t("common.today")}, {new Date().toDateString()}</Text>
 
-        {/* Calendar */}
-        <View style={[styles.calendarRow, { backgroundColor: dynamicStyles.calendarBg.backgroundColor }]}>
+        <View style={styles.weekNav}>
+          <TouchableOpacity onPress={goToPrevWeek}>
+            <Ionicons name="chevron-back" size={22} color={dynamicStyles.text.color} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={goToNextWeek}>
+            <Ionicons name="chevron-forward" size={22} color={dynamicStyles.text.color} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.calendarRow}>
           {weekDates.map((date, index) => {
             const selected = date.toDateString() === selectedDate.toDateString();
             return (
@@ -342,7 +350,22 @@ const styles = StyleSheet.create({
   urduText: { writingDirection: "rtl", textAlign: "right" },
   welcomeText: { fontSize: 16 },
   todayText: { fontSize: 18, marginTop: 20 },
-  weekNav: { flexDirection: "row", justifyContent: "space-between", marginVertical: 10 },
+  weekNav: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center",
+    marginVertical: 12,
+    paddingHorizontal: 10,
+  },
+  navButton: {
+    padding: 8,
+  },
+  weekText: {
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
+  },
   calendarRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 5, borderRadius: 12, marginVertical: 10 },
   dayContainer: { padding: 10, alignItems: "center", borderRadius: 10 },
   selectedDay: { borderWidth: 1, borderColor: "#007AFF" },
