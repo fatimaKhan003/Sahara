@@ -1,8 +1,8 @@
 {
   "common": {
     "welcome": "خوش آمدید",
-    "hello": "ہیلو" ,
-    "welcomeBack": "واپس خوش آمدید!",
+    "hello": "سلام" ,
+    "welcomeBack": " خوش آمدید!",
     "today": "آج",
     "save": "محفوظ کریں",
     "cancel": "منسوخ کریں",
@@ -93,8 +93,8 @@
   "home": {
     "addMedication": "دوائی شامل کریں",
     "all": "سب",
-    "taken": "لی گئی",
-    "missed": "چھوٹ گئی",
+    "taken": "دوا لی گئی",
+    "missed": "دوا رہ گئ ",
     "take": "لیں",
     "logoutConfirm": "لاگ آؤٹ",
     "logoutMessage": "کیا آپ واقعی باہر نکلنا چاہتے ہیں؟",
