@@ -88,8 +88,69 @@ const SignUpScreen = () => {
     createButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
     signInText: { color: darkMode ? '#A0A0A0' : '#777' },
     signInLink: { color: '#3B5BFF', fontWeight: '500' },
-    modalContainer: { backgroundColor: darkMode ? '#2C2C2C' : '#fff', width: '80%', borderRadius: 15, padding: 20, alignItems: 'center' },
-    modalMessage: { fontSize: 16, color: darkMode ? '#E5E5E5' : '#555', textAlign: 'center', marginBottom: 20 },
+    
+    // Enhanced Modal Styles
+    modalOverlay: { 
+      flex: 1, 
+      backgroundColor: 'rgba(0,0,0,0.6)', 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    modalContainer: { 
+      backgroundColor: darkMode ? '#2C2C2C' : '#fff', 
+      width: '100%',
+      maxWidth: 340,
+      borderRadius: 20, 
+      padding: 30, 
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    modalIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: darkMode ? '#1E2A3A' : '#E8F0FF',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    modalTitle: { 
+      fontSize: 22, 
+      fontWeight: 'bold', 
+      marginBottom: 10,
+      color: darkMode ? '#E5E5E5' : '#000',
+      textAlign: 'center',
+    },
+    modalMessage: { 
+      fontSize: 15, 
+      color: darkMode ? '#B0B0B0' : '#666', 
+      textAlign: 'center', 
+      marginBottom: 25,
+      lineHeight: 22,
+    },
+    modalButton: {
+      backgroundColor: '#3B5BFF',
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 16,
+      width: '100%',
+      shadowColor: '#3B5BFF',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    modalButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
+    },
   });
 
   useLayoutEffect(() => {
@@ -99,7 +160,6 @@ const SignUpScreen = () => {
           <Ionicons name="menu-outline" size={24} color={darkMode ? '#fff' : '#007AFF'} />
         </TouchableOpacity>
       ),
-      // align the header icon with the screen content padding
       headerRightContainerStyle: { paddingRight: 25 },
     });
   }, [navigation, openDrawer, darkMode]);
@@ -194,15 +254,31 @@ const SignUpScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Success Modal */}
+      {/* Enhanced Success Modal */}
       <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+        <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContainer}>
-            <Ionicons name="checkmark-circle" size={60} color="green" style={{ marginBottom: 15 }} />
-            <Text style={[{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }, dynamicStyles.text]}>{t("signup.successTitle")}</Text>
+            {/* Icon with background circle */}
+            <View style={dynamicStyles.modalIconContainer}>
+              <Ionicons name="checkmark-circle" size={60} color="#3B5BFF" />
+            </View>
+            
+            {/* Title */}
+            <Text style={dynamicStyles.modalTitle}>{t("signup.successTitle")}</Text>
+            
+            {/* Message */}
             <Text style={dynamicStyles.modalMessage}>{t("signup.successMessage")}</Text>
-            <TouchableOpacity style={dynamicStyles.createButton} onPress={() => { setModalVisible(false); navigation.navigate('LoginScreen'); }}>
-              <Text style={dynamicStyles.createButtonText}>OK</Text>
+            
+            {/* Action Button */}
+            <TouchableOpacity 
+              style={dynamicStyles.modalButton} 
+              onPress={() => { 
+                setModalVisible(false); 
+                navigation.navigate('LoginScreen'); 
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={dynamicStyles.modalButtonText}>{t("common.ok")}</Text>
             </TouchableOpacity>
           </View>
         </View>
