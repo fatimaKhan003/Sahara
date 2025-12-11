@@ -1,4 +1,4 @@
-# cmd: uvicorn app:app --host 0.0.0.0 --port 8000
+# cmd: uvicorn OCR.app:app --host 0.0.0.0 --port 8000
 import torch
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
