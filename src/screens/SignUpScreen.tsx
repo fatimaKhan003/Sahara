@@ -1,22 +1,26 @@
 import { StyleSheet, Text, View, TouchableOpacity, TextInput, Modal } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useLayoutEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from "../../api";
 import i18n, { changeLanguage } from '../i18n';
 import { containsUrdu } from '../utils/textUtils';
+import { useDrawer } from '../navigation/AppDrawerProvider';
+import { ThemeContext } from '../context/ThemeContext';
 
 const SignUpScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [passwordVisible, setPasswordVisible] = useState(false); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  const darkMode = theme === 'dark';
+  const { openDrawer } = useDrawer();
 
   useEffect(() => {
     const updateLanguage = () => setCurrentLanguage(i18n.language);
@@ -86,27 +90,31 @@ const SignUpScreen = () => {
     signInLink: { color: '#3B5BFF', fontWeight: '500' },
     modalContainer: { backgroundColor: darkMode ? '#2C2C2C' : '#fff', width: '80%', borderRadius: 15, padding: 20, alignItems: 'center' },
     modalMessage: { fontSize: 16, color: darkMode ? '#E5E5E5' : '#555', textAlign: 'center', marginBottom: 20 },
-    languageButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: darkMode ? '#333' : '#f0f0f0' },
   });
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={openDrawer} style={{ paddingHorizontal: 6 }}>
+          <Ionicons name="menu-outline" size={24} color={darkMode ? '#fff' : '#007AFF'} />
+        </TouchableOpacity>
+      ),
+      // align the header icon with the screen content padding
+      headerRightContainerStyle: { paddingRight: 25 },
+    });
+  }, [navigation, openDrawer, darkMode]);
 
   return (
     <View style={dynamicStyles.container}>
-      {/* Top bar */}
+      {/* Top bar with drawer trigger - aligned with content */}
       <View style={{ position: 'absolute', top: 60, left: 25, right: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('OnboardingScreen', { goToLastSlide: true })}>
           <Ionicons name="arrow-back" size={24} color={dynamicStyles.topBarIcon.color} />
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity onPress={handleLanguageChange} style={dynamicStyles.languageButton}>
-            <Ionicons name="language" size={20} color="#007AFF" />
-            <Text style={{ marginLeft: 4, fontSize: 12, color: '#007AFF', fontWeight: '600' }}>{currentLanguage === "en" ? "اردو" : "EN"}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => setDarkMode(!darkMode)}>
-            <Ionicons name={darkMode ? "moon" : "sunny"} size={24} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={openDrawer}>
+          <Ionicons name="menu-outline" size={26} color={dynamicStyles.topBarIcon.color} />
+        </TouchableOpacity>
       </View>
 
       {/* Titles */}

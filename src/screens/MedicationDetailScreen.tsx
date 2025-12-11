@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useMemo, useState, useContext, useLayoutEffect } from "react";
 import {
   Alert,
   Image,
@@ -10,19 +10,41 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Switch,
   View,
+  SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
+// IMPORT GLOBAL THEME CONTEXT
+import { ThemeContext } from "../context/ThemeContext";
 
 const MedicationDetailScreen = () => {
   const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { med, onUpdate } = route.params;
+  
+  const { theme } = useContext(ThemeContext); 
+  const darkMode = theme === 'dark';
 
+  const medParam = route.params?.med;
+  const onUpdate = route.params?.onUpdate ?? (() => {});
+
+  const med = useMemo(
+    () =>
+      medParam || {
+        _id: null,
+        name: t('medication.sampleName') || "Sample Medication",
+        dose: t('medication.sampleDose') || "1 tab",
+        frequency: t('medication.sampleFrequency') || "Once daily",
+        time: t('medication.sampleTime') || "08:00 AM",
+        status: "pending",
+        imageUri: null,
+      },
+    [medParam, t]
+  );
+
+  // State for editable fields
   const [name, setName] = useState(med.name);
   const [dose, setDose] = useState(med.dose);
   const [frequency, setFrequency] = useState(med.frequency);
@@ -32,20 +54,20 @@ const MedicationDetailScreen = () => {
     med.imageUri ? `${API_BASE}${med.imageUri}` : null
   );
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false); // Dark mode toggle
-
-  const toggleDarkMode = () => setDarkMode(prev => !prev);
 
   /* ================= IMAGE PICKER ================= */
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return;
+    if (status !== "granted") {
+        Alert.alert(t('scan.permissionRequired') || "Permission Required", t('scan.galleryPermission') || "Please grant gallery permission.");
+        return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
@@ -55,6 +77,10 @@ const MedicationDetailScreen = () => {
 
   // ================= UPDATE MEDICATION =================
   const updateMedication = async () => {
+    if (!med?._id) {
+      Alert.alert(t("common.info") || "Info", t("medication.updateError") || "Update not available for this entry.");
+      return;
+    }
     setLoading(true);
     try {
       const formData = new FormData();
@@ -65,10 +91,9 @@ const MedicationDetailScreen = () => {
       formData.append("status", status);
 
       if (imageUri && !imageUri.startsWith("http")) {
-        const filename = imageUri.split("/").pop();
-        const match = /\.(\w+)$/.exec(filename ?? "");
-        const type = match ? `image/${match[1]}` : `image`;
-        formData.append("image", { uri: imageUri, name: filename, type } as any);
+        const localResponse = await fetch(imageUri);
+        const blob = await localResponse.blob();
+        formData.append("image", blob, "med.jpg");
       }
 
       const res = await fetch(`${API_BASE}/api/medications/${med._id}`, {
@@ -82,11 +107,11 @@ const MedicationDetailScreen = () => {
       const updated = await res.json();
       if (onUpdate) onUpdate(updated);
 
-      Alert.alert(t("common.success"), t("medication.updateSuccess"), [
-        { text: t("common.ok"), onPress: () => navigation.goBack() },
+      Alert.alert(t("common.success") || "Success", t("medication.updateSuccess") || "Medication updated successfully!", [
+        { text: t("common.ok") || "OK", onPress: () => navigation.goBack() },
       ]);
     } catch (err) {
-      Alert.alert(t("common.error"), t("medication.updateError"));
+      Alert.alert(t("common.error") || "Error", t("medication.updateError") || "Failed to update medication.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -95,20 +120,24 @@ const MedicationDetailScreen = () => {
 
   // ================= DELETE MEDICATION =================
   const deleteMedication = async () => {
-    Alert.alert(t("medication.deleteConfirm"), t("medication.deleteMessage"), [
-      { text: t("common.cancel"), style: "cancel" },
+    if (!med?._id) {
+      Alert.alert(t("common.info") || "Info", t("medication.deleteError") || "Delete not available for this entry.");
+      return;
+    }
+    Alert.alert(t("medication.deleteConfirm") || "Confirm Deletion", t("medication.deleteMessage") || "Are you sure you want to delete this medication?", [
+      { text: t("common.cancel") || "Cancel", style: "cancel" },
       {
-        text: t("common.delete"),
+        text: t("common.delete") || "Delete",
         style: "destructive",
         onPress: async () => {
           try {
             await fetch(`${API_BASE}/api/medications/${med._id}`, { method: "DELETE" });
-            if (onUpdate) onUpdate(null);
-            Alert.alert(t("common.success"), t("medication.deleteSuccess"), [
-              { text: t("common.ok"), onPress: () => navigation.goBack() },
+            if (onUpdate) onUpdate(null); 
+            Alert.alert(t("common.success") || "Success", t("medication.deleteSuccess") || "Medication deleted successfully!", [
+              { text: t("common.ok") || "OK", onPress: () => navigation.goBack() },
             ]);
           } catch (err) {
-            Alert.alert(t("common.error"), t("medication.deleteError"));
+            Alert.alert(t("common.error") || "Error", t("medication.deleteError") || "Failed to delete medication.");
             console.error(err);
           }
         },
@@ -118,119 +147,214 @@ const MedicationDetailScreen = () => {
 
   // ================= DYNAMIC STYLES =================
   const dynamicStyles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
-    medImage: { width: 150, height: 150, borderRadius: 75 },
-    changeImageText: { textAlign: "center", color: "#007AFF", marginTop: 5 },
-    imagePickerContainer: { alignItems: "center", marginBottom: 20 },
-    label: { fontSize: 16, fontWeight: "600", marginVertical: 5, color: darkMode ? "#fff" : "#000" },
+    container: { 
+        flex: 1, 
+        paddingHorizontal: 20, 
+        backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" 
+    },
+    // New Card Style for grouping inputs
+    card: {
+        backgroundColor: darkMode ? "#2C2C2C" : "#fff",
+        borderRadius: 15,
+        padding: 20,
+        marginBottom: 25,
+        shadowColor: darkMode ? "#000" : "#A0A0A0",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    medImage: { 
+        width: 160, // Slightly larger image
+        height: 160, 
+        borderRadius: 80,
+        borderColor: darkMode ? "#555" : "#ddd",
+        borderWidth: 2, // Thicker border
+    },
+    changeImageText: { 
+        textAlign: "center", 
+        color: "#007AFF", 
+        marginTop: 10,
+        fontWeight: '700', // Bolder text
+        fontSize: 14,
+    },
+    imagePickerContainer: { 
+        alignItems: "center", 
+        marginBottom: 30, // More separation
+        paddingTop: 10,
+        paddingBottom: 10,
+    },
+    label: { 
+        fontSize: 14, 
+        fontWeight: "600", 
+        marginBottom: 5, 
+        color: darkMode ? "#E5E5E5" : "#333" 
+    },
     input: {
-      backgroundColor: darkMode ? "#2C2C2E" : "#fff",
-      padding: 10,
-      borderRadius: 8,
-      marginBottom: 10,
+      backgroundColor: darkMode ? "#1E1E1E" : "#F0F0F0", // Lighter background for inputs within the card
+      padding: 14, // Increased padding
+      borderRadius: 10,
+      marginBottom: 20,
       borderWidth: 1,
-      borderColor: darkMode ? "#444" : "#ccc",
+      borderColor: darkMode ? "#444" : "#E0E0E0",
       color: darkMode ? "#fff" : "#000",
+      fontSize: 14,
     },
+    // Primary Button (Update)
     updateButton: {
-      backgroundColor: "#007AFF",
-      padding: 15,
-      borderRadius: 10,
+      backgroundColor: "#007AFF", 
+      padding: 18, // Larger padding
+      borderRadius: 12,
       alignItems: "center",
-      marginVertical: 10,
+      marginTop: 20,
+      marginBottom: 10,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 10,
     },
+    updateButtonText: { 
+        color: "#fff", 
+        fontWeight: "bold",
+        fontSize: 16 // Larger text
+    },
+    // Secondary Button (Delete)
     deleteButton: {
-      backgroundColor: "red",
-      padding: 15,
-      borderRadius: 10,
+      backgroundColor: darkMode ? "#3A3A3A" : "#EAEAEA", // Subtle background for delete
+      padding: 18,
+      borderRadius: 12,
       alignItems: "center",
       flexDirection: "row",
       justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "#FF3B30", // Red border
     },
-    toggleContainer: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginBottom: 10 },
-    toggleText: { color: darkMode ? "#fff" : "#000", marginRight: 10 },
+    deleteButtonText: {
+        color: "#FF3B30", // Red text
+        fontWeight: "bold", 
+        marginLeft: 5,
+        fontSize: 16
+    },
+    statusLabel: {
+        fontSize: 14,
+        fontWeight: "600",
+        marginBottom: 5,
+        color: darkMode ? "#A0A0A0" : "#666" 
+    },
     statusText: {
-      color: status === "missed" ? "red" : status === "taken" ? "#34C759" : darkMode ? "#fff" : "#000",
+      fontSize: 16, // Slightly larger status text
       fontWeight: "bold",
-      marginBottom: 10,
+      marginBottom: 0,
+      color: status === "missed" ? "#FF3B30" : status === "taken" ? "#34C759" : darkMode ? "#E5E5E5" : "#000",
     },
   });
+
+  // ================= HEADER CONFIGURATION =================
+  useLayoutEffect(() => {
+    navigation.setOptions({
+        headerTitle: t('medication.detailsTitle') || 'Medication Details',
+        headerStyle: {
+            backgroundColor: dynamicStyles.container.backgroundColor,
+            shadowOpacity: 0, 
+            elevation: 0,
+        },
+        headerTintColor: dynamicStyles.label.color,
+        headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingRight: 10 }}>
+                <Ionicons name="close-outline" size={30} color={dynamicStyles.label.color} />
+            </TouchableOpacity>
+        ),
+        headerRight: () => (
+            <TouchableOpacity onPress={updateMedication} disabled={loading} style={{ paddingLeft: 10 }}>
+                {loading ? (
+                    <ActivityIndicator size="small" color={dynamicStyles.label.color} />
+                ) : (
+                    <Ionicons name="save-outline" size={26} color={dynamicStyles.label.color} />
+                )}
+            </TouchableOpacity>
+        ),
+    });
+  }, [navigation, darkMode, loading, name, dose, frequency, time, status, imageUri, t]);
+
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: dynamicStyles.container.backgroundColor }}>
       <ScrollView style={dynamicStyles.container} contentContainerStyle={{ paddingBottom: 30 }}>
-        {/* Dark Mode Toggle */}
-        <View style={dynamicStyles.toggleContainer}>
-          <Text style={dynamicStyles.toggleText}>{darkMode ? "Dark" : "Light"} Mode</Text>
-          <Switch value={darkMode} onValueChange={toggleDarkMode} />
-        </View>
-
+        
+        {/* Image Picker with defined container */}
         <TouchableOpacity onPress={pickImage} style={dynamicStyles.imagePickerContainer} activeOpacity={0.7}>
           <Image
-            source={{ uri: imageUri || "https://cdn-icons-png.flaticon.com/512/2907/2907763.png" }}
+            source={{ uri: imageUri || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBm1yFTdVh7W4eAWd4nrod_KffW-IIv6k82g&s" }}
             style={dynamicStyles.medImage}
           />
-          <Text style={dynamicStyles.changeImageText}>{t("medication.changeImage")}</Text>
+          <Text style={dynamicStyles.changeImageText}>{t("medication.changeImage") || "Change Image"}</Text>
         </TouchableOpacity>
 
-        <Text style={dynamicStyles.label}>{t("common.name")}</Text>
-        <TextInput style={dynamicStyles.input} value={name} onChangeText={setName} placeholderTextColor={darkMode ? "#aaa" : "#888"} />
+        {/* Form Fields wrapped in a Card for visual appeal */}
+        <View style={dynamicStyles.card}>
+            <Text style={dynamicStyles.label}>{t("common.name") || 'Name'}</Text>
+            <TextInput 
+                style={dynamicStyles.input} 
+                value={name} 
+                onChangeText={setName} 
+                placeholderTextColor={darkMode ? "#aaa" : "#888"} 
+            />
 
-        <Text style={dynamicStyles.label}>{t("medication.dose")}</Text>
-        <TextInput style={dynamicStyles.input} value={dose} onChangeText={setDose} placeholderTextColor={darkMode ? "#aaa" : "#888"} />
+            <Text style={dynamicStyles.label}>{t("medication.dose") || 'Dose'}</Text>
+            <TextInput 
+                style={dynamicStyles.input} 
+                value={dose} 
+                onChangeText={setDose} 
+                placeholderTextColor={darkMode ? "#aaa" : "#888"} 
+            />
 
-        <Text style={dynamicStyles.label}>{t("medication.frequency")}</Text>
-        <TextInput style={dynamicStyles.input} value={frequency} onChangeText={setFrequency} placeholderTextColor={darkMode ? "#aaa" : "#888"} />
+            <Text style={dynamicStyles.label}>{t("medication.frequency") || 'Frequency'}</Text>
+            <TextInput 
+                style={dynamicStyles.input} 
+                value={frequency} 
+                onChangeText={setFrequency} 
+                placeholderTextColor={darkMode ? "#aaa" : "#888"} 
+            />
 
-        <Text style={dynamicStyles.label}>{t("medication.time")}</Text>
-        <TextInput style={dynamicStyles.input} value={time} onChangeText={setTime} placeholderTextColor={darkMode ? "#aaa" : "#888"} />
+            <Text style={dynamicStyles.label}>{t("medication.time") || 'Time'}</Text>
+            <TextInput 
+                style={dynamicStyles.input} 
+                value={time} 
+                onChangeText={setTime} 
+                placeholderTextColor={darkMode ? "#aaa" : "#888"} 
+            />
 
-        <Text style={dynamicStyles.label}>{t("medication.status")}</Text>
-        <Text style={dynamicStyles.statusText}>{status.toUpperCase()}</Text>
+            {/* Status Display (placed inside the card) */}
+            <View style={{ marginBottom: 5 }}>
+                <Text style={dynamicStyles.statusLabel}>{t("medication.status") || 'Current Status'}</Text>
+                <Text style={dynamicStyles.statusText}>{status.toUpperCase()}</Text>
+            </View>
+        </View>
 
-        <TouchableOpacity style={dynamicStyles.updateButton} onPress={updateMedication}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("medication.updateMedication")}</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={dynamicStyles.deleteButton} onPress={deleteMedication}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
-          <Text style={{ color: "#fff", fontWeight: "bold", marginLeft: 5 }}>{t("common.delete")}</Text>
-        </TouchableOpacity>
+        {/* Action Buttons */}
+        <View style={{ marginVertical: 10 }}>
+            {/* Update Button (Primary Action) */}
+            <TouchableOpacity style={dynamicStyles.updateButton} onPress={updateMedication} disabled={loading}>
+                {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                    <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+                )}
+                <Text style={dynamicStyles.updateButtonText}>
+                    {loading ? (t("common.saving") || "Saving...") : (t("medication.updateMedication") || "Update Medication")}
+                </Text>
+            </TouchableOpacity>
+
+            {/* Delete Button (Destructive Action) */}
+            <TouchableOpacity style={dynamicStyles.deleteButton} onPress={deleteMedication}>
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                <Text style={dynamicStyles.deleteButtonText}>{t("common.delete") || "Delete Medication"}</Text>
+            </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 export default MedicationDetailScreen;
-
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F6F8FF" },
-  medImage: { width: 150, height: 150, borderRadius: 75 },
-  changeImageText: { textAlign: "center", color: "#007AFF", marginTop: 5 },
-  imagePickerContainer: { alignItems: "center", marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: "600", marginVertical: 5 },
-  input: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  updateButton: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  deleteButton: {
-    backgroundColor: "red",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-});

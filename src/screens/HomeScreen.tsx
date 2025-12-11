@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useContext, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   StyleSheet,
   Text,
@@ -9,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import i18n, { changeLanguage } from "../i18n";
+import i18n from "../i18n";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,11 +18,17 @@ import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDrawer } from "../navigation/AppDrawerProvider";
 import { API_BASE } from "../../api";
 import { containsUrdu } from "../utils/textUtils";
+import { ThemeContext } from "../context/ThemeContext";
+import EventBus from '../utils/EventBus';
 
 const HomeScreen = () => {
   const { t } = useTranslation();
+  const { openDrawer } = useDrawer();
+  const { theme } = useContext(ThemeContext);
+  const darkMode = theme === "dark";
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -29,7 +36,6 @@ const HomeScreen = () => {
   const navigation = useNavigation<any>();
   const [selectedTab, setSelectedTab] = useState("all");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-  const [darkMode, setDarkMode] = useState(false); // new dark mode state
 
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
@@ -49,12 +55,6 @@ const HomeScreen = () => {
     t("home.days.saturday"),
     t("home.days.sunday"),
   ];
-
-  const handleLanguageChange = async () => {
-    const newLang = currentLanguage === "en" ? "ur" : "en";
-    await changeLanguage(newLang);
-    setCurrentLanguage(newLang);
-  };
 
   const getWeekDates = (startDate: Date) => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -78,26 +78,48 @@ const HomeScreen = () => {
     setCurrentWeekStart(newDate);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const userData = await AsyncStorage.getItem("user");
-        if (!userData) return;
-
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-
-        const response = await fetch(`${API_BASE}/api/medications/${parsedUser._id}`);
-        const meds = await response.json();
-        setMedications(Array.isArray(meds) ? meds : []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  // ================= FETCH USER DATA =================
+  const fetchUserData = useCallback(async () => {
+    try {
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        setUser(null);
+        return;
       }
-    };
-    fetchData();
+
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+
+      const response = await fetch(`${API_BASE}/api/medications/${parsedUser._id}`);
+      const meds = await response.json();
+      setMedications(Array.isArray(meds) ? meds : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // ================= LOAD ON MOUNT =================
+  useEffect(() => {
+    fetchUserData();
+
+    // Listen for profile image updates
+    const handler = (u: any) => {
+      console.log('HomeScreen: User updated', u);
+      setUser(u);
+    };
+    EventBus.on('userUpdated', handler);
+
+    return () => EventBus.off('userUpdated', handler);
+  }, [fetchUserData]);
+
+  // ================= RELOAD ON FOCUS =================
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [fetchUserData])
+  );
 
   const totalCount = medications.length;
   const takenCount = medications.filter((m) => m.status === "taken").length;
@@ -163,25 +185,6 @@ const HomeScreen = () => {
     }
   };
 
-  const handleChangeProfileImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      const updatedUser = { ...user, profileImage: uri };
-      setUser(updatedUser);
-      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-    }
-  };
-
   const filteredMeds = medications.filter((med) => {
     if (selectedTab === "taken") return med.status === "taken";
     if (selectedTab === "missed") return med.status === "missed";
@@ -222,13 +225,22 @@ const HomeScreen = () => {
     tabBg: { backgroundColor: darkMode ? "#3A3A3A" : "#eee" },
     activeTabBg: { backgroundColor: darkMode ? "#007AFF" : "#007AFF" },
     activeTabText: { color: "#fff" },
+    calendarBg: { backgroundColor: darkMode ? "#2C2C2C" : "#F0F7FF" },
+    dayText: { color: darkMode ? "#E5E5E5" : "#666" },
+    selectedDayText: { color: "#007AFF" },
+    dateText: { color: darkMode ? "#E5E5E5" : "#333", fontWeight: "bold" },
   });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: dynamicStyles.container.backgroundColor }}>
-      <ScrollView style={dynamicStyles.container} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={dynamicStyles.container}
+        contentContainerStyle={{ paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleChangeProfileImage}>
+          <TouchableOpacity onPress={()=>navigation.navigate("ProfileEditScreen")}>
             <Image
               source={{ uri: user?.profileImage || "https://cdn-icons-png.flaticon.com/512/147/147144.png" }}
               style={styles.avatar}
@@ -243,61 +255,52 @@ const HomeScreen = () => {
           </View>
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <TouchableOpacity onPress={handleLanguageChange} style={styles.languageButton}>
-              <Ionicons name="language" size={24} color="#007AFF" />
-              <Text style={styles.languageText}>{currentLanguage === "en" ? "اردو" : "EN"}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => {
-              Alert.alert(
-                t("home.logoutConfirm"),
-                t("home.logoutMessage"),
-                [
-                  { text: t("common.cancel"), style: "cancel" },
-                  { text: t("common.yes"), onPress: async () => {
-                      await AsyncStorage.removeItem("user");
-                      navigation.reset({ index: 0, routes: [{ name: "OnboardingScreen" }] });
-                    }, style: "destructive" },
-                ]
-              );
-            }}>
-              <Ionicons name="log-out-outline" size={28} color="#007AFF" />
-            </TouchableOpacity>
-
-            {/* Dark Mode Toggle */}
-            <TouchableOpacity onPress={() => setDarkMode(!darkMode)}>
-              <Ionicons name={darkMode ? "moon" : "sunny"} size={24} color="#007AFF" />
+            <TouchableOpacity onPress={openDrawer}>
+              <Ionicons name="menu-outline" size={26} color={darkMode ? "#fff" : "#000"} />
             </TouchableOpacity>
           </View>
         </View>
 
+        {/* Today */}
         <Text style={[styles.todayText, { color: dynamicStyles.text.color }]}>{t("common.today")}, {new Date().toDateString()}</Text>
 
         <View style={styles.weekNav}>
-          <TouchableOpacity onPress={goToPrevWeek}><Ionicons name="chevron-back" size={22} color={dynamicStyles.text.color} /></TouchableOpacity>
-          <TouchableOpacity onPress={goToNextWeek}><Ionicons name="chevron-forward" size={22} color={dynamicStyles.text.color} /></TouchableOpacity>
+          <TouchableOpacity onPress={goToPrevWeek}>
+            <Ionicons name="chevron-back" size={22} color={dynamicStyles.text.color} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={goToNextWeek}>
+            <Ionicons name="chevron-forward" size={22} color={dynamicStyles.text.color} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.calendarRow}>
           {weekDates.map((date, index) => {
             const selected = date.toDateString() === selectedDate.toDateString();
             return (
-              <TouchableOpacity key={index} onPress={() => setSelectedDate(date)} style={[styles.dayContainer, selected && styles.selectedDay]}>
-                <Text style={[styles.dayText, selected ? styles.selectedDayText : { color: dynamicStyles.text.color }]}>{days[index]}</Text>
-                <Text style={[styles.dateText, selected ? styles.selectedDayText : { color: dynamicStyles.text.color }]}>{date.getDate()}</Text>
+              <TouchableOpacity
+                key={index}
+                onPress={() => setSelectedDate(date)}
+                style={[styles.dayContainer, selected && styles.selectedDay]}
+              >
+                <Text style={[styles.dayText, { color: selected ? dynamicStyles.selectedDayText.color : dynamicStyles.dayText.color }]}>{days[index]}</Text>
+                <Text style={[styles.dateText, { color: selected ? dynamicStyles.selectedDayText.color : dynamicStyles.dateText.color }]}>{date.getDate()}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
+        {/* Tabs */}
         <View style={styles.tabs}>
           {[
             { key: "all", label: t("home.all"), count: totalCount },
             { key: "taken", label: t("home.taken"), count: takenCount },
             { key: "missed", label: t("home.missed"), count: missedCount },
           ].map((tab) => (
-            <TouchableOpacity key={tab.key} onPress={() => setSelectedTab(tab.key)}
-              style={[styles.tabButton, { backgroundColor: selectedTab === tab.key ? dynamicStyles.activeTabBg.backgroundColor : dynamicStyles.tabBg.backgroundColor }]}>
+            <TouchableOpacity
+              key={tab.key}
+              onPress={() => setSelectedTab(tab.key)}
+              style={[styles.tabButton, { backgroundColor: selectedTab === tab.key ? dynamicStyles.activeTabBg.backgroundColor : dynamicStyles.tabBg.backgroundColor }]}
+            >
               <Text style={selectedTab === tab.key ? dynamicStyles.activeTabText : { color: dynamicStyles.text.color }}>
                 {tab.label} ({tab.count})
               </Text>
@@ -305,12 +308,16 @@ const HomeScreen = () => {
           ))}
         </View>
 
+        {/* Medications */}
         {filteredMeds.map((med) => (
-          <Swipeable key={med._id} renderRightActions={() => (
-            <TouchableOpacity onPress={() => deleteMedication(med._id)} style={styles.deleteBox}>
-              <Ionicons name="trash" size={24} color="#fff" />
-            </TouchableOpacity>
-          )}>
+          <Swipeable
+            key={med._id}
+            renderRightActions={() => (
+              <TouchableOpacity onPress={() => deleteMedication(med._id)} style={styles.deleteBox}>
+                <Ionicons name="trash" size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
+          >
             <TouchableOpacity style={[styles.savedMedContainer, { backgroundColor: dynamicStyles.medBox.backgroundColor }]} onPress={() => goToDetail(med)}>
               <Text style={[styles.medName, { color: dynamicStyles.text.color }]}>{med.name}</Text>
               <Text style={{ color: dynamicStyles.text.color }}>{med.dose}</Text>
@@ -321,6 +328,7 @@ const HomeScreen = () => {
           </Swipeable>
         ))}
 
+        {/* Add Medication */}
         <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("ScanPrescriptionScreen")}>
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
@@ -333,123 +341,41 @@ const HomeScreen = () => {
 
 export default HomeScreen;
 
-
+// ======================= Styles =====================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F6F8FF", padding: 20 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   avatar: { width: 70, height: 70, borderRadius: 35, marginRight: 15 },
-  helloText: { fontSize: 22, fontWeight: "700" },
-  urduText: { 
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  welcomeText: { fontSize: 16, color: "gray" },
+  helloText: { fontSize: 18, fontWeight: "700" },
+  urduText: { writingDirection: "rtl", textAlign: "right" },
+  welcomeText: { fontSize: 16 },
   todayText: { fontSize: 18, marginTop: 20 },
-
-  weekNav: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 10,
-  },
-
-  calendarRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  dayContainer: {
-    padding: 10,
+  weekNav: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
     alignItems: "center",
-    borderRadius: 10,
+    marginVertical: 12,
+    paddingHorizontal: 10,
   },
-
-  selectedDay: {
-    borderWidth: 1,
-    borderColor: "#007AFF",
+  navButton: {
+    padding: 8,
   },
-
-  dayText: { color: "gray" },
-  dateText: { fontWeight: "bold" },
-
-  selectedDayText: { color: "#007AFF" },
-
-  tabs: {
-    flexDirection: "row",
-    marginVertical: 20,
-    justifyContent: "space-between",
+  weekText: {
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
   },
-
-  tabButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#eee",
-  },
-
-  activeTab: {
-    backgroundColor: "#007AFF",
-  },
-
-  tabText: { color: "#333" },
-  activeTabText: { color: "#fff" },
-
-  savedMedContainer: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 15,
-  },
-
+  calendarRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 5, borderRadius: 12, marginVertical: 10 },
+  dayContainer: { padding: 10, alignItems: "center", borderRadius: 10 },
+  selectedDay: { borderWidth: 1, borderColor: "#007AFF" },
+  tabs: { flexDirection: "row", marginVertical: 20, justifyContent: "space-between" },
+  tabButton: { padding: 10, borderRadius: 10 },
+  savedMedContainer: { padding: 15, borderRadius: 15, marginBottom: 15 },
   medName: { fontSize: 18, fontWeight: "bold" },
-
-  takeButton: {
-    backgroundColor: "#34C759",
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-
-  missed: {
-    color: "red",
-    fontWeight: "bold",
-    marginVertical: 4,
-  },
-
-  deleteBox: {
-    backgroundColor: "red",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
-  },
-
-  addButton: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 12,
-    marginVertical: 20,
-  },
-
-  addButtonText: {
-    color: "#fff",
-    marginLeft: 8,
-    fontWeight: "600",
-  },
-  languageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "#f0f0f0",
-  },
-  languageText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
+  takeButton: { backgroundColor: "#34C759", padding: 10, borderRadius: 8, marginTop: 8 },
+  missed: { fontWeight: "bold", marginVertical: 4 },
+  deleteBox: { backgroundColor: "red", justifyContent: "center", alignItems: "center", width: 80, height: "100%" },
+  addButton: { backgroundColor: "#007AFF", padding: 15, flexDirection: "row", justifyContent: "center", alignItems: "center", borderRadius: 12, marginVertical: 20 },
+  addButtonText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
 });

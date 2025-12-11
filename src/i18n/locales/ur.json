@@ -1,0 +1,155 @@
+{
+  "common": {
+    "welcome": "خوش آمدید",
+    "hello": "سلام" ,
+    "welcomeBack": " خوش آمدید!",
+    "today": "آج",
+    "save": "محفوظ کریں",
+    "cancel": "منسوخ کریں",
+    "delete": "حذف کریں",
+    "update": "اپ ڈیٹ کریں",
+    "edit": "ترمیم",
+    "done": "مکمل",
+    "next": "اگلا",
+    "back": "واپس",
+    "skip": "چھوڑیں",
+    "login": "لاگ ان",
+    "logout": "لاگ آؤٹ",
+    "signUp": "سائن اپ",
+    "createAccount": "اکاؤنٹ بنائیں",
+    "email": "ای میل",
+    "password": "پاس ورڈ",
+    "name": "نام",
+    "confirm": "تصدیق کریں",
+    "ok": "ٹھیک ہے",
+    "yes": "ہاں",
+    "no": "نہیں",
+    "close": "بند کریں",
+    "language": "زبان",
+    "english": "انگریزی",
+    "urdu": "اردو",
+    "and": "اور",
+    "error": "خرابی",
+    "success": "کامیابی"
+  },
+  "splash": {
+    "title": "سہارا"
+  },
+  "onboarding": {
+    "slide1": {
+      "title": "اپنی نسخے اسکین کریں",
+      "subtitle": "ہمارے میڈیکل OCR فیچر کا استعمال کرتے ہوئے طبی نسخوں کی آسانی سے داخلہ کے ساتھ اپنی بہبود پر کنٹرول حاصل کریں۔"
+    },
+    "slide2": {
+      "title": "اعلیٰ یاد دہانیاں، آسان استعمال",
+      "subtitle": "آسانی اور اطمینان کے ساتھ ٹریک پر رہیں، یقینی بنائیں کہ آپ کبھی بھی خوراک نہیں چھوڑیں گے۔"
+    },
+    "slide3": {
+      "title": "اپنے لیے، خاندان اور دوستوں کے لیے",
+      "subtitle": "ایک مؤثر ڈیش بورڈ کے ذریعے اپنے پیاروں کی دوائی کا انتظام آسانی سے کریں۔"
+    }
+  },
+  "signup": {
+    "title": "سائن اپ",
+    "subtitle": "اپنا اکاؤنٹ بنانے کے لیے تفصیلات بھریں",
+    "enterName": "اپنا نام درج کریں",
+    "enterEmail": "اپنا ای میل پتہ درج کریں",
+    "enterPassword": "اپنا مطلوبہ پاس ورڈ درج کریں",
+    "createButton": "اکاؤنٹ بنائیں",
+    "terms": "سائن اپ کرنے سے، آپ اس سے متفق ہیں",
+    "termsLink": "سروس کی شرائط",
+    "privacyLink": "رازداری کی پالیسی",
+    "alreadyHaveAccount": "پہلے سے اکاؤنٹ ہے؟",
+    "signIn": "سائن ان",
+    "successTitle": "سائن اپ مکمل!",
+    "successMessage": "اکاؤنٹ کامیابی سے بنایا گیا!"
+  },
+  "login": {
+    "title": "لاگ ان",
+    "subtitle": "اپنے اکاؤنٹ میں لاگ ان کرنے کے لیے تفصیلات بھریں",
+    "enterEmail": "اپنا ای میل پتہ درج کریں",
+    "enterPassword": "اپنا مطلوبہ پاس ورڈ درج کریں",
+    "forgotPassword": "اپنا پاس ورڈ بھول گئے؟",
+    "clickHere": "یہاں کلک کریں",
+    "dontHaveAccount": "اکاؤنٹ نہیں ہے؟",
+    "successTitle": "لاگ ان کامیاب!",
+    "successMessage": "اکاؤنٹ کامیابی سے لاگ ان ہو گیا!"
+  },
+  "forgotPassword": {
+    "title": "پاس ورڈ ری سیٹ کریں",
+    "subtitle": "اپ ڈیٹ کرنے کے لیے اپنا ای میل اور پرانا پاس ورڈ درج کریں",
+    "enterEmail": "اپنا ای میل درج کریں",
+    "oldPassword": "پرانا پاس ورڈ",
+    "enterOldPassword": "اپنا پرانا پاس ورڈ درج کریں",
+    "newPassword": "نیا پاس ورڈ",
+    "enterNewPassword": "اپنا نیا پاس ورڈ درج کریں",
+    "updateButton": "پاس ورڈ اپ ڈیٹ کریں",
+    "wantToLogin": "لاگ ان کرنا چاہتے ہیں؟",
+    "wantToSignUp": "نیا اکاؤنٹ بنانا چاہتے ہیں؟",
+    "successTitle": "پاس ورڈ اپ ڈیٹ!",
+    "successMessage": "آپ کا پاس ورڈ کامیابی سے تبدیل کر دیا گیا ہے۔",
+    "goToLogin": "لاگ ان پر جائیں"
+  },
+  "home": {
+    "addMedication": "دوائی شامل کریں",
+    "all": "سب",
+    "taken": "دوا لی گئی",
+    "missed": "دوا رہ گئ ",
+    "take": "لیں",
+    "logoutConfirm": "لاگ آؤٹ",
+    "logoutMessage": "کیا آپ واقعی باہر نکلنا چاہتے ہیں؟",
+    "days": {
+      "monday":"پیر",
+      "tuesday": "منگل",
+      "wednesday": "بدھ",
+      "thursday": "جمعرات",
+      "friday": "جمعہ",
+      "saturday": "ہفتہ",
+      "sunday": "اتوار"
+    }
+  },
+  "scan": {
+    "title": "نسخہ اسکین کریں",
+    "takePicture": "تصویر لیں",
+    "chooseFromGallery": "گیلری سے منتخب کریں",
+    "permissionRequired": "اجازت درکار",
+    "cameraPermission": "کیمرے کی اجازت درکار ہے",
+    "galleryPermission": "گیلری کی اجازت درکار ہے"
+  },
+  "medication": {
+    "medication": "دوائی",
+    "medicationDetails": "دوائی کی تفصیلات",
+    "medicationNumber": "دوائی {{number}}",
+    "dose": "خوراک",
+    "frequency": "تعدد",
+    "time": "وقت",
+    "timePlaceholder": "وقت (مثال: 23:49)",
+    "active": "فعال",
+    "status": "حالت",
+    "addMore": "+ مزید شامل کریں",
+    "updateMedication": "دوائی اپ ڈیٹ کریں",
+    "changeImage": "تصویر تبدیل کریں",
+    "deleteConfirm": "دوائی حذف کریں",
+    "deleteMessage": "کیا آپ یقینی ہیں؟",
+    "deleteSuccess": "دوائی کامیابی سے حذف ہو گئی",
+    "updateSuccess": "دوائی کامیابی سے اپ ڈیٹ ہو گئی",
+    "saveSuccess": "دوائیاں محفوظ ہو گئیں!",
+    "saveError": "دوائیاں محفوظ نہیں ہو سکیں",
+    "updateError": "دوائی اپ ڈیٹ کرنے میں ناکام",
+    "deleteError": "دوائی حذف کرنے میں ناکام"
+  },
+  "errors": {
+    "fillAllFields": "براہ کرم تمام فیلڈز بھریں",
+    "invalidEmail": "براہ کرم درست ای میل پتہ درج کریں",
+    "weakPassword": "پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے اور شامل ہونا چاہیے:\n• بڑا حرف\n• چھوٹا حرف\n• نمبر\n• خصوصی حرف",
+    "nameTooShort": "نام کم از کم 3 حروف کا ہونا چاہیے",
+    "serverError": "سرور سے منسلک ہونے میں خرابی",
+    "userNotFound": "صارف نہیں ملا",
+    "invalidCredentials": "غلط اسناد",
+    "emailInUse": "ای میل پہلے سے استعمال میں ہے",
+    "somethingWentWrong": "کچھ غلط ہو گیا",
+    "enterAtLeastOne": "براہ کرم کم از کم ایک دوائی درج کریں",
+    "userNotFoundError": "صارف نہیں ملا"
+  }
+}
+

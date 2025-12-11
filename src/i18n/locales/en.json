@@ -1,0 +1,164 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "hello": "Hello",
+    "welcomeBack": "Welcome back!",
+    "today": "Today",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "update": "Update",
+    "edit": "Edit",
+    "done": "Done",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "login": "Login",
+    "logout": "Logout",
+    "signUp": "Sign Up",
+    "createAccount": "Create an account",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "close": "Close",
+    "language": "Language",
+    "english": "English",
+    "urdu": "Urdu",
+    "and": "and",
+    "error": "Error",
+    "success": "Success",
+    "phone":"Phone"
+  },
+  "splash": {
+    "title": "Sahara"
+  },
+  "profile":{
+    "enterPhone":"Enter your phone number",
+    "saveChanges":"Save Changes",
+    "saved:":"Profile updated successfully"
+  },
+  "onboarding": {
+    "slide1": {
+      "title": "Scan your prescriptions",
+      "subtitle": "Take control of your well-being with effortless entry of medical prescriptions using our medical OCR feature."
+    },
+    "slide2": {
+      "title": "Advanced reminders, Easy use",
+      "subtitle": "Stay on track with ease and peace of mind, ensuring you never miss a dose."
+    },
+    "slide3": {
+      "title": "For yourself, family and friends",
+      "subtitle": "Easily manage medication for everyone you care about with an efficient caregiver dashboard."
+    }
+  },
+  "signup": {
+    "title": "Sign Up",
+    "subtitle": "Fill in the details to create your account",
+    "enterName": "Enter your Name",
+    "enterEmail": "Enter your email address",
+    "enterPassword": "Enter your desired password",
+    "createButton": "Create an account",
+    "terms": "By Signing up, you agree to the",
+    "termsLink": "Term of Service",
+    "privacyLink": "Privacy Policy",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "successTitle": "Sign Up Completed!",
+    "successMessage": "Account has been created successfully!"
+  },
+  "login": {
+    "title": "Login",
+    "subtitle": "Fill in the details to Login to your account",
+    "enterEmail": "Enter your email address",
+    "enterPassword": "Enter your desired password",
+    "forgotPassword": "Forgot your Password?",
+    "clickHere": "Click Here",
+    "dontHaveAccount": "Don't have an account?",
+    "successTitle": "Login Successful!",
+    "successMessage": "Account has been successfully Logged in!"
+  },
+  "forgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email and old password to update",
+    "enterEmail": "Enter your email",
+    "oldPassword": "Old Password",
+    "enterOldPassword": "Enter your old password",
+    "newPassword": "New Password",
+    "enterNewPassword": "Enter your new password",
+    "updateButton": "Update Password",
+    "wantToLogin": "Want to log in?",
+    "wantToSignUp": "Want to create a new account?",
+    "successTitle": "Password Updated!",
+    "successMessage": "Your password has been successfully changed.",
+    "goToLogin": "Go to Login"
+  },
+  "home": {
+    "addMedication": "Add Medication",
+    "all": "All",
+    "taken": "Taken",
+    "missed": "Missed",
+    "take": "Take",
+    "logoutConfirm": "Logout",
+    "logoutMessage": "Are you sure you want to exit?",
+    "days": {
+      "monday": "M",
+      "tuesday": "T",
+      "wednesday": "W",
+      "thursday": "T",
+      "friday": "F",
+      "saturday": "S",
+      "sunday": "S"
+    }
+  },
+  "scan": {
+    "title": "Scan Prescription",
+    "takePicture": "Take Picture",
+    "chooseFromGallery": "Choose from Gallery",
+    "permissionRequired": "Permission required",
+    "cameraPermission": "Camera permission is required",
+    "galleryPermission": "Gallery permission is required"
+  },
+  "medication": {
+    "medication": "Medication",
+    "medicationDetails": "Medication Details",
+    "medicationNumber": "Medication {{number}}",
+    "dose": "Dose",
+    "frequency": "Frequency",
+    "time": "Time",
+    "timePlaceholder": "Time (e.g. 23:49)",
+    "active": "Active",
+    "status": "Status",
+    "addMore": "+ Add More",
+    "updateMedication": "Update Medication",
+    "changeImage": "Change Image",
+    "deleteConfirm": "Delete Medication",
+    "deleteMessage": "Are you sure?",
+    "deleteSuccess": "Medication deleted successfully",
+    "updateSuccess": "Medication updated successfully",
+    "saveSuccess": "Medications saved!",
+    "saveError": "Could not save medications",
+    "updateError": "Failed to update medication",
+    "deleteError": "Failed to delete medication",
+     "dosePlaceholder": "Dose (e.g. 2 pills)",
+    "frequencyPlaceholder": "Frequency (e.g. Twice a day)",
+    "reviewTitle": "Review Medications"
+  },
+  "errors": {
+    "fillAllFields": "Please fill all fields",
+    "invalidEmail": "Please enter a valid email address",
+    "weakPassword": "Password must be at least 8 characters long and include:\n• Uppercase letter\n• Lowercase letter\n• Number\n• Special character",
+    "nameTooShort": "Name must be at least 3 characters long",
+    "serverError": "Error connecting to server",
+    "userNotFound": "User not found",
+    "invalidCredentials": "Invalid credentials",
+    "emailInUse": "Email already in use",
+    "somethingWentWrong": "Something went wrong",
+    "enterAtLeastOne": "Please enter at least one medication",
+    "userNotFoundError": "User not found"
+  }
+}
+
