@@ -1,0 +1,2 @@
+trocr_prescription/*.safetensors filter=lfs diff=lfs merge=lfs -text
+trocr_prescription/*.bin filter=lfs diff=lfs merge=lfs -text

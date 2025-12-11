@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,21 +6,20 @@ import {
   StyleSheet,
   Alert,
   SafeAreaView,
+  Switch,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE } from "../../api";
 import { useTranslation } from 'react-i18next';
-import { ThemeContext } from '../context/ThemeContext';
 
 export default function ScanPrescriptionScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { theme } = useContext(ThemeContext);
-  const darkMode = theme === 'dark';
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Open camera to take picture
+  // open camera to take picture
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -35,11 +34,15 @@ export default function ScanPrescriptionScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
-      const response = await fetch(localUri);
-      const blob = await response.blob();
 
       const formData = new FormData();
-      formData.append("image", blob, "prescription.jpg");
+      formData.append("image", {
+        uri: localUri,
+        name: "prescription.jpg",
+        type: "image/jpeg",
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
@@ -56,7 +59,7 @@ export default function ScanPrescriptionScreen() {
     }
   };
 
-  // Open gallery to select picture
+  // open gallery to select picture
   const openGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -71,11 +74,15 @@ export default function ScanPrescriptionScreen() {
 
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
-      const response = await fetch(localUri);
-      const blob = await response.blob();
 
       const formData = new FormData();
-      formData.append("image", blob, "prescription.jpg");
+      formData.append("image", {
+        uri: localUri,
+        name: "prescription.jpg",
+        type: "image/jpeg",
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
@@ -92,19 +99,19 @@ export default function ScanPrescriptionScreen() {
     }
   };
 
-  const styles = StyleSheet.create({
+  const dynamicStyles = StyleSheet.create({
     container: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
-      backgroundColor: darkMode ? '#1E1E1E' : '#F6F8FF',
+      backgroundColor: isDarkMode ? '#121212' : '#fff',
     },
     title: {
-      fontSize: 22,
+      fontSize: 24,
       marginBottom: 40,
       fontWeight: '600',
-      color: darkMode ? '#E5E5E5' : '#000',
+      color: isDarkMode ? '#fff' : '#000',
       textAlign: 'center',
     },
     button: {
@@ -127,36 +134,53 @@ export default function ScanPrescriptionScreen() {
       width: '80%',
       justifyContent: 'center',
       marginBottom: 20,
-      backgroundColor: darkMode ? '#2C2C2C' : '#fff',
+      backgroundColor: isDarkMode ? '#1E1E1E' : '#fff',
     },
-    buttonText: {
-      color: '#fff',
-      fontSize: 18,
-      marginLeft: 10,
+    buttonText: { color: '#fff', fontSize: 18, marginLeft: 10 },
+    buttonTextSecondary: { color: '#1E5AF2', fontSize: 18, marginLeft: 10 },
+    toggleContainer: {
+      position: 'absolute',
+      top: 20,
+      right: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1E1E1E' : '#f0f0f0',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 20,
     },
-    buttonTextSecondary: {
-      color: darkMode ? '#E5E5E5' : '#1E5AF2',
-      fontSize: 18,
-      marginLeft: 10,
+    toggleText: {
+      color: isDarkMode ? '#fff' : '#000',
+      marginRight: 5,
+      fontWeight: '500',
     },
   });
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <Text style={styles.title}>{t('scan.title')}</Text>
+      <View style={dynamicStyles.container}>
 
-        <TouchableOpacity onPress={openCamera} style={styles.button}>
+        <View style={dynamicStyles.toggleContainer}>
+          <Text style={dynamicStyles.toggleText}>
+            {isDarkMode ? 'Dark' : 'Light'}
+          </Text>
+          <Switch value={isDarkMode} onValueChange={setIsDarkMode} />
+        </View>
+
+        <Text style={dynamicStyles.title}>{t('scan.title')}</Text>
+
+        <TouchableOpacity onPress={openCamera} style={dynamicStyles.button}>
           <Ionicons name="camera" size={30} color="#fff" />
-          <Text style={styles.buttonText}>{t('scan.takePicture')}</Text>
+          <Text style={dynamicStyles.buttonText}>{t('scan.takePicture')}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={openGallery} style={styles.buttonSecondary}>
-          <Ionicons name="images" size={30} color={darkMode ? '#E5E5E5' : '#1E5AF2'} />
-          <Text style={styles.buttonTextSecondary}>
+        <TouchableOpacity onPress={openGallery} style={dynamicStyles.buttonSecondary}>
+          <Ionicons name="images" size={30} color="#1E5AF2" />
+          <Text style={dynamicStyles.buttonTextSecondary}>
             {t('scan.chooseFromGallery')}
           </Text>
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );

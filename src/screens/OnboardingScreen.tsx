@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   useWindowDimensions,
-  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -71,7 +70,7 @@ const OnboardingScreen = () => {
   }).current;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {currentIndex > 0 && (
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="black" />
@@ -111,24 +110,21 @@ const OnboardingScreen = () => {
         ))}
       </View>
 
-      {/* Buttons: wrap them so we can shift upward */}
-      <View style={styles.buttonsContainer}>
-        {currentIndex === slides.length - 1 ? (
-          <View style={styles.bottomButtons}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleCreateAccount}>
-              <Text style={styles.primaryText}>{t('common.createAccount')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleLogin}>
-              <Text style={styles.secondaryText}>{t('common.login')}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextText}>{t('common.next')}</Text>
+      {currentIndex === slides.length - 1 ? (
+        <View style={styles.bottomButtons}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleCreateAccount}>
+            <Text style={styles.primaryText}>{t('common.createAccount')}</Text>
           </TouchableOpacity>
-        )}
-      </View>
-    </SafeAreaView>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleLogin}>
+            <Text style={styles.secondaryText}>{t('common.login')}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+          <Text style={styles.nextText}>{t('common.next')}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 };
 
@@ -153,17 +149,4 @@ const styles = StyleSheet.create({
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   secondaryButton: { backgroundColor: '#f5f5f5', borderRadius: 10, paddingVertical: 14, paddingHorizontal: 120 },
   secondaryText: { color: '#aaa', fontSize: 16, fontWeight: '600' },
-  buttonsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    // Option A: simple lift using margin
-    marginBottom: 40, // increase to move buttons further up, decrease to move down
-
-    // Option B (alternative, uncomment to use): fixed position relative to bottom
-    // position: 'absolute',
-    // left: 20,
-    // right: 20,
-    // bottom: 80, // increase to move up
-  },
 });

@@ -1,64 +1,95 @@
+# cmd: uvicorn app:app --host 0.0.0.0 --port 8000
 import torch
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
 import io
-import torchvision.transforms as transforms
-from crnn import CRNN, StrLabelConverter
+import re
 from contextlib import asynccontextmanager
 
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+
+
+# ---------- Lifespan ----------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("=== OCR Server is starting... ===")
+    print("=== TrOCR OCR Server Starting... ===")
     yield
-    print("=== OCR Server is shutting down... ===")
+    print("=== TrOCR OCR Server Shutting Down... ===")
+
 
 app = FastAPI(lifespan=lifespan)
 
-# Load model once at startup
+
+# ---------- Device ----------
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-/+ "
-converter = StrLabelConverter(alphabet)
-nclass = len(alphabet) + 1
 
-model = CRNN(32, 1, nclass, 256).to(device)
-model.load_state_dict(torch.load("saved-model/crnn_dataset5_final.pth", map_location=device))
-model.eval()
+# =====================================================
+#  CLEAN TEXT FUNCTION (removes ALL trailing punctuation)
+# =====================================================
+def clean_text(text: str) -> str:
+    if not text:
+        return ""
 
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
+    text = text.strip()
+
+    # Remove punctuation at start
+    text = re.sub(r'^[\s\.,;:!?()\[\]{}"\'-]+', '', text)
+
+    # Remove punctuation at end
+    text = re.sub(r'[\s\.,;:!?()\[\]{}"\'-]+$', '', text)
+
+    # Remove space + dot (e.g., "thyroxine .")
+    text = re.sub(r"\s+\.", "", text)
+
+    # Normalize multiple spaces
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
 
 
-def preprocess(img):
-    img = img.convert('L')
-    w, h = img.size
-    target_height = 32
-    new_w = max(int(w * (target_height / h)), 200)
-    img = img.resize((new_w, target_height), Image.BILINEAR)
-    return transform(img).unsqueeze(0).to(device)  # [1, 1, H, W]
+# =====================================================
+#  LOAD TrOCR MODEL ONLY
+# =====================================================
+processor = TrOCRProcessor.from_pretrained("./trocr_prescription")
+trocr_model = VisionEncoderDecoderModel.from_pretrained("./trocr_prescription")
+trocr_model.to(device)
+trocr_model.eval()
 
 
+def preprocess_trocr(img):
+    img = img.convert("RGB")
+    pixel_values = processor(images=img, return_tensors="pt").pixel_values
+    return pixel_values.to(device)
+
+
+# =====================================================
+#  OCR ENDPOINT (ONLY TrOCR)
+# =====================================================
 @app.post("/ocr")
 async def ocr_api(file: UploadFile = File(...)):
     try:
+        # Load Image
         image_bytes = await file.read()
         img = Image.open(io.BytesIO(image_bytes))
 
-        tensor_img = preprocess(img)
+        # Preprocess
+        pixel_values = preprocess_trocr(img)
 
+        # Run TrOCR
         with torch.no_grad():
-            preds = model(tensor_img)
-            preds_size = torch.IntTensor([preds.size(0)])
-            text = converter.decode(preds, preds_size)
+            generated_ids = trocr_model.generate(pixel_values)
+            text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-        return JSONResponse({"text": text[0]})
+        # Clean text output
+        text = clean_text(text)
+
+        return JSONResponse({
+            "text": text,
+            "model": "TrOCR",
+            "status": "success"
+        })
+
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
-
-# cmd: uvicorn app:app --host 0.0.0.0 --port 8000
-# endpoint: POST http://ip-addr:8000/ocr
-#           form-data: file=<image>
-
