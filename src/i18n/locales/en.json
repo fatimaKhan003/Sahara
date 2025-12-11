@@ -30,10 +30,16 @@
     "urdu": "Urdu",
     "and": "and",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "phone":"Phone"
   },
   "splash": {
     "title": "Sahara"
+  },
+  "profile":{
+    "enterPhone":"Enter your phone number",
+    "saveChanges":"Save Changes",
+    "saved:":"Profile updated successfully"
   },
   "onboarding": {
     "slide1": {
@@ -136,7 +142,10 @@
     "saveSuccess": "Medications saved!",
     "saveError": "Could not save medications",
     "updateError": "Failed to update medication",
-    "deleteError": "Failed to delete medication"
+    "deleteError": "Failed to delete medication",
+     "dosePlaceholder": "Dose (e.g. 2 pills)",
+    "frequencyPlaceholder": "Frequency (e.g. Twice a day)",
+    "reviewTitle": "Review Medications"
   },
   "errors": {
     "fillAllFields": "Please fill all fields",
@@ -152,4 +161,3 @@
     "userNotFoundError": "User not found"
   }
 }
-
