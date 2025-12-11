@@ -17,19 +17,23 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // POST: save medication -----------------------------------
-router.post("/save-medications", async (req, res) => {
+router.post("/save-medications", upload.single("image"), async (req, res) => {
   try {
-    const { userId, medicines, imageUri } = req.body;
+    const { userId, medicines, backendImageUri } = req.body;
 
     if (!userId || !medicines) {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
+    // Parse medicines because FormData sends them as string
+    const medsArray = JSON.parse(medicines);
+
     const savedMeds = await Medication.insertMany(
-      medicines.map((med) => {
+      medsArray.map((med) => {
         if (!med.time) {
           throw new Error(`Time is required for medication ${med.name}`);
         }
+
         return {
           user: userId,
           name: med.name,
@@ -37,18 +41,19 @@ router.post("/save-medications", async (req, res) => {
           frequency: med.frequency,
           time: med.time,
           isActive: med.isActive ?? true,
-          imageUri,
+          // Use uploaded file path if present, else backendImageUri
+          imageUri: req.file ? `/uploads/${req.file.filename}` : backendImageUri || "",
         };
       })
     );
 
     res.status(201).json({ message: "Medications saved successfully", medications: savedMeds });
-  
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // GET: get user's medications -----------------------------------
 router.get("/:userId", async (req, res) => {

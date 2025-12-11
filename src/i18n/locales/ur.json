@@ -5,6 +5,7 @@
     "welcomeBack": " خوش آمدید!",
     "today": "آج",
     "save": "محفوظ کریں",
+    "saving": "محفوظ ہو رہا ہے...",
     "cancel": "منسوخ کریں",
     "delete": "حذف کریں",
     "update": "اپ ڈیٹ کریں",
@@ -30,10 +31,17 @@
     "urdu": "اردو",
     "and": "اور",
     "error": "خرابی",
-    "success": "کامیابی"
+    "success": "کامیابی",
+    "phone": "فون",
+    "info": "معلومات"
   },
   "splash": {
     "title": "سہارا"
+  },
+  "profile": {
+    "enterPhone": "اپنا فون نمبر درج کریں",
+    "saveChanges": "تبدیلیاں محفوظ کریں",
+    "saved": "پروفائل کامیابی سے اپ ڈیٹ ہو گیا"
   },
   "onboarding": {
     "slide1": {
@@ -136,7 +144,11 @@
     "saveSuccess": "دوائیاں محفوظ ہو گئیں!",
     "saveError": "دوائیاں محفوظ نہیں ہو سکیں",
     "updateError": "دوائی اپ ڈیٹ کرنے میں ناکام",
-    "deleteError": "دوائی حذف کرنے میں ناکام"
+    "deleteError": "دوائی حذف کرنے میں ناکام",
+    "dosePlaceholder": "خوراک (مثال: 2 گولیاں)",
+    "frequencyPlaceholder": "تعدد (مثال: دن میں دو بار)",
+    "reviewTitle": "دوائیوں کا جائزہ لیں",
+    "namePlaceholder": "دوائی کا نام درج کریں"
   },
   "errors": {
     "fillAllFields": "براہ کرم تمام فیلڈز بھریں",
