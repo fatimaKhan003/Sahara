@@ -16,4 +16,3 @@ export const getTextDirection = (text: string, currentLanguage: string): 'ltr' |
   }
   return 'ltr';
 };
-
