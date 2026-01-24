@@ -3,7 +3,7 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import './src/i18n'; // Initialize i18n
+import './src/i18n'; 
 import { AppDrawerProvider } from './src/navigation/AppDrawerProvider';
 import { navigationRef } from './src/navigation/navigationRef';
 
@@ -16,7 +16,9 @@ import OnboardingScreen from './src/screens/OnboardingScreen';
 import ScanPrescriptionScreen from './src/screens/ScanPrescriptionScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import SplashScreen from './src/screens/SplashScreen';
-import ProfileEditScreen from './src/screens/ProfileEditScreen'; // <-- added
+import ProfileEditScreen from './src/screens/ProfileEditScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import AddDependentsScreen from './src/screens/AddDependentsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +46,8 @@ export default function App() {
             component={ProfileEditScreen}
             options={{ title: "Edit Profile" }}
           />
+          <Stack.Screen name='SettingsScreen' component={SettingsScreen}/>
+          <Stack.Screen name='AddDependentsScreen' component={AddDependentsScreen}/>
         </Stack.Navigator>
       </NavigationContainer>
     </AppDrawerProvider>

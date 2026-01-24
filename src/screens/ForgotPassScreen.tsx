@@ -54,7 +54,6 @@ const ForgotPassScreen = () => {
     }
   };
 
-  // Dynamic colors for dark mode
   const bgColor = darkMode ? '#1E1E1E' : '#fff';
   const textColor = darkMode ? '#fff' : '#000';
   const subtitleColor = darkMode ? '#ccc' : '#777';
@@ -67,7 +66,7 @@ const ForgotPassScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      {/* Dark mode toggle */}
+      
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 15 }}>
         <Text style={{ color: textColor, marginRight: 8 }}>{darkMode ? t("Dark Mode") : t("Light Mode")}</Text>
         <Switch value={darkMode} onValueChange={setDarkMode} />
@@ -83,7 +82,7 @@ const ForgotPassScreen = () => {
       <Text style={[styles.title, { color: textColor }]}>{t("forgotPassword.title")}</Text>
       <Text style={[styles.subtitle, { color: subtitleColor }]}>{t("forgotPassword.subtitle")}</Text>
 
-      {/* Email */}
+
       <View style={styles.inputContainer}>
         <Text style={[styles.label, { color: textColor }]}>{t("common.email")}</Text>
         <View style={[styles.inputWrapper, { borderColor, backgroundColor: inputBg }]}>
@@ -103,7 +102,7 @@ const ForgotPassScreen = () => {
         </View>
       </View>
 
-      {/* Old Password */}
+      
       <View style={styles.inputContainer}>
         <Text style={[styles.label, { color: textColor }]}>{t("forgotPassword.oldPassword")}</Text>
         <View style={[styles.passwordContainer, { borderColor, backgroundColor: inputBg }]}>
@@ -121,7 +120,7 @@ const ForgotPassScreen = () => {
         </View>
       </View>
 
-      {/* New Password */}
+      
       <View style={styles.inputContainer}>
         <Text style={[styles.label, { color: textColor }]}>{t("forgotPassword.newPassword")}</Text>
         <View style={[styles.passwordContainer, { borderColor, backgroundColor: inputBg }]}>
@@ -157,7 +156,7 @@ const ForgotPassScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Success Modal */}
+
       <Modal transparent animationType="fade" visible={modalVisible}>
         <View style={styles.modalBackground}>
           <View style={[styles.modalContainer, { backgroundColor: modalBg }]}>
