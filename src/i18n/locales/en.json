@@ -31,7 +31,10 @@
     "and": "and",
     "error": "Error",
     "success": "Success",
-    "phone":"Phone"
+    "phone":"Phone",
+    "editProfile": "Edit Profile",
+    "logout": "Logout",
+    "user": "User"
   },
   "splash": {
     "title": "Sahara"
@@ -159,5 +162,23 @@
     "somethingWentWrong": "Something went wrong",
     "enterAtLeastOne": "Please enter at least one medication",
     "userNotFoundError": "User not found"
+  },
+  "settings": {
+    "reminders": "Reminders & Alarms",
+    "notificationSettings": "Notification Settings",
+    "notificationDesc": "Manage notification preferences",
+    "reminderPreferences": "Reminder Preferences",
+    "reminderDesc": "Customize your reminders",
+    "general": "General",
+    "language": "Language",
+    "languageDesc": "Change app language",
+    "appearance": "Appearance",
+    "appearanceDesc": "Light or Dark mode",
+    "caregiverAccount": "Caregiver Account",
+    "caregiverToggle": "Enable Caregiver Mode",
+    "addDependents": "Add Dependents",
+    "caregiverEnabled": "Account changed to Caregiver!",
+    "caregiverDesc": "You can now add dependents and manage their medications.",
+    "logoutDesc":"Click here to log out of this device."
   }
 }

@@ -10,7 +10,7 @@ import {
   ScrollView,
   Alert,
   SafeAreaView,
-  ActivityIndicator, // Added for save loading state
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,7 +19,7 @@ import { API_BASE } from "../../api";
 import { ThemeContext } from "../context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 
-// Define the expected route parameters for type safety
+
 type ConfirmMedicationRouteParams = {
     imageUri: string;
     backendImageUri: string;
@@ -49,9 +49,8 @@ const ConfirmMedicationScreen = () => {
   ]);
 
   const [user, setUser] = useState<any>(null);
-  const [isSaving, setIsSaving] = useState(false); // New state for saving indicator
+  const [isSaving, setIsSaving] = useState(false); 
 
-  // 1. Fetch User Data
   useEffect(() => {
     const fetchUser = async () => {
       const userData = await AsyncStorage.getItem("user");
@@ -60,7 +59,6 @@ const ConfirmMedicationScreen = () => {
     fetchUser();
   }, []);
 
-  // 2. Add More Medication Slot
   const handleAddMore = () => {
     setMeds([
       ...meds,
@@ -68,7 +66,6 @@ const ConfirmMedicationScreen = () => {
     ]);
   };
 
-  // 3. Save Medication
   const handleSave = async () => {
     if (isSaving) return;
     if (!user) return Alert.alert(t("common.error") || "Error", t("errors.userNotFoundError") || "User data not found. Please log in.");
@@ -83,14 +80,12 @@ const ConfirmMedicationScreen = () => {
       formData.append("userId", user._id);
       formData.append("medicines", JSON.stringify(validMeds));
 
-      // Append image data for the backend
-      // NOTE: Using the local URI to create a proper blob for multipart/form-data
       if (imageUri) {
         const localResponse = await fetch(imageUri);
         const blob = await localResponse.blob();
         formData.append("image", blob, "med.jpg");
       } else if (backendImageUri) {
-        // If image was already uploaded in OCR step and only the backend URI is needed
+
         formData.append("backendImageUri", backendImageUri);
       }
 
@@ -99,8 +94,7 @@ const ConfirmMedicationScreen = () => {
         {
           method: "POST",
           body: formData,
-          // Removed manual 'Content-Type' as 'multipart/form-data' is typically set automatically when using FormData
-          // You may need to adjust based on your specific backend requirements
+
         }
       );
 
@@ -121,14 +115,12 @@ const ConfirmMedicationScreen = () => {
   };
 
 
-  // 4. Update Medication Field
   const updateMed = (index: number, field: string, value: any) => {
     const updated = [...meds];
     updated[index] = { ...updated[index], [field]: value };
     setMeds(updated);
   };
 
-  // 5. Dynamic Styles
   const dynamicStyles = StyleSheet.create({
     container: {
       flex: 1,
@@ -139,8 +131,8 @@ const ConfirmMedicationScreen = () => {
       padding: 20,
       borderRadius: 12,
       marginBottom: 20,
-      backgroundColor: darkMode ? "#2C2C2C" : "#fff", // Card background
-      // Subtle shadow for lift
+      backgroundColor: darkMode ? "#2C2C2C" : "#fff", 
+      
       shadowColor: darkMode ? "#000" : "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -160,7 +152,7 @@ const ConfirmMedicationScreen = () => {
       borderRadius: 8,
       marginBottom: 15,
       color: darkMode ? "#fff" : "#000",
-      backgroundColor: darkMode ? "#1E1E1E" : "#fff", // Input background
+      backgroundColor: darkMode ? "#1E1E1E" : "#fff", 
       fontSize: 16,
     },
     title: {
@@ -169,9 +161,9 @@ const ConfirmMedicationScreen = () => {
       marginBottom: 20,
       color: darkMode ? '#E5E5E5' : '#333',
     },
-    // Primary Button Style (for Done/Save)
+    
     primaryButton: {
-      backgroundColor: "#007AFF", // Primary blue accent
+      backgroundColor: "#007AFF", 
       padding: 15,
       borderRadius: 12,
       alignItems: "center",
@@ -180,7 +172,7 @@ const ConfirmMedicationScreen = () => {
       justifyContent: 'center',
       gap: 10,
     },
-    // Secondary Button Style (for Add More)
+    
     secondaryButton: {
       backgroundColor: darkMode ? "#3A3A3A" : "#E5E5E5",
       borderColor: "#007AFF",
@@ -207,13 +199,12 @@ const ConfirmMedicationScreen = () => {
     },
   });
 
-  // 6. Header Configuration
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: t('medication.confirmTitle') || 'Confirm Medication Details',
       headerStyle: {
         backgroundColor: dynamicStyles.container.backgroundColor,
-        shadowOpacity: 0, // Remove header border
+        shadowOpacity: 0,
         elevation: 0,
       },
       headerTintColor: dynamicStyles.label.color,
@@ -222,7 +213,7 @@ const ConfirmMedicationScreen = () => {
           <Ionicons name="close-outline" size={30} color={dynamicStyles.label.color} />
         </TouchableOpacity>
       ),
-      headerRight: () => null, // Ensure no buttons appear here
+      headerRight: () => null, 
     });
   }, [navigation, darkMode, dynamicStyles.label.color, t]);
 
@@ -231,13 +222,13 @@ const ConfirmMedicationScreen = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: dynamicStyles.container.backgroundColor }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 50 }} style={dynamicStyles.container}>
         
-        {/* Removed the manual Dark Mode switch */}
+
         
         <Text style={[dynamicStyles.title, { textAlign: 'center' }]}>
             {t('medication.reviewTitle') || 'Review and Edit Details'}
         </Text>
 
-        {/* Image Preview */}
+
         <Image
           source={{ uri: imageUri }}
           style={{ width: "100%", height: 200, marginBottom: 25, borderRadius: 12, resizeMode: 'cover' }}
@@ -249,7 +240,7 @@ const ConfirmMedicationScreen = () => {
               {t("medication.medicationNumber", { number: idx + 1 }) || `Medication ${idx + 1}`}
             </Text>
 
-            {/* Name Input */}
+            
             <Text style={dynamicStyles.label}>{t("common.name") || 'Name'}</Text>
             <TextInput
               placeholder={t("common.name") || "e.g., Panadol"}
@@ -259,7 +250,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "name", text)}
             />
 
-            {/* Dose Input */}
+          
             <Text style={dynamicStyles.label}>{t("medication.dose") || 'Dose'}</Text>
             <TextInput
               placeholder={t("medication.dosePlaceholder") || "e.g., 500mg"}
@@ -269,7 +260,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "dose", text)}
             />
 
-            {/* Frequency Input */}
+            
             <Text style={dynamicStyles.label}>{t("medication.frequency") || 'Frequency'}</Text>
             <TextInput
               placeholder={t("medication.frequencyPlaceholder") || "e.g., Daily, Twice a day"}
@@ -279,7 +270,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "frequency", text)}
             />
 
-            {/* Time Input */}
+            
             <Text style={dynamicStyles.label}>{t("medication.timePlaceholder") || 'Time'}</Text>
             <TextInput
               placeholder={t("medication.timePlaceholder") || "e.g., 8:00 AM, 6:00 PM"}
@@ -289,7 +280,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "time", text)}
             />
 
-            {/* Active Switch */}
+            
             <View style={dynamicStyles.switchContainer}>
                 <Text style={dynamicStyles.switchLabel}>
                     {t("medication.active") || 'Active Schedule'}
@@ -305,16 +296,16 @@ const ConfirmMedicationScreen = () => {
           </View>
         ))}
 
-        {/* Action Buttons */}
+        
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
-          {/* Add More Button (Secondary) */}
+          
           <TouchableOpacity onPress={handleAddMore} style={dynamicStyles.secondaryButton}>
             <Text style={dynamicStyles.secondaryButtonText}>
               {t("medication.addMore") || 'Add More'}
             </Text>
           </TouchableOpacity>
 
-          {/* Done/Save Button (Primary) */}
+          
           <TouchableOpacity onPress={handleSave} style={dynamicStyles.primaryButton} disabled={isSaving}>
             {isSaving ? (
                 <ActivityIndicator size="small" color="#fff" />

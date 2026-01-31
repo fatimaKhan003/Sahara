@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import medRoutes from "./routes/medRoutes.js";
 import ocrRoutes from "./routes/ocrRoutes.js";
+import caregiverRoutes from "./routes/caregiverRoutes.js";
 import { fileURLToPath } from "url";
 import path from "path";
 dotenv.config();
@@ -18,7 +19,7 @@ app.use("/api", authRoutes);
 app.use("/api/medications", medRoutes); 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/ocr", ocrRoutes);
-
+app.use("/api/caregiver", caregiverRoutes);
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to Sahara's DB"))

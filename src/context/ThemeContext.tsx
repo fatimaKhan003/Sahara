@@ -1,4 +1,3 @@
-// context/ThemeContext.tsx
 import React, { createContext, useState } from "react";
 import { lightTheme, darkTheme } from "../themes";
 

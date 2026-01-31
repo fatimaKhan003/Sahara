@@ -14,7 +14,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// POST: OCR extraction -----------------------------------
 router.post("/extract", upload.single("image"), async (req, res) => {
   try {
     const imagePath = req.file.path;

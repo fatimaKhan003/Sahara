@@ -10,7 +10,6 @@ export default function ScanPrescriptionScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   
-  // open camera to take picture
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -20,8 +19,9 @@ export default function ScanPrescriptionScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      quality: 0.5,
+      allowsEditing: true,
+      aspect: [4,3],
+      quality: 0.8,
     });
 
     if (!result.canceled) {
@@ -34,7 +34,7 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       });
 
-      // Call OCR API in Node backend
+      
       await new Promise((resolve) => setTimeout(resolve, 100));
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
@@ -43,7 +43,7 @@ export default function ScanPrescriptionScreen() {
 
       const data = await resp.json();
 
-      // Navigate with OCR result + uploaded image path from backend
+      
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
         backendImageUri: data.imageUri,
@@ -53,7 +53,7 @@ export default function ScanPrescriptionScreen() {
 
   };
 
-  // open gallery to select picture
+  
   const openGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -64,7 +64,9 @@ export default function ScanPrescriptionScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.5,
+      allowsEditing:true,
+      aspect:[1,1],
+      quality: 0.8,
     });
 
     if (!result.canceled) {
@@ -77,7 +79,7 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       });
 
-      // Call OCR API in Node backend
+      
       await new Promise((resolve) => setTimeout(resolve, 100));
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
@@ -86,7 +88,7 @@ export default function ScanPrescriptionScreen() {
 
       const data = await resp.json();
 
-      // Navigate with OCR result + uploaded image path from backend
+      
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
         backendImageUri: data.imageUri,

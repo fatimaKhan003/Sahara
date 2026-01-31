@@ -76,7 +76,7 @@ const SignUpScreen = () => {
     }
   };
 
-  // ========== Dynamic Styles ==========
+  
   const dynamicStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: darkMode ? '#1E1E1E' : '#fff', paddingHorizontal: 25, paddingTop: 120 },
     topBarIcon: { color: darkMode ? '#fff' : '#000' },
@@ -89,7 +89,7 @@ const SignUpScreen = () => {
     signInText: { color: darkMode ? '#A0A0A0' : '#777' },
     signInLink: { color: '#3B5BFF', fontWeight: '500' },
     
-    // Enhanced Modal Styles
+    
     modalOverlay: { 
       flex: 1, 
       backgroundColor: 'rgba(0,0,0,0.6)', 
@@ -166,7 +166,7 @@ const SignUpScreen = () => {
 
   return (
     <View style={dynamicStyles.container}>
-      {/* Top bar with drawer trigger - aligned with content */}
+      
       <View style={{ position: 'absolute', top: 60, left: 25, right: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('OnboardingScreen', { goToLastSlide: true })}>
           <Ionicons name="arrow-back" size={24} color={dynamicStyles.topBarIcon.color} />
@@ -177,11 +177,11 @@ const SignUpScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Titles */}
+      
       <Text style={[{ fontSize: 28, fontWeight: '600', marginTop: 20, marginBottom: 8 }, dynamicStyles.text]}>{t("signup.title")}</Text>
       <Text style={[{ fontSize: 14, marginBottom: 40 }, dynamicStyles.subText]}>{t("signup.subtitle")}</Text>
 
-      {/* Name */}
+      
       <View style={{ marginBottom: 20 }}>
         <Text style={[{ fontWeight: '500', marginBottom: 8 }, dynamicStyles.text]}>{t("common.name")}</Text>
         <View style={dynamicStyles.inputWrapper}>
@@ -201,7 +201,7 @@ const SignUpScreen = () => {
         </View>
       </View>
 
-      {/* Email */}
+      
       <View style={{ marginBottom: 20 }}>
         <Text style={[{ fontWeight: '500', marginBottom: 8 }, dynamicStyles.text]}>{t("common.email")}</Text>
         <View style={dynamicStyles.inputWrapper}>
@@ -217,7 +217,7 @@ const SignUpScreen = () => {
         </View>
       </View>
 
-      {/* Password */}
+      
       <View style={{ marginBottom: 20 }}>
         <Text style={[{ fontWeight: '500', marginBottom: 8 }, dynamicStyles.text]}>{t("common.password")}</Text>
         <View style={dynamicStyles.inputWrapper}>
@@ -235,18 +235,18 @@ const SignUpScreen = () => {
         </View>
       </View>
 
-      {/* Create Account */}
+      
       <TouchableOpacity style={dynamicStyles.createButton} onPress={handleCreateAccount}>
         <Text style={dynamicStyles.createButtonText}>{t("signup.createButton")}</Text>
       </TouchableOpacity>
 
-      {/* Terms */}
+      
       <Text style={[{ fontSize: 12, textAlign: 'center', marginTop: 10, lineHeight: 18 }, dynamicStyles.subText]}>
         {t("signup.terms")} <Text style={{ color: '#3B5BFF' }}>{t("signup.termsLink")}</Text> {t("common.and")}{' '}
         <Text style={{ color: '#3B5BFF' }}>{t("signup.privacyLink")}</Text>.
       </Text>
 
-      {/* Sign in */}
+      
       <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 40 }}>
         <Text style={dynamicStyles.signInText}>{t("signup.alreadyHaveAccount")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
@@ -254,22 +254,22 @@ const SignUpScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Enhanced Success Modal */}
+      
       <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContainer}>
-            {/* Icon with background circle */}
+            
             <View style={dynamicStyles.modalIconContainer}>
               <Ionicons name="checkmark-circle" size={60} color="#3B5BFF" />
             </View>
             
-            {/* Title */}
+            
             <Text style={dynamicStyles.modalTitle}>{t("signup.successTitle")}</Text>
             
-            {/* Message */}
+            
             <Text style={dynamicStyles.modalMessage}>{t("signup.successMessage")}</Text>
             
-            {/* Action Button */}
+           
             <TouchableOpacity 
               style={dynamicStyles.modalButton} 
               onPress={() => { 
