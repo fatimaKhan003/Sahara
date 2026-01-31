@@ -111,7 +111,7 @@ const OnboardingScreen = () => {
         ))}
       </View>
 
-      {/* Buttons: wrap them so we can shift upward */}
+      
       <View style={styles.buttonsContainer}>
         {currentIndex === slides.length - 1 ? (
           <View style={styles.bottomButtons}>
@@ -157,13 +157,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
 
-    // Option A: simple lift using margin
-    marginBottom: 40, // increase to move buttons further up, decrease to move down
 
-    // Option B (alternative, uncomment to use): fixed position relative to bottom
-    // position: 'absolute',
-    // left: 20,
-    // right: 20,
-    // bottom: 80, // increase to move up
+    marginBottom: 40, 
+
   },
 });

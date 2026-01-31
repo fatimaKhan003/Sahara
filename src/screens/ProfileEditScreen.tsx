@@ -36,7 +36,7 @@ const ProfileEditScreen = () => {
   const [profileImage, setProfileImage] = useState('');
   const [isImageDirty, setIsImageDirty] = useState(false); // Track if image was changed
 
-  // 1. Load User Data
+  
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -45,14 +45,14 @@ const ProfileEditScreen = () => {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
           
-          // Initialize states using loaded data or provide a default fallback
+          
           setName(parsedUser.name || '');
           setPhone(parsedUser.phone || '');
           setProfileImage(parsedUser.profileImage || 'https://cdn-icons-png.flaticon.com/512/147/147144.png');
         }
       } catch (err) {
         console.error('Error loading user data:', err);
-        // Fallback profile image if loading fails
+        
         setProfileImage('https://cdn-icons-png.flaticon.com/512/147/147144.png');
       } finally {
         setLoading(false);
@@ -61,7 +61,7 @@ const ProfileEditScreen = () => {
     loadUser();
   }, []);
 
-  // Upload image to backend if changed
+  
   const uploadProfileImage = async (localUri: string) => {
     try {
       const response = await fetch(localUri);
@@ -75,7 +75,7 @@ const ProfileEditScreen = () => {
       const uploadResp = await fetch(`${API_BASE}/api/medications/upload-profile`, {
         method: 'POST',
         body: formData,
-        // DO NOT set Content-Type header
+        
       });
 
       console.log('Upload response status:', uploadResp.status);
@@ -86,7 +86,7 @@ const ProfileEditScreen = () => {
         throw new Error(uploadData.message || 'Image upload failed');
       }
 
-      // Construct full URL for display
+      
       const backendImageUrl = `${API_BASE}${uploadData.imageUrl}`;
       console.log('Final image URL:', backendImageUrl);
       return backendImageUrl;
@@ -96,7 +96,7 @@ const ProfileEditScreen = () => {
     }
   };
 
-  // 2. Handle API Update and Local Persistence
+  
   const handleSaveChanges = async () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -104,7 +104,7 @@ const ProfileEditScreen = () => {
     try {
       let finalImageUrl = profileImage;
 
-      // Upload new image if it was changed and isn't already a URL
+      
       if (isImageDirty && !profileImage.startsWith('http') && !profileImage.startsWith('file://')) {
         console.log('Image is dirty, uploading...');
         finalImageUrl = await uploadProfileImage(profileImage);
@@ -121,7 +121,7 @@ const ProfileEditScreen = () => {
       setUser(updatedUser);
       setIsImageDirty(false);
 
-      // Emit event to update HomeScreen and drawer
+      
       EventBus.emit('userUpdated', updatedUser);
       console.log('Emitted userUpdated event:', updatedUser);
 
@@ -135,7 +135,7 @@ const ProfileEditScreen = () => {
     }
   };
 
-  // 3. Handle Image Picker
+  
   const handleChangeProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -157,7 +157,7 @@ const ProfileEditScreen = () => {
   };
 
 
-  // =================== Dynamic Styles ===================
+  
 
   const dynamicStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: darkMode ? '#1E1E1E' : '#F6F8FF' },
@@ -215,10 +215,10 @@ const ProfileEditScreen = () => {
     },
   });
 
-  // 4. Setup Header
+  
   useLayoutEffect(() => {
     navigation.setOptions({
-      // FIX: Use fallback text if translation key fails
+     
       headerTitle: t('profile.editProfile') || 'Edit Profile', 
       headerStyle: { backgroundColor: dynamicStyles.container.backgroundColor },
       headerTintColor: dynamicStyles.text.color,
@@ -243,7 +243,7 @@ const ProfileEditScreen = () => {
     <SafeAreaView style={dynamicStyles.container}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 25, paddingVertical: 30 }} showsVerticalScrollIndicator={false}>
         
-        {/* Profile Image Section */}
+
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: profileImage }}
@@ -254,14 +254,11 @@ const ProfileEditScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Editable Fields */}
         
-        {/* Name Input */}
-        {/* FIX: Use fallback text for label */}
         <Text style={dynamicStyles.label}>{t('common.name') || 'Name'}</Text> 
         <View style={dynamicStyles.inputWrapper}>
           <TextInput
-            // FIX: Use fallback text for placeholder
+            
             placeholder={t('profile.enterName') || 'Enter your name'} 
             placeholderTextColor={darkMode ? '#888' : '#999'}
             style={[dynamicStyles.input, (containsUrdu(name)) && styles.urduInputStyle]}
@@ -271,8 +268,7 @@ const ProfileEditScreen = () => {
           />
         </View>
 
-        {/* Email Input (Read-only) */}
-        {/* FIX: Use fallback text for label */}
+        
         <Text style={dynamicStyles.label}>{t('common.email') || 'Email'}</Text> 
         <View style={[dynamicStyles.inputWrapper, { borderColor: darkMode ? '#333' : '#eee', backgroundColor: darkMode ? '#3A3A3A' : '#f8f8f8' }]}>
           <TextInput
@@ -286,12 +282,11 @@ const ProfileEditScreen = () => {
           <Ionicons name="lock-closed-outline" size={20} color={dynamicStyles.subText.color} />
         </View>
 
-        {/* Phone Input */}
-        {/* FIX: Use fallback text for label */}
+        
         <Text style={dynamicStyles.label}>{t('common.phone') || 'Phone'}</Text> 
         <View style={dynamicStyles.inputWrapper}>
           <TextInput
-            // FIX: Use fallback text for placeholder
+            
             placeholder={t('profile.enterPhone') || 'Enter phone number'} 
             placeholderTextColor={darkMode ? '#888' : '#999'}
             style={dynamicStyles.input}
@@ -301,7 +296,7 @@ const ProfileEditScreen = () => {
           />
         </View>
         
-        {/* Save Button */}
+        
         <TouchableOpacity 
             style={dynamicStyles.saveButton} 
             onPress={handleSaveChanges}
@@ -313,7 +308,7 @@ const ProfileEditScreen = () => {
             <Ionicons name="save-outline" size={20} color="#fff" />
           )}
           <Text style={dynamicStyles.saveButtonText}>
-            {/* FIX: Use fallback text for button label */}
+            
             {isSaving ? (t('common.saving') || 'Saving...') : (t('profile.saveChanges') || 'Save Changes')} 
           </Text>
         </TouchableOpacity>
@@ -325,7 +320,6 @@ const ProfileEditScreen = () => {
 
 export default ProfileEditScreen;
 
-// ======================= Static Styles =====================
 const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',

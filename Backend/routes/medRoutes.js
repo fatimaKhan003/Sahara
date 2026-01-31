@@ -13,10 +13,7 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
-
-const upload = multer({ storage });
-
-// POST: save medication -----------------------------------
+const upload = multer({ storage }); 
 router.post("/save-medications", upload.single("image"), async (req, res) => {
   try {
     const { userId, medicines, backendImageUri } = req.body;
@@ -25,7 +22,6 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
-    // Parse medicines because FormData sends them as string
     const medsArray = JSON.parse(medicines);
 
     const savedMeds = await Medication.insertMany(
@@ -41,7 +37,6 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
           frequency: med.frequency,
           time: med.time,
           isActive: med.isActive ?? true,
-          // Use uploaded file path if present, else backendImageUri
           imageUri: req.file ? `/uploads/${req.file.filename}` : backendImageUri || "",
         };
       })
@@ -55,7 +50,6 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
 });
 
 
-// GET: get user's medications -----------------------------------
 router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -67,7 +61,6 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
-// PATCH: update medication status -----------------------------------
 router.patch("/update-status/:id", async (req, res) => {
   try {
     const { status } = req.body; 
@@ -84,7 +77,7 @@ router.patch("/update-status/:id", async (req, res) => {
   }
 });
 
-// DELETE: delete medication -----------------------------------
+
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +94,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// PATCH: update medication details -----------------------------------
 router.patch("/:id", upload.single("image"), async (req, res) => {
   try {
     const { name, dose, frequency, time, status } = req.body;
@@ -121,7 +113,6 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-// POST: upload profile image -----------------------------------
 router.post("/upload-profile", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {

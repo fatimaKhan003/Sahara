@@ -64,7 +64,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
     loadUser();
 
-    // Listen for profile updates from ProfileEditScreen
+    // Listens for profile updates from ProfileEditScreen
     const handler = (u: any) => {
       setUser(u);
       setUserName(u?.name || u?.email || '');
@@ -77,7 +77,6 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const openDrawer = () => setIsOpen(true);
   const toggleDrawer = () => setIsOpen((prev) => !prev);
 
-  // Pan responder for swipe to close
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -109,7 +108,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       await AsyncStorage.removeItem('user');
       navigateSafe('OnboardingScreen');
     } catch (e) {
-      // ignore
+      
     } finally {
       closeDrawer();
     }
@@ -136,9 +135,9 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     },
     { label: 'Profile', icon: 'person-outline', route: 'ProfileEditScreen' },
     { label: 'Logout', icon: 'log-out-outline', action: handleLogout },
+    {label:'Settings', icon:'settings-outline', route:'SettingsScreen'}
   ];
 
-  // Dynamic colors based on theme
   const dynamicStyles = StyleSheet.create({
     panel: {
       backgroundColor: darkMode ? '#1E1E1E' : '#fff',
@@ -181,10 +180,8 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     },
   });
 
-  // Detect current active route - with safety check
   const currentRoute = navigationRef.isReady() ? navigationRef.getCurrentRoute()?.name : undefined;
 
-  // Screens with minimal sidebar
   const authScreens = ['LoginScreen', 'SignUpScreen'];
 
   const isAuthScreen = currentRoute ? authScreens.includes(currentRoute) : false;
@@ -194,7 +191,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       <View style={{ flex: 1 }}>
         {children}
 
-        {/* Overlay */}
+
         <Animated.View
           pointerEvents={isOpen ? 'auto' : 'none'}
           style={[
@@ -213,7 +210,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           />
         </Animated.View>
 
-        {/* Drawer Panel */}
+    
         <Animated.View
           {...panResponder.panHandlers}
           style={[
@@ -231,7 +228,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ]}
         >
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Header with close button */}
+            
             <View style={styles.topBar}>
               <TouchableOpacity 
                 onPress={closeDrawer} 
@@ -242,7 +239,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               </TouchableOpacity>
             </View>
 
-            {/* User Profile Section - Hide on auth screens */}
+            
             {!isAuthScreen && (
               <View style={[styles.profileSection, dynamicStyles.borderColor]}>
                 {user?.profileImage ? (
@@ -262,7 +259,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               </View>
             )}
 
-            {/* Navigation Items - Hide on auth screens */}
+            
             {!isAuthScreen && (
               <View style={styles.menuSection}>
                 {items.map((item) => (
@@ -291,7 +288,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               </View>
             )}
 
-            {/* Preferences Section - Always show (includes Dark Mode and Language) */}
+            
             <View style={styles.preferencesSection}>
               <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>PREFERENCES</Text>
               
@@ -334,7 +331,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               </TouchableOpacity>
             </View>
 
-            {/* Logout Button - Hide on auth screens */}
+            
             {!isAuthScreen && (
               <TouchableOpacity
                 style={[styles.logoutButton, dynamicStyles.logoutButton]}

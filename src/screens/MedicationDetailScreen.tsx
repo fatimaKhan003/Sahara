@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
-// IMPORT GLOBAL THEME CONTEXT
 import { ThemeContext } from "../context/ThemeContext";
 
 const MedicationDetailScreen = () => {
@@ -44,7 +43,7 @@ const MedicationDetailScreen = () => {
     [medParam, t]
   );
 
-  // State for editable fields
+  
   const [name, setName] = useState(med.name);
   const [dose, setDose] = useState(med.dose);
   const [frequency, setFrequency] = useState(med.frequency);
@@ -55,7 +54,7 @@ const MedicationDetailScreen = () => {
   );
   const [loading, setLoading] = useState(false);
 
-  /* ================= IMAGE PICKER ================= */
+  
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -75,7 +74,7 @@ const MedicationDetailScreen = () => {
     }
   };
 
-  // ================= UPDATE MEDICATION =================
+  
   const updateMedication = async () => {
     if (!med?._id) {
       Alert.alert(t("common.info") || "Info", t("medication.updateError") || "Update not available for this entry.");
@@ -118,7 +117,7 @@ const MedicationDetailScreen = () => {
     }
   };
 
-  // ================= DELETE MEDICATION =================
+  
   const deleteMedication = async () => {
     if (!med?._id) {
       Alert.alert(t("common.info") || "Info", t("medication.deleteError") || "Delete not available for this entry.");
@@ -145,14 +144,14 @@ const MedicationDetailScreen = () => {
     ]);
   };
 
-  // ================= DYNAMIC STYLES =================
+  
   const dynamicStyles = StyleSheet.create({
     container: { 
         flex: 1, 
         paddingHorizontal: 20, 
         backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" 
     },
-    // New Card Style for grouping inputs
+    
     card: {
         backgroundColor: darkMode ? "#2C2C2C" : "#fff",
         borderRadius: 15,
@@ -165,22 +164,22 @@ const MedicationDetailScreen = () => {
         elevation: 5,
     },
     medImage: { 
-        width: 160, // Slightly larger image
+        width: 160, 
         height: 160, 
         borderRadius: 80,
         borderColor: darkMode ? "#555" : "#ddd",
-        borderWidth: 2, // Thicker border
+        borderWidth: 2, 
     },
     changeImageText: { 
         textAlign: "center", 
         color: "#007AFF", 
         marginTop: 10,
-        fontWeight: '700', // Bolder text
+        fontWeight: '700', 
         fontSize: 14,
     },
     imagePickerContainer: { 
         alignItems: "center", 
-        marginBottom: 30, // More separation
+        marginBottom: 30, 
         paddingTop: 10,
         paddingBottom: 10,
     },
@@ -191,8 +190,8 @@ const MedicationDetailScreen = () => {
         color: darkMode ? "#E5E5E5" : "#333" 
     },
     input: {
-      backgroundColor: darkMode ? "#1E1E1E" : "#F0F0F0", // Lighter background for inputs within the card
-      padding: 14, // Increased padding
+      backgroundColor: darkMode ? "#1E1E1E" : "#F0F0F0", 
+      padding: 14, 
       borderRadius: 10,
       marginBottom: 20,
       borderWidth: 1,
@@ -200,10 +199,10 @@ const MedicationDetailScreen = () => {
       color: darkMode ? "#fff" : "#000",
       fontSize: 14,
     },
-    // Primary Button (Update)
+    
     updateButton: {
       backgroundColor: "#007AFF", 
-      padding: 18, // Larger padding
+      padding: 18, 
       borderRadius: 12,
       alignItems: "center",
       marginTop: 20,
@@ -215,21 +214,21 @@ const MedicationDetailScreen = () => {
     updateButtonText: { 
         color: "#fff", 
         fontWeight: "bold",
-        fontSize: 16 // Larger text
+        fontSize: 16 
     },
-    // Secondary Button (Delete)
+    
     deleteButton: {
-      backgroundColor: darkMode ? "#3A3A3A" : "#EAEAEA", // Subtle background for delete
+      backgroundColor: darkMode ? "#3A3A3A" : "#EAEAEA", 
       padding: 18,
       borderRadius: 12,
       alignItems: "center",
       flexDirection: "row",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: "#FF3B30", // Red border
+      borderColor: "#FF3B30", 
     },
     deleteButtonText: {
-        color: "#FF3B30", // Red text
+        color: "#FF3B30", 
         fontWeight: "bold", 
         marginLeft: 5,
         fontSize: 16
@@ -241,14 +240,14 @@ const MedicationDetailScreen = () => {
         color: darkMode ? "#A0A0A0" : "#666" 
     },
     statusText: {
-      fontSize: 16, // Slightly larger status text
+      fontSize: 16, 
       fontWeight: "bold",
       marginBottom: 0,
       color: status === "missed" ? "#FF3B30" : status === "taken" ? "#34C759" : darkMode ? "#E5E5E5" : "#000",
     },
   });
 
-  // ================= HEADER CONFIGURATION =================
+
   useLayoutEffect(() => {
     navigation.setOptions({
         headerTitle: t('medication.detailsTitle') || 'Medication Details',
@@ -280,7 +279,7 @@ const MedicationDetailScreen = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: dynamicStyles.container.backgroundColor }}>
       <ScrollView style={dynamicStyles.container} contentContainerStyle={{ paddingBottom: 30 }}>
         
-        {/* Image Picker with defined container */}
+        
         <TouchableOpacity onPress={pickImage} style={dynamicStyles.imagePickerContainer} activeOpacity={0.7}>
           <Image
             source={{ uri: imageUri || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBm1yFTdVh7W4eAWd4nrod_KffW-IIv6k82g&s" }}
@@ -289,7 +288,7 @@ const MedicationDetailScreen = () => {
           <Text style={dynamicStyles.changeImageText}>{t("medication.changeImage") || "Change Image"}</Text>
         </TouchableOpacity>
 
-        {/* Form Fields wrapped in a Card for visual appeal */}
+        
         <View style={dynamicStyles.card}>
             <Text style={dynamicStyles.label}>{t("common.name") || 'Name'}</Text>
             <TextInput 
@@ -323,7 +322,7 @@ const MedicationDetailScreen = () => {
                 placeholderTextColor={darkMode ? "#aaa" : "#888"} 
             />
 
-            {/* Status Display (placed inside the card) */}
+            
             <View style={{ marginBottom: 5 }}>
                 <Text style={dynamicStyles.statusLabel}>{t("medication.status") || 'Current Status'}</Text>
                 <Text style={dynamicStyles.statusText}>{status.toUpperCase()}</Text>
@@ -331,9 +330,9 @@ const MedicationDetailScreen = () => {
         </View>
 
 
-        {/* Action Buttons */}
+        
         <View style={{ marginVertical: 10 }}>
-            {/* Update Button (Primary Action) */}
+            
             <TouchableOpacity style={dynamicStyles.updateButton} onPress={updateMedication} disabled={loading}>
                 {loading ? (
                     <ActivityIndicator size="small" color="#fff" />
@@ -345,7 +344,7 @@ const MedicationDetailScreen = () => {
                 </Text>
             </TouchableOpacity>
 
-            {/* Delete Button (Destructive Action) */}
+            
             <TouchableOpacity style={dynamicStyles.deleteButton} onPress={deleteMedication}>
                 <Ionicons name="trash-outline" size={20} color="#FF3B30" />
                 <Text style={dynamicStyles.deleteButtonText}>{t("common.delete") || "Delete Medication"}</Text>

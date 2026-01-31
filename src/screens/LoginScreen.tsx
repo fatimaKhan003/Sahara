@@ -21,7 +21,7 @@ const LoginScreen = () => {
   const darkMode = theme === 'dark';
   const { openDrawer } = useDrawer();
 
-  // Update language state when i18n language changes
+  
   useEffect(() => {
     const updateLanguage = () => setCurrentLanguage(i18n.language);
     i18n.on("languageChanged", updateLanguage);
@@ -61,7 +61,7 @@ const LoginScreen = () => {
     }
   };
 
-  // =================== Dynamic Styles ===================
+  
   const dynamicStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: darkMode ? '#1E1E1E' : '#fff', paddingHorizontal: 25, paddingTop: 120 },
     topBarIcon: { color: darkMode ? '#fff' : '#000' },
@@ -74,7 +74,7 @@ const LoginScreen = () => {
     signInText: { color: darkMode ? '#A0A0A0' : '#777' },
     signInLink: { color: '#3B5BFF', fontWeight: '500' },
     
-    // Enhanced Modal Styles
+    
     modalOverlay: { 
       flex: 1, 
       backgroundColor: 'rgba(0,0,0,0.6)', 
@@ -145,14 +145,14 @@ const LoginScreen = () => {
           <Ionicons name="menu-outline" size={24} color={darkMode ? '#fff' : '#007AFF'} />
         </TouchableOpacity>
       ),
-      // align the header icon with the screen content padding
+      
       headerRightContainerStyle: { paddingRight: 25 },
     });
   }, [navigation, openDrawer, darkMode]);
 
   return (
     <View style={dynamicStyles.container}>
-      {/* Top bar with drawer trigger - aligned with content */}
+      
       <View style={{ position: 'absolute', top: 60, left: 25, right: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('OnboardingScreen', { goToLastSlide: true })}>
           <Ionicons name="arrow-back" size={24} color={dynamicStyles.topBarIcon.color} />
@@ -166,7 +166,7 @@ const LoginScreen = () => {
       <Text style={[{ fontSize: 28, fontWeight: '600', marginTop: 20, marginBottom: 8 }, dynamicStyles.text]}>{t("login.title")}</Text>
       <Text style={[{ fontSize: 14, marginBottom: 40 }, dynamicStyles.subText]}>{t("login.subtitle")}</Text>
 
-      {/* Email input */}
+      
       <View style={{ marginBottom: 20 }}>
         <Text style={[{ fontWeight: '500', marginBottom: 8 }, dynamicStyles.text]}>{t("common.email")}</Text>
         <View style={dynamicStyles.inputWrapper}>
@@ -182,7 +182,7 @@ const LoginScreen = () => {
         </View>
       </View>
 
-      {/* Password input */}
+      
       <View style={{ marginBottom: 20 }}>
         <Text style={[{ fontWeight: '500', marginBottom: 8 }, dynamicStyles.text]}>{t("common.password")}</Text>
         <View style={dynamicStyles.inputWrapper}>
@@ -200,12 +200,12 @@ const LoginScreen = () => {
         </View>
       </View>
 
-      {/* Login button */}
+      
       <TouchableOpacity style={dynamicStyles.createButton} onPress={handleLogin}>
         <Text style={dynamicStyles.createButtonText}>{t("common.login")}</Text>
       </TouchableOpacity>
 
-      {/* Forgot password */}
+      
       <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 40 }}>
         <Text style={dynamicStyles.signInText}>{t("login.forgotPassword")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('ForgotPassScreen')}>
@@ -213,7 +213,7 @@ const LoginScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Sign up */}
+      
       <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
         <Text style={dynamicStyles.signInText}>{t("login.dontHaveAccount")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignUpScreen')}>
@@ -221,22 +221,22 @@ const LoginScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Enhanced Success Modal */}
+      
       <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContainer}>
-            {/* Icon with background circle */}
+            
             <View style={dynamicStyles.modalIconContainer}>
               <Ionicons name="checkmark-circle" size={60} color="#3B5BFF" />
             </View>
             
-            {/* Title */}
+            
             <Text style={dynamicStyles.modalTitle}>{t("login.successTitle")}</Text>
             
-            {/* Message */}
+            
             <Text style={dynamicStyles.modalMessage}>{t("login.successMessage")}</Text>
             
-            {/* Action Button */}
+            
             <TouchableOpacity 
               style={dynamicStyles.modalButton} 
               onPress={() => setModalVisible(false)}
