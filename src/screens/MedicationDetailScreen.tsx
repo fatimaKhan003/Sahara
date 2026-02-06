@@ -17,6 +17,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
 import { ThemeContext } from "../context/ThemeContext";
+import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const MedicationDetailScreen = () => {
   const { t } = useTranslation();
@@ -46,8 +48,10 @@ const MedicationDetailScreen = () => {
   
   const [name, setName] = useState(med.name);
   const [dose, setDose] = useState(med.dose);
-  const [frequency, setFrequency] = useState(med.frequency);
-  const [time, setTime] = useState(med.time);
+  const [schedule, setSchedule] = useState({
+    repeat: med.schedule?.repeat || "daily",
+    times: med.schedule?.times || ["08:00 AM"],
+  });
   const [status, setStatus] = useState(med.status);
   const [imageUri, setImageUri] = useState(
     med.imageUri ? `${API_BASE}${med.imageUri}` : null
@@ -307,20 +311,33 @@ const MedicationDetailScreen = () => {
             />
 
             <Text style={dynamicStyles.label}>{t("medication.frequency") || 'Frequency'}</Text>
-            <TextInput 
-                style={dynamicStyles.input} 
-                value={frequency} 
-                onChangeText={setFrequency} 
-                placeholderTextColor={darkMode ? "#aaa" : "#888"} 
-            />
+            <Picker
+              selectedValue={schedule.repeat}
+              onValueChange={(value) => setSchedule({ ...schedule, repeat: value })}
+              style={{ color: darkMode ? "#fff" : "#000", marginBottom: 20 }}
+            >
+              <Picker.Item label="Once a day" value="daily" />
+              <Picker.Item label="Twice a day" value="twiceDaily" />
+              <Picker.Item label="Weekly" value="weekly" />
+            </Picker>
 
-            <Text style={dynamicStyles.label}>{t("medication.time") || 'Time'}</Text>
-            <TextInput 
-                style={dynamicStyles.input} 
-                value={time} 
-                onChangeText={setTime} 
-                placeholderTextColor={darkMode ? "#aaa" : "#888"} 
-            />
+            <Text style={dynamicStyles.label}>{t("medication.time") || 'Times'}</Text>
+
+            {schedule.times.map((t, idx) => (
+              <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                <Text style={{ color: darkMode ? "#fff" : "#000", flex: 1 }}>{t}</Text>
+                <TouchableOpacity onPress={() => removeTime(idx)}>
+                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              onPress={showTimePicker}
+              style={[dynamicStyles.secondaryButton, { marginBottom: 20 }]}
+            >
+              <Text style={dynamicStyles.secondaryButtonText}>Add Time</Text>
+            </TouchableOpacity>
 
             
             <View style={{ marginBottom: 5 }}>

@@ -1,14 +1,19 @@
 import mongoose from "mongoose";
+import scheduleSchema from "./Schedule.js";
 
 const medicationSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
     name: { type: String, required: true },
-    dose: { type: String, required: true },         
-    frequency: { type: String, required: true },    
-    time: { type: String, required:true },                          
-    type: { type: String }, 
+    dose: { type: String, required: true },
+
+    schedule: {
+      type: scheduleSchema,
+      required: true,
+    },
+
+    type: { type: String },
 
     isActive: { type: Boolean, default: true },
     status: {
@@ -17,10 +22,9 @@ const medicationSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    imageUri: { type: String },             
-
+    imageUri: { type: String },
   },
-  { timestamps: true } 
+  { timestamps: true },
 );
 
 const Medication = mongoose.model("Medication", medicationSchema);

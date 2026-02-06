@@ -26,19 +26,23 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
 
     const savedMeds = await Medication.insertMany(
       medsArray.map((med) => {
-        if (!med.time) {
-          throw new Error(`Time is required for medication ${med.name}`);
+        if (!med.schedule || !med.schedule.times || med.schedule.times.length === 0) {
+          throw new Error(`Schedule times are required for medication ${med.name}`);
         }
 
         return {
           user: userId,
           name: med.name,
           dose: med.dose,
-          frequency: med.frequency,
-          time: med.time,
+          schedule: {
+            times: med.schedule.times,        // ["08:00", "20:00"]
+            repeat: med.schedule.repeat || "daily"
+          },
           isActive: med.isActive ?? true,
+          status: med.status || "pending",
           imageUri: req.file ? `/uploads/${req.file.filename}` : backendImageUri || "",
         };
+
       })
     );
 
@@ -96,8 +100,10 @@ router.delete("/:id", async (req, res) => {
 
 router.patch("/:id", upload.single("image"), async (req, res) => {
   try {
-    const { name, dose, frequency, time, status } = req.body;
-    const updateData = { name, dose, frequency, time, status };
+    const { name, dose, status, schedule } = req.body;
+    const updateData = { name, dose, status };
+
+    if (schedule) updateData.schedule = schedule;
 
     if (req.file) {
       updateData.imageUri = `/uploads/${req.file.filename}`;
