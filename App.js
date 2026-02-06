@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import './src/i18n'; 
 import { AppDrawerProvider } from './src/navigation/AppDrawerProvider';
@@ -19,10 +19,16 @@ import SplashScreen from './src/screens/SplashScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AddDependentsScreen from './src/screens/AddDependentsScreen';
+import { registerForNotifications } from "./src/services/notifications";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+
+  useEffect(() => {
+    registerForNotifications();
+  }, []);
+
   return (<GestureHandlerRootView style={{flex:1}}>
     <ThemeProvider>
     <AppDrawerProvider>
