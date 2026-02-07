@@ -13,14 +13,21 @@ const medicationSchema = new mongoose.Schema(
       required: true,
     },
 
+    doseLogs: [
+      {
+        scheduledAt: Date,
+        takenAt: Date,
+        status: {
+          type: String,
+          enum: ["pending", "taken", "missed"],
+          default: "pending",
+        },
+      },
+    ],
+
     type: { type: String },
 
     isActive: { type: Boolean, default: true },
-    status: {
-      type: String,
-      enum: ["pending", "taken", "missed"],
-      default: "pending",
-    },
 
     imageUri: { type: String },
   },
