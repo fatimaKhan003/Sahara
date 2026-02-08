@@ -41,7 +41,6 @@ const MedicationDetailScreen = () => {
           repeat: t("medication.schedule.sampleRepeat") || "daily",
           times: [t("medication.schedule.sampleTime") || "08:00"],
         },
-        status: "pending",
         imageUri: null,
       },
     [medParam, t],
@@ -53,14 +52,11 @@ const MedicationDetailScreen = () => {
     repeat: med.schedule?.repeat || "daily",
     times: med.schedule?.times || ["08:00"],
   });
-  const [status, setStatus] = useState(med.status);
   const [imageUri, setImageUri] = useState(
     med.imageUri ? `${API_BASE}${med.imageUri}` : null,
   );
   const [loading, setLoading] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
-  const [timePickerIndex, setTimePickerIndex] = useState(-1);
-  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [showPickerIndex, setShowPickerIndex] = useState(-1);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -90,34 +86,6 @@ const MedicationDetailScreen = () => {
     setSchedule({ ...schedule, times: updated });
   };
 
-  const showTimePicker = () => {
-    setTimePickerIndex(0);
-    setShowPicker(true);
-  };
-
-  const handleTimeChange = (event: any, date?: Date) => {
-    if (event.type === "dismissed") {
-      setShowPicker(false);
-      return;
-    }
-
-    if (date) {
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-      const timeStr = `${hours}:${minutes}`;
-
-      const updated = [...schedule.times];
-      if (timePickerIndex >= 0 && timePickerIndex < updated.length) {
-        updated[timePickerIndex] = timeStr;
-      } else {
-        updated.push(timeStr);
-      }
-      setSchedule({ ...schedule, times: updated });
-      setShowPicker(false);
-      setTimePickerIndex(-1);
-    }
-  };
-
   const updateMedication = async () => {
     if (!med?._id) {
       Alert.alert(
@@ -132,7 +100,6 @@ const MedicationDetailScreen = () => {
       formData.append("name", name);
       formData.append("dose", dose);
       formData.append("schedule", JSON.stringify(schedule));
-      formData.append("status", status);
 
       if (imageUri && !imageUri.startsWith("http")) {
         const localResponse = await fetch(imageUri);
@@ -321,19 +288,6 @@ const MedicationDetailScreen = () => {
       marginBottom: 5,
       color: darkMode ? "#A0A0A0" : "#666",
     },
-    statusText: {
-      fontSize: 16,
-      fontWeight: "bold",
-      marginBottom: 0,
-      color:
-        status === "missed"
-          ? "#FF3B30"
-          : status === "taken"
-            ? "#34C759"
-            : darkMode
-              ? "#E5E5E5"
-              : "#000",
-    },
   });
 
   useLayoutEffect(() => {
@@ -375,17 +329,7 @@ const MedicationDetailScreen = () => {
         </TouchableOpacity>
       ),
     });
-  }, [
-    navigation,
-    darkMode,
-    loading,
-    name,
-    dose,
-    schedule,
-    status,
-    imageUri,
-    t,
-  ]);
+  }, [navigation, darkMode, loading, name, dose, schedule, imageUri, t]);
 
   return (
     <SafeAreaView
@@ -454,45 +398,96 @@ const MedicationDetailScreen = () => {
             {t("medication.time") || "Times"}
           </Text>
 
-          {schedule.times.map((t, idx) => (
-            <View
-              key={idx}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
-              <Text style={{ color: darkMode ? "#fff" : "#000", flex: 1 }}>
-                {t}
-              </Text>
-              <TouchableOpacity onPress={() => removeTime(idx)}>
-                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+          {schedule.times.map((time, tIdx) => (
+            <View key={tIdx} style={{ marginBottom: 10 }}>
+              <TouchableOpacity
+                style={[dynamicStyles.input, { justifyContent: "center" }]}
+                onPress={() => setShowPickerIndex(tIdx)}
+              >
+                <Text
+                  style={{
+                    color: time ? (darkMode ? "#fff" : "#000") : "#888",
+                  }}
+                >
+                  {time
+                    ? new Date(time).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Select Time"}
+                </Text>
               </TouchableOpacity>
+
+              {showPickerIndex === tIdx && (
+                <DateTimePicker
+                  value={time ? new Date(time) : new Date()}
+                  mode="time"
+                  is24Hour={false}
+                  display="spinner"
+                  onChange={(event, selectedDate) => {
+                    setShowPickerIndex(-1); // close picker
+                    if (event.type === "set" && selectedDate) {
+                      const updatedTimes = [...schedule.times];
+                      updatedTimes[tIdx] = new Date(
+                        1970,
+                        0,
+                        1,
+                        selectedDate.getHours(),
+                        selectedDate.getMinutes(),
+                      ).toISOString();
+                      setSchedule({ ...schedule, times: updatedTimes });
+                    }
+                  }}
+                />
+              )}
             </View>
           ))}
 
           <TouchableOpacity
-            onPress={showTimePicker}
+            onPress={() =>
+              setSchedule({ ...schedule, times: [...schedule.times, ""] })
+            }
             style={[dynamicStyles.secondaryButton, { marginBottom: 20 }]}
           >
             <Text style={dynamicStyles.secondaryButtonText}>Add Time</Text>
           </TouchableOpacity>
 
-          {showPicker && (
-            <DateTimePicker
-              value={selectedTime}
-              mode="time"
-              display="default"
-              onChange={handleTimeChange}
-            />
-          )}
-
           <View style={{ marginBottom: 5 }}>
-            <Text style={dynamicStyles.statusLabel}>
-              {t("medication.status") || "Current Status"}
-            </Text>
-            <Text style={dynamicStyles.statusText}>{status.toUpperCase()}</Text>
+            <Text style={dynamicStyles.statusLabel}>Dose Logs</Text>
+            {med.doseLogs?.map((log, idx) => {
+              const logColor =
+                log.status === "missed"
+                  ? "#FF3B30"
+                  : log.status === "taken"
+                    ? "#34C759"
+                    : darkMode
+                      ? "#E5E5E5"
+                      : "#000";
+
+              return (
+                <View
+                  key={idx}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginBottom: 3,
+                  }}
+                >
+                  <Text style={{ color: darkMode ? "#aaa" : "#555" }}>
+                    {new Date(log.scheduledAt).toLocaleTimeString([], {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                  <Text style={{ color: logColor, fontWeight: "bold" }}>
+                    {log.status.toUpperCase()}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </View>
 

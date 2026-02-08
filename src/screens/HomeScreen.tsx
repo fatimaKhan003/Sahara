@@ -109,6 +109,13 @@ const HomeScreen = () => {
 
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
+
+      // SYNC MISSED DOSES
+      await fetch(`${API_BASE}/api/medications/sync-missed/${parsedUser._id}`, {
+        method: "POST",
+      });
+
+      // CAREGIVER
       const caregiverRes = await fetch(
         `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
       );
@@ -126,7 +133,18 @@ const HomeScreen = () => {
           `${API_BASE}/api/caregiver/${parsedUser._id}/dependents-meds`,
         );
         const data = await res.json();
-        setDependentsMeds(Array.isArray(data) ? data : []);
+        const dependents = Array.isArray(data) ? data : [];
+
+        // MARK EXPIRED DOSES FOR EACH DEPENDENT
+        await Promise.all(
+          dependents.map((med) =>
+            fetch(`${API_BASE}/api/medications/expire-doses/${med.user}`, {
+              method: "POST",
+            }),
+          ),
+        );
+
+        setDependentsMeds(dependents);
       } else {
         const response = await fetch(
           `${API_BASE}/api/medications/${parsedUser._id}`,
@@ -168,8 +186,13 @@ const HomeScreen = () => {
     dashboardMode === "personal" ? medications : dependentsMeds;
 
   const totalCount = medsToShow.length;
-  const takenCount = medsToShow.filter((m) => m.status === "taken").length;
-  const missedCount = medsToShow.filter((m) => m.status === "missed").length;
+  const takenCount = medsToShow.filter((med) =>
+    med.doseLogs.some((d) => d.status === "taken"),
+  ).length;
+
+  const missedCount = medsToShow.filter((med) =>
+    med.doseLogs.some((d) => d.status === "missed"),
+  ).length;
 
   const filteredMeds = medsToShow.filter((med) => {
     if (selectedTab === "taken") {
@@ -266,11 +289,11 @@ const HomeScreen = () => {
   const getCurrentScheduledDose = (med) => {
     const now = new Date();
 
-    // Find a dose within ±30 minutes of current time
+    // Find a dose within +/- 30 minutes of current time
     const currentDose = med.doseLogs.find((log) => {
-      if (log.status !== "pending") return false;
       const sched = new Date(log.scheduledAt).getTime();
-      return Math.abs(now.getTime() - sched) <= 30 * 60 * 1000; // 30 mins
+      const diff = now.getTime() - sched;
+      return diff >= 0 && diff <= 30 * 60 * 1000;
     });
 
     return currentDose || null;
@@ -398,15 +421,12 @@ const HomeScreen = () => {
                 let buttonLabel = t("home.take");
 
                 if (currentDose) {
-                  const sched = new Date(currentDose.scheduledAt);
-                  const diffMins =
-                    (new Date().getTime() - sched.getTime()) / 60000;
+                  const sched = new Date(currentDose.scheduledAt).getTime();
+                  const diffMins = (new Date().getTime() - sched) / 60000;
+
                   if (currentDose.takenAt) {
                     disableButton = true;
                     buttonLabel = t("home.taken");
-                  } else if (diffMins > 30) {
-                    disableButton = true;
-                    buttonLabel = t("home.missed");
                   }
                 }
 

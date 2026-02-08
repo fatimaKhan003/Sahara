@@ -26,11 +26,9 @@ const generateDoseLogs = (times, days = 7) => {
     date.setDate(today.getDate() + d);
 
     for (const time of times) {
-      const [hours, minutes] = time.split(":").map(Number);
-
+      const timeDate = new Date(time);
       const scheduledAt = new Date(date);
-      scheduledAt.setHours(hours);
-      scheduledAt.setMinutes(minutes);
+      scheduledAt.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0);
 
       logs.push({
         scheduledAt,
@@ -40,6 +38,32 @@ const generateDoseLogs = (times, days = 7) => {
   }
 
   return logs;
+};
+
+const markExpiredDosesAsMissed = async (userId) => {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 30 * 60 * 1000); // 30 mins ago
+
+  await Medication.updateMany(
+    {
+      user: userId,
+      "doseLogs.status": "pending",
+      "doseLogs.scheduledAt": { $lt: cutoff },
+    },
+    {
+      $set: {
+        "doseLogs.$[log].status": "missed",
+      },
+    },
+    {
+      arrayFilters: [
+        {
+          "log.status": "pending",
+          "log.scheduledAt": { $lt: cutoff },
+        },
+      ],
+    },
+  );
 };
 
 router.post("/save-medications", upload.single("image"), async (req, res) => {
@@ -150,6 +174,16 @@ router.patch("/dose-log/:medId/:logId", async (req, res) => {
   }
 });
 
+router.post("/sync-missed/:userId", async (req, res) => {
+  try {
+    await markExpiredDosesAsMissed(req.params.userId);
+    res.json({ message: "Dose logs synced" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to sync missed doses" });
+  }
+});
+
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -171,13 +205,21 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
     const { name, dose, schedule, isActive } = req.body;
     const updateData = { name, dose, isActive };
 
+    const med = await Medication.findById(req.params.id);
+    if (!med) {
+      return res.status(404).json({ message: "Medication not found" });
+    }
+
+    // Update schedule if provided
     if (schedule) {
-      updateData.schedule = schedule;
+      let parsedSchedule =
+        typeof schedule === "string" ? JSON.parse(schedule) : schedule;
 
-      const med = await Medication.findById(req.params.id);
-      const takenLogs = med.doseLogs.filter((log) => log.status === "taken"); // keep taken logs
-      const newPendingLogs = generateDoseLogs(schedule.times, 7); // regenerate future pending logs
+      updateData.schedule = parsedSchedule;
 
+      // Keep all taken logs
+      const takenLogs = med.doseLogs.filter((log) => log.status === "taken");
+      const newPendingLogs = generateDoseLogs(parsedSchedule.times, 7);
       updateData.doseLogs = [...takenLogs, ...newPendingLogs];
     }
 
@@ -190,8 +232,6 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
       updateData,
       { new: true },
     );
-    if (!updated)
-      return res.status(404).json({ message: "Medication not found" });
 
     res.json(updated);
   } catch (err) {

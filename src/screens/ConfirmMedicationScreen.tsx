@@ -49,7 +49,13 @@ const ConfirmMedicationScreen = () => {
         repeat: "daily",
       },
       isActive: true,
-      status: "pending",
+      doseLogs: [
+        {
+          status: "pending",
+          scheduledAt: null,
+          takenAt: null,
+        },
+      ],
       showPickerIndex: -1,
     },
   ]);
@@ -71,10 +77,16 @@ const ConfirmMedicationScreen = () => {
       {
         name: "",
         dose: "",
-        schedule: { times: [], repeat: "daily" }, // UPDATED: schedule object
+        schedule: { times: [], repeat: "daily" },
         isActive: true,
-        status: "pending",
-        showPickerIndex: -1, // NEW: to control time picker
+        doseLogs: [
+          {
+            status: "pending",
+            scheduledAt: null,
+            takenAt: null,
+          },
+        ],
+        showPickerIndex: -1,
       },
     ]);
   };
@@ -121,6 +133,11 @@ const ConfirmMedicationScreen = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Mark expired doses
+        await fetch(`${API_BASE}/api/medications/sync-missed/${user._id}`, {
+          method: "POST",
+        });
+
         Alert.alert(
           t("common.success") || "Success",
           t("medication.saveSuccess") || "Medications saved successfully!",
@@ -345,28 +362,36 @@ const ConfirmMedicationScreen = () => {
                       color: time ? (darkMode ? "#fff" : "#000") : "#888",
                     }}
                   >
-                    {time || "Select Time"}
+                    {time
+                      ? new Date(time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Select Time"}
                   </Text>
                 </TouchableOpacity>
 
                 {med.showPickerIndex === tIdx && ( // UPDATED
                   <DateTimePicker
-                    value={
-                      time ? new Date(`1970-01-01T${time}:00`) : new Date()
-                    }
+                    value={time ? new Date(time) : new Date()}
                     mode="time"
                     is24Hour={false}
                     display="spinner"
                     onChange={(event, selectedDate) => {
                       updateMed(idx, "showPickerIndex", -1); // close picker
                       if (event.type === "set" && selectedDate) {
-                        const hours = selectedDate.getHours();
-                        const minutes = selectedDate.getMinutes();
-                        const formattedTime = `${hours % 12 || 12}:${minutes
-                          .toString()
-                          .padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
+                        // Convert selected time to ISO string on today’s date
+                        const now = new Date();
+                        now.setHours(
+                          selectedDate.getHours(),
+                          selectedDate.getMinutes(),
+                          0,
+                          0,
+                        );
+                        const isoTime = now.toISOString();
+
                         const updatedTimes = [...med.schedule.times];
-                        updatedTimes[tIdx] = formattedTime;
+                        updatedTimes[tIdx] = isoTime;
                         updateMed(idx, "schedule", {
                           ...med.schedule,
                           times: updatedTimes,
