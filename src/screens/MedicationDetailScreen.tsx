@@ -19,6 +19,7 @@ import { API_BASE } from "../../api";
 import { ThemeContext } from "../context/ThemeContext";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { cancelMedicationNotifications } from "../services/notifications";
 
 const MedicationDetailScreen = () => {
   const { t } = useTranslation();
@@ -156,6 +157,7 @@ const MedicationDetailScreen = () => {
               await fetch(`${API_BASE}/api/medications/${med._id}`, {
                 method: "DELETE",
               });
+              await cancelMedicationNotifications(med._id);
               if (onUpdate) onUpdate(null);
               Alert.alert(
                 t("common.success") || "Success",

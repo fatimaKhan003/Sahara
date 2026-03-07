@@ -115,9 +115,11 @@ const ConfirmMedicationScreen = () => {
       formData.append("medicines", JSON.stringify(validMeds));
 
       if (imageUri) {
-        const localResponse = await fetch(imageUri);
-        const blob = await localResponse.blob();
-        formData.append("image", blob, "med.jpg");
+        formData.append("image", {
+          uri: imageUri,
+          name: "med.jpg",
+          type: "image/jpeg",
+        });
       } else if (backendImageUri) {
         formData.append("backendImageUri", backendImageUri);
       }

@@ -163,3 +163,15 @@ export async function scheduleMedicationNotifications(medications) {
     }
   }
 }
+
+export async function cancelMedicationNotifications(medId) {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
+  for (const notif of scheduled) {
+    const data = notif.content?.data;
+
+    if (data?.medId === medId) {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    }
+  }
+}

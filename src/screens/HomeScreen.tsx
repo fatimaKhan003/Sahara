@@ -28,7 +28,10 @@ import { API_BASE } from "../../api";
 import { containsUrdu } from "../utils/textUtils";
 import { ThemeContext } from "../context/ThemeContext";
 import EventBus from "../utils/EventBus";
-import { scheduleMedicationNotifications } from "../services/notifications";
+import {
+  cancelMedicationNotifications,
+  scheduleMedicationNotifications,
+} from "../services/notifications";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -236,6 +239,7 @@ const HomeScreen = () => {
   const deleteMedication = async (id: string) => {
     try {
       await fetch(`${API_BASE}/api/medications/${id}`, { method: "DELETE" });
+      await cancelMedicationNotifications(id);
       if (dashboardMode === "personal") {
         setMedications((prev) => prev.filter((m) => m._id !== id));
       } else {
