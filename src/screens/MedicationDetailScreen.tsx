@@ -19,7 +19,10 @@ import { API_BASE } from "../../api";
 import { ThemeContext } from "../context/ThemeContext";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { cancelMedicationNotifications } from "../services/notifications";
+import {
+  cancelLogNotification,
+  cancelMedicationNotifications,
+} from "../services/notifications";
 
 const MedicationDetailScreen = () => {
   const { t } = useTranslation();
@@ -97,6 +100,9 @@ const MedicationDetailScreen = () => {
     }
     setLoading(true);
     try {
+      const logIds = med.doseLogs?.map((log) => log._id) || [];
+      await cancelLogNotification(logIds);
+
       const formData = new FormData();
       formData.append("name", name);
       formData.append("dose", dose);
