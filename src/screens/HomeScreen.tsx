@@ -28,6 +28,7 @@ import { API_BASE } from "../../api";
 import { containsUrdu } from "../utils/textUtils";
 import { ThemeContext } from "../context/ThemeContext";
 import EventBus from "../utils/EventBus";
+import { scheduleMedicationNotifications } from "../services/notifications";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -151,6 +152,7 @@ const HomeScreen = () => {
         );
         const meds = await response.json();
         setMedications(Array.isArray(meds) ? meds : []);
+        await scheduleMedicationNotifications(meds);
       }
     } catch (err) {
       console.error(err);

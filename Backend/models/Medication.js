@@ -22,6 +22,7 @@ const medicationSchema = new mongoose.Schema(
           enum: ["pending", "taken", "missed"],
           default: "pending",
         },
+        notificationScheduled: { type: Boolean, default: false },
       },
     ],
 

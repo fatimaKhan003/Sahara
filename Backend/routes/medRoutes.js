@@ -117,10 +117,60 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
 router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const meds = await Medication.find({ user: userId }).sort({
+
+    const meds = await Medication.find({ user: userId });
+
+    const today = new Date();
+    today.setSeconds(0);
+    today.setMilliseconds(0);
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    for (const med of meds) {
+      const todaysLogs = med.doseLogs.filter((log) => {
+        const t = new Date(log.scheduledAt);
+        return t >= startOfToday && t <= endOfToday;
+      });
+
+      const logsToInsert = [];
+
+      for (const time of med.schedule.times) {
+        const timeDate = new Date(time);
+
+        const scheduledAt = new Date(startOfToday);
+        scheduledAt.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0);
+
+        const exists = todaysLogs.some((log) => {
+          const t = new Date(log.scheduledAt);
+          return (
+            t.getHours() === scheduledAt.getHours() &&
+            t.getMinutes() === scheduledAt.getMinutes()
+          );
+        });
+
+        if (!exists) {
+          logsToInsert.push({
+            scheduledAt,
+            status: "pending",
+          });
+        }
+      }
+
+      if (logsToInsert.length > 0) {
+        med.doseLogs.push(...logsToInsert);
+        await med.save();
+      }
+    }
+
+    const updatedMeds = await Medication.find({ user: userId }).sort({
       createdAt: -1,
     });
-    res.status(200).json(meds);
+
+    res.status(200).json(updatedMeds);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -253,6 +303,30 @@ router.post("/upload-profile", upload.single("image"), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to upload profile image" });
+  }
+});
+
+router.patch("/mark-notification/:medId/:logId", async (req, res) => {
+  try {
+    const { medId, logId } = req.params;
+
+    const updated = await Medication.findByIdAndUpdate(
+      medId,
+      { $set: { "doseLogs.$[log].notificationScheduled": true } },
+      {
+        arrayFilters: [{ "log._id": logId }],
+        new: true,
+      },
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Medication or log not found" });
+    }
+
+    res.status(200).json({ message: "Notification marked as scheduled" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to mark notification" });
   }
 });
 
