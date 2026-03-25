@@ -1,0 +1,10 @@
+[
+  {
+    "image": "test.jpeg",
+    "base_output": "1) Radiograph of P.T; 2) (Anamnese Vow); 3) INS: A.Banerjee(P.O.)",
+    "ft_output": "1) Radiograph of P.T; 2) (Anamnese Vow); 3) INS: A.Banerjee(P.O.)",
+    "winner": "Base model",
+    "decision_reason": "Heuristic score — Base: 12.4/100  |  Fine-tuned: 12.4/100",
+    "best_output": "1) Radiograph of P.T; 2) (Anamnese Vow); 3) INS: A.Banerjee(P.O.)"
+  }
+]

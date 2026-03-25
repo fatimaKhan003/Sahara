@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "Sahara",
+    "slug": "Sahara",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to your camera to scan prescriptions.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select prescriptions."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "enableNewArchitecture": true,
+      "useNextNotificationsApi": true,
+      "allowBackup": true,
+      "edgeToEdgeEnabled": true,
+      "package": "com.sahara.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "exp+sahara"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "permissions":[
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "plugins": [
+      "expo-localization",
+      [ "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "useAndroidX": true,
+            "enableJetifier": true
+          }
+        }
+      ]
+    ]
+  }
+}
