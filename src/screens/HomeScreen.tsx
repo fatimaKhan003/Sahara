@@ -102,6 +102,17 @@ const HomeScreen = () => {
     setCurrentWeekStart(newDate);
   };
 
+  function getClosestLog(doseLogs) {
+    const now = new Date();
+
+    return doseLogs.reduce((closest, current) => {
+      const currentDiff = Math.abs(new Date(current.scheduledAt) - now);
+      const closestDiff = Math.abs(new Date(closest.scheduledAt) - now);
+
+      return currentDiff < closestDiff ? current : closest;
+    });
+  }
+
   // FETCH USER + MODE + MEDS
   const fetchUserData = useCallback(async () => {
     try {
@@ -191,21 +202,31 @@ const HomeScreen = () => {
     dashboardMode === "personal" ? medications : dependentsMeds;
 
   const totalCount = medsToShow.length;
-  const takenCount = medsToShow.filter((med) =>
-    med.doseLogs.some((d) => d.status === "taken"),
-  ).length;
+  const takenCount = medsToShow.filter((med) => {
+    const closest = getClosestLog(med.doseLogs);
+    return closest?.status === "taken";
+  }).length;
 
-  const missedCount = medsToShow.filter((med) =>
-    med.doseLogs.some((d) => d.status === "missed"),
-  ).length;
+  const missedCount = medsToShow.filter((med) => {
+    const closest = getClosestLog(med.doseLogs);
+    return closest?.status === "missed";
+  }).length;
 
   const filteredMeds = medsToShow.filter((med) => {
+    if (!med.doseLogs?.length) return false;
+
+    const closest = getClosestLog(med.doseLogs);
+
+    if (!closest) return false;
+
     if (selectedTab === "taken") {
-      return med.doseLogs.some((dose) => dose.status === "taken");
+      return closest.status === "taken";
     }
+
     if (selectedTab === "missed") {
-      return med.doseLogs.some((dose) => dose.status === "missed");
+      return closest.status === "missed";
     }
+
     return true; // "all" tab
   });
 

@@ -22,9 +22,11 @@ import AddDependentsScreen from "./src/screens/AddDependentsScreen";
 import {
   registerForNotifications,
   sendLocalTestNotification,
+  setupForegroundNotificationListener,
   setupNotificationActions,
   setupNotificationResponseListener,
 } from "./src/services/notifications";
+import { SettingsProvider } from "./src/context/SettingsContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -32,57 +34,63 @@ export default function App() {
   useEffect(() => {
     registerForNotifications();
     setupNotificationActions();
+    setupForegroundNotificationListener();
     setupNotificationResponseListener();
   }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <AppDrawerProvider>
-          <NavigationContainer ref={navigationRef}>
-            <Stack.Navigator
-              initialRouteName="SplashScreen"
-              screenOptions={{ headerShown: false }}
-            >
-              <Stack.Screen name="SplashScreen" component={SplashScreen} />
-              <Stack.Screen
-                name="OnboardingScreen"
-                component={OnboardingScreen}
-              />
-              <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
-              <Stack.Screen name="LoginScreen" component={LoginScreen} />
-              <Stack.Screen name="HomeScreen" component={HomeScreen} />
-              <Stack.Screen
-                name="ScanPrescriptionScreen"
-                component={ScanPrescriptionScreen}
-              />
-              <Stack.Screen
-                name="ConfirmMedicationScreen"
-                component={ConfirmMedicationScreen}
-              />
-              <Stack.Screen
-                name="ForgotPassScreen"
-                component={ForgotPassScreen}
-              />
-              <Stack.Screen
-                name="MedicationDetailScreen"
-                component={MedicationDetailScreen}
-                options={{ title: "Medication Details" }}
-              />
-              <Stack.Screen
-                name="ProfileEditScreen"
-                component={ProfileEditScreen}
-                options={{ title: "Edit Profile" }}
-              />
-              <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
-              <Stack.Screen
-                name="AddDependentsScreen"
-                component={AddDependentsScreen}
-              />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </AppDrawerProvider>
-      </ThemeProvider>
+      <SettingsProvider>
+        <ThemeProvider>
+          <AppDrawerProvider>
+            <NavigationContainer ref={navigationRef}>
+              <Stack.Navigator
+                initialRouteName="SplashScreen"
+                screenOptions={{ headerShown: false }}
+              >
+                <Stack.Screen name="SplashScreen" component={SplashScreen} />
+                <Stack.Screen
+                  name="OnboardingScreen"
+                  component={OnboardingScreen}
+                />
+                <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
+                <Stack.Screen name="LoginScreen" component={LoginScreen} />
+                <Stack.Screen name="HomeScreen" component={HomeScreen} />
+                <Stack.Screen
+                  name="ScanPrescriptionScreen"
+                  component={ScanPrescriptionScreen}
+                />
+                <Stack.Screen
+                  name="ConfirmMedicationScreen"
+                  component={ConfirmMedicationScreen}
+                />
+                <Stack.Screen
+                  name="ForgotPassScreen"
+                  component={ForgotPassScreen}
+                />
+                <Stack.Screen
+                  name="MedicationDetailScreen"
+                  component={MedicationDetailScreen}
+                  options={{ title: "Medication Details" }}
+                />
+                <Stack.Screen
+                  name="ProfileEditScreen"
+                  component={ProfileEditScreen}
+                  options={{ title: "Edit Profile" }}
+                />
+                <Stack.Screen
+                  name="SettingsScreen"
+                  component={SettingsScreen}
+                />
+                <Stack.Screen
+                  name="AddDependentsScreen"
+                  component={AddDependentsScreen}
+                />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </AppDrawerProvider>
+        </ThemeProvider>
+      </SettingsProvider>
     </GestureHandlerRootView>
   );
 }

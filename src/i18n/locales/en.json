@@ -31,7 +31,7 @@
     "and": "and",
     "error": "Error",
     "success": "Success",
-    "phone":"Phone",
+    "phone": "Phone",
     "editProfile": "Edit Profile",
     "logout": "Logout",
     "user": "User"
@@ -39,10 +39,10 @@
   "splash": {
     "title": "Sahara"
   },
-  "profile":{
-    "enterPhone":"Enter your phone number",
-    "saveChanges":"Save Changes",
-    "saved:":"Profile updated successfully"
+  "profile": {
+    "enterPhone": "Enter your phone number",
+    "saveChanges": "Save Changes",
+    "saved:": "Profile updated successfully"
   },
   "onboarding": {
     "slide1": {
@@ -146,7 +146,7 @@
     "saveError": "Could not save medications",
     "updateError": "Failed to update medication",
     "deleteError": "Failed to delete medication",
-     "dosePlaceholder": "Dose (e.g. 2 pills)",
+    "dosePlaceholder": "Dose (e.g. 2 pills)",
     "frequencyPlaceholder": "Frequency (e.g. Twice a day)",
     "reviewTitle": "Review Medications"
   },
@@ -179,6 +179,8 @@
     "addDependents": "Add Dependents",
     "caregiverEnabled": "Account changed to Caregiver!",
     "caregiverDesc": "You can now add dependents and manage their medications.",
-    "logoutDesc":"Click here to log out of this device."
+    "voiceReminders": "Voice Reminders",
+    "voiceRemindersDesc": "Enable spoken reminders for your medications.",
+    "logoutDesc": "Click here to log out of this device."
   }
 }

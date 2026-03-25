@@ -1,6 +1,8 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { API_BASE } from "../../api";
+import { speakMedication } from "./tts";
+import { getVoiceReminderEnabled } from "../context/SettingsContext";
 
 /*--Notification characteristics---*/
 Notifications.setNotificationHandler({
@@ -79,7 +81,11 @@ export function setupNotificationResponseListener() {
 
     const data = response.notification.request.content.data;
 
-    const { medId, logId, name } = data;
+    const { medId, logId, name, dose } = data;
+
+    if (getVoiceReminderEnabled()) {
+      speakMedication(name, dose);
+    }
 
     try {
       await Notifications.dismissNotificationAsync(
@@ -108,7 +114,7 @@ export function setupNotificationResponseListener() {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Medication Reminder",
-          body: `Take ${name}`,
+          body: `Time to take ${med.name}`,
           data: { medId, logId, name },
           categoryIdentifier: "MEDICATION_REMINDER",
         },
@@ -134,7 +140,7 @@ export async function scheduleMedicationNotifications(medications) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Medication Reminder",
-          body: `Take ${med.name} (${med.dose})`,
+          body: `Time to take ${med.name}, dose ${med.dose}`,
           data: {
             medId: med._id,
             logId: log._id,
@@ -186,4 +192,14 @@ export async function cancelLogNotification(logId) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
     }
   }
+}
+
+export function setupForegroundNotificationListener() {
+  Notifications.addNotificationReceivedListener((notification) => {
+    const data = notification.request.content.data;
+
+    if (data?.name && getVoiceReminderEnabled()) {
+      speakMedication(data.name, data?.dose ? data.dose : "");
+    }
+  });
 }
