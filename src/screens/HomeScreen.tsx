@@ -36,7 +36,7 @@ import {
 const HomeScreen = () => {
   const { t } = useTranslation();
   const { openDrawer } = useDrawer();
-  const { theme } = useContext(ThemeContext);
+  const { theme, applyTheme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
   const [selectedDependent, setSelectedDependent] = useState("all");
 
@@ -133,6 +133,46 @@ const HomeScreen = () => {
       await fetch(`${API_BASE}/api/medications/sync-missed/${parsedUser._id}`, {
         method: "POST",
       });
+
+      // DEPENDENT
+      try {
+        const depRes = await fetch(
+          `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+        );
+        const depData = await depRes.json();
+
+        if (depData.isDependent) {
+          const themeReqRes = await fetch(
+            `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
+          );
+
+          const approvedRequests = await themeReqRes.json();
+
+          if (approvedRequests.length > 0) {
+            const latest = approvedRequests[0];
+
+            if (
+              latest.status !== "applied" &&
+              latest.requestedTheme !== theme
+            ) {
+              applyTheme(latest.requestedTheme);
+
+              await fetch(`${API_BASE}/api/caregiver/mark-theme-applied`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ requestId: latest._id }),
+              });
+
+              Alert.alert(
+                "Theme Updated",
+                `Your caregiver approved your theme change request`,
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.log("Theme logic error:", err);
+      }
 
       // CAREGIVER
       const caregiverRes = await fetch(

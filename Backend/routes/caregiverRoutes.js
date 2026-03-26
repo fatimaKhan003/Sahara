@@ -198,16 +198,59 @@ router.get("/is-dependent/:userId", async (req, res) => {
   }
 });
 
-// GET THEME REQUESTS FOR DEPENDENT
 router.get("/my-theme-requests/:userId", async (req, res) => {
   try {
     const requests = await ThemeRequest.find({
       dependent: req.params.userId,
-    }).populate("dependent");
+      status: "approved",
+    })
+      .sort({ updatedAt: -1 })
+      .limit(1);
 
     res.json(requests);
   } catch (err) {
     res.status(500).json({ message: "Error fetching requests" });
   }
 });
+
+router.patch("/mark-theme-applied", async (req, res) => {
+  try {
+    const { requestId } = req.body;
+
+    if (!requestId)
+      return res.status(400).json({ message: "requestId required" });
+
+    const updated = await ThemeRequest.findByIdAndUpdate(
+      requestId,
+      { status: "applied" },
+      { new: true },
+    );
+
+    if (!updated) return res.status(404).json({ message: "Request not found" });
+
+    res.json({ message: "Theme marked as applied", request: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating request" });
+  }
+});
+
+router.delete("/delete-theme-request", async (req, res) => {
+  try {
+    const { requestId } = req.query;
+
+    if (!requestId)
+      return res.status(400).json({ message: "requestId required" });
+
+    const deleted = await ThemeRequest.findByIdAndDelete(requestId);
+
+    if (!deleted) return res.status(404).json({ message: "Request not found" });
+
+    res.json({ message: "Theme request deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error deleting request" });
+  }
+});
+
 export default router;

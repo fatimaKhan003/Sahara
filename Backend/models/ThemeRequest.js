@@ -7,7 +7,7 @@ const themeRequestSchema = new mongoose.Schema(
     requestedTheme: { type: String, enum: ["light", "dark"] },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "approved", "rejected", "applied"],
       default: "pending",
     },
   },

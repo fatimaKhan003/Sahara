@@ -111,35 +111,6 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
 
     fetchMedications();
   }, [user]);
-  const toggleThemeWithApproval = async () => {
-    const userData = await AsyncStorage.getItem("user");
-    if (!userData) {
-      toggleTheme();
-      return;
-    }
-    const parsedUser = JSON.parse(userData);
-
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
-      );
-      const data = await res.json();
-
-      if (data.isDependent) {
-        const newTheme = theme === "light" ? "dark" : "light";
-        await fetch(`${API_BASE}/api/caregiver/request-theme`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: parsedUser._id, theme: newTheme }),
-        });
-        alert("Theme change request sent to caregiver");
-      } else {
-        toggleTheme();
-      }
-    } catch {
-      toggleTheme(); // fallback
-    }
-  };
 
   const closeDrawer = () => setIsOpen(false);
   const openDrawer = () => setIsOpen(true);
@@ -212,7 +183,6 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
       route: "ViewPrescriptionsScreen",
     },
     { label: "Profile", icon: "person-outline", route: "ProfileEditScreen" },
-    { label: "Logout", icon: "log-out-outline", action: handleLogout },
     { label: "Settings", icon: "settings-outline", route: "SettingsScreen" },
   ];
 
@@ -390,7 +360,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 PREFERENCES
               </Text>
 
-              <View style={[styles.preferenceRow, dynamicStyles.borderColor]}>
+              {/* <View style={[styles.preferenceRow, dynamicStyles.borderColor]}>
                 <View style={styles.prefLeft}>
                   <View style={[styles.iconWrapper, dynamicStyles.iconWrapper]}>
                     <Ionicons
@@ -410,7 +380,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                   thumbColor="#fff"
                   ios_backgroundColor="#d1d5db"
                 />
-              </View>
+              </View> */}
 
               <TouchableOpacity
                 style={[styles.preferenceRow, dynamicStyles.borderColor]}

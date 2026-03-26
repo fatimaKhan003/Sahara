@@ -24,37 +24,124 @@ const SettingsScreen = () => {
   const { theme, toggleTheme, applyTheme } = useContext(ThemeContext);
   const { voiceReminderEnabled, toggleVoiceReminder } =
     useContext(SettingsContext);
-  const darkMode = theme === "dark";
   const { t } = useTranslation();
-
-  const [caregiverEnabled, setCaregiverEnabled] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-  const [isDependent, setIsDependent] = useState(false);
   const navigation = useNavigation<any>();
+  const darkMode = theme === "dark";
+
+  const [user, setUser] = useState<any>(null);
+  const [caregiverEnabled, setCaregiverEnabled] = useState(false);
+  const [isDependent, setIsDependent] = useState(false);
+  const [hasDependents, setHasDependents] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   /** Load user + caregiver mode */
-  const loadData = useCallback(async () => {
+  // const loadData = useCallback(async () => {
+  //   try {
+  //     const userData = await AsyncStorage.getItem("user");
+  //     if (!userData) return;
+  //     const parsedUser = JSON.parse(userData);
+  //     setUser(parsedUser);
+
+  //     const caregiver = await AsyncStorage.getItem(CAREGIVER_KEY);
+  //     if (caregiver === null) {
+  //       setCaregiverEnabled(false);
+  //       await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(false));
+  //     } else {
+  //       setCaregiverEnabled(JSON.parse(caregiver));
+  //     }
+
+  //     const depRes = await fetch(
+  //       `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+  //     );
+  //     const depData = await depRes.json();
+  //     setIsDependent(depData.isDependent);
+
+  //     // Fetch approved theme requests (if dependent)
+  //     if (depData.isDependent) {
+  //       const themeRes = await fetch(
+  //         `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
+  //       );
+  //       const themeRequests = await themeRes.json();
+  //       const approved = themeRequests.find(
+  //         (r: any) => r.status === "approved",
+  //       );
+  //       if (approved) applyTheme(approved.requestedTheme);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error loading settings:", err);
+  //     setCaregiverEnabled(false);
+  //   }
+  // }, []);
+
+  // useEffect(() => {
+  //   loadData();
+
+  //   const userHandler = (u: any) => setUser(u);
+  //   EventBus.on("userUpdated", userHandler);
+
+  //   const langHandler = () => setCurrentLanguage(i18n.language);
+  //   i18n.on("languageChanged", langHandler);
+
+  //   return () => {
+  //     EventBus.off("userUpdated", userHandler);
+  //     i18n.off("languageChanged", langHandler);
+  //   };
+  // }, [loadData]);
+
+  const loadCaregiverState = useCallback(async () => {
     try {
-      const userData = await AsyncStorage.getItem("user");
-      if (userData) setUser(JSON.parse(userData));
+      const storedUser = await AsyncStorage.getItem("user");
+      if (!storedUser) return;
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
 
-      const caregiver = await AsyncStorage.getItem(CAREGIVER_KEY);
+      // 1. Check if user is caregiver
+      const caregiverRes = await fetch(
+        `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
+      );
+      const caregiverData = await caregiverRes.json();
+      const isCaregiver = caregiverData.isCaregiver;
+      setCaregiverEnabled(isCaregiver);
 
-      if (caregiver === null) {
-        setCaregiverEnabled(false); // First app launch = OFF
-        await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(false));
-      } else {
-        setCaregiverEnabled(JSON.parse(caregiver));
+      // 2. If caregiver, check if they have dependents
+      let hasDependents = false;
+      if (isCaregiver) {
+        const dependentsRes = await fetch(
+          `${API_BASE}/api/caregiver/${parsedUser._id}/dependents`,
+        );
+        const dependents = await dependentsRes.json();
+        hasDependents = dependents.length > 0;
+        setHasDependents(hasDependents);
+      }
+
+      // Store caregiver toggle in AsyncStorage
+      await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(isCaregiver));
+
+      // 3. Check if user is dependent
+      const dependentRes = await fetch(
+        `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+      );
+      const dependentData = await dependentRes.json();
+      setIsDependent(dependentData.isDependent);
+
+      // 4. If dependent, fetch approved theme requests and apply theme
+      if (dependentData.isDependent) {
+        const themeRes = await fetch(
+          `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
+        );
+        const themeRequests = await themeRes.json();
+        const approved = themeRequests.find(
+          (r: any) => r.status === "approved",
+        );
+        if (approved) applyTheme(approved.requestedTheme);
       }
     } catch (err) {
-      console.error("Error loading settings:", err);
-      setCaregiverEnabled(false);
+      console.error("Failed to load caregiver state", err);
     }
-  }, []);
+  }, [applyTheme]);
 
   useEffect(() => {
-    loadData();
+    loadCaregiverState();
 
     const userHandler = (u: any) => setUser(u);
     EventBus.on("userUpdated", userHandler);
@@ -66,56 +153,42 @@ const SettingsScreen = () => {
       EventBus.off("userUpdated", userHandler);
       i18n.off("languageChanged", langHandler);
     };
-  }, [loadData]);
-
-  useEffect(() => {
-    if (!user?._id) return;
-
-    const checkThemeApproval = async () => {
-      const res = await fetch(
-        `${API_BASE}/api/caregiver/my-theme-requests/${user._id}`,
-      );
-      const data = await res.json();
-      const approved = data.find((r: any) => r.status === "approved");
-      if (approved) applyTheme(approved.requestedTheme);
-    };
-
-    checkThemeApproval();
-  }, [user]);
+  }, [loadCaregiverState]);
 
   const toggleCaregiver = async () => {
+    // If user is caregiver with dependents, prevent toggle
+    if (caregiverEnabled && hasDependents) {
+      console.log("Cannot change caregiver status: dependents exist");
+      return;
+    }
+
     const newValue = !caregiverEnabled;
     setCaregiverEnabled(newValue);
     await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(newValue));
-
     if (!newValue) return;
 
-    try {
-      const storedUser = await AsyncStorage.getItem("user");
-      if (!storedUser) {
-        console.log("No user in storage");
-        return;
+    // Only create caregiver if user is not already a caregiver
+    if (!caregiverEnabled) {
+      try {
+        const storedUser = await AsyncStorage.getItem("user");
+        if (!storedUser) return;
+        const parsedUser = JSON.parse(storedUser);
+
+        if (!parsedUser?._id) return;
+
+        console.log("Creating caregiver for:", parsedUser._id);
+
+        const res = await fetch(`${API_BASE}/api/caregiver/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: parsedUser._id }),
+        });
+
+        const data = await res.json();
+        console.log("Caregiver API response:", data);
+      } catch (err) {
+        console.error("Caregiver creation failed:", err);
       }
-
-      const parsedUser = JSON.parse(storedUser);
-
-      if (!parsedUser?._id) {
-        console.log("User ID missing");
-        return;
-      }
-
-      console.log("Creating caregiver for:", parsedUser._id);
-
-      const res = await fetch(`${API_BASE}/api/caregiver/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: parsedUser._id }),
-      });
-
-      const data = await res.json();
-      console.log("Caregiver API response:", data);
-    } catch (err) {
-      console.error("Caregiver creation failed:", err);
     }
   };
 
@@ -128,14 +201,7 @@ const SettingsScreen = () => {
     const newTheme = theme === "light" ? "dark" : "light";
 
     try {
-      const res = await fetch(
-        `${API_BASE}/api/caregiver/is-dependent/${user._id}`,
-      );
-      const data = await res.json();
-
-      setIsDependent(data.isDependent);
-
-      if (data.isDependent) {
+      if (isDependent) {
         await fetch(`${API_BASE}/api/caregiver/request-theme`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -212,12 +278,7 @@ const SettingsScreen = () => {
 
             <Switch
               value={darkMode}
-              onValueChange={
-                caregiverEnabled
-                  ? toggleThemeWithApproval // dependent request
-                  : toggleTheme // normal user
-              }
-              disabled={caregiverEnabled && isDependent}
+              onValueChange={toggleThemeWithApproval} // already checks dependent inside
             />
           </View>
 
@@ -261,7 +322,11 @@ const SettingsScreen = () => {
             <Text style={{ color: darkMode ? "#fff" : "#000" }}>
               {t("settings.caregiverAccount")}
             </Text>
-            <Switch value={caregiverEnabled} onValueChange={toggleCaregiver} />
+            <Switch
+              value={caregiverEnabled}
+              onValueChange={toggleCaregiver}
+              disabled={caregiverEnabled && hasDependents}
+            />
           </View>
 
           {caregiverEnabled && (
