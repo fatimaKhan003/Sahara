@@ -241,10 +241,10 @@ const ProfileEditScreen = () => {
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
-       <View style={{flexDirection: "row", alignItems: "center", padding: 15, backgroundColor: "#c9d0d7", borderBottomWidth: 1, borderBottomColor: "#ddd" }}>
-         <TouchableOpacity onPress={()=> navigation.goBack()} style={{marginRight: 10}}>
-           <Ionicons name="arrow-back" size={26} color="#3c6fa5"/>
-         </TouchableOpacity>
+       <View style={{flexDirection: "row", alignItems: "center", padding: 15, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" , borderBottomWidth: 0.1, borderBottomColor: "#ddd" }}>
+             <TouchableOpacity onPress={()=> navigation.goBack()} style={{marginRight: 10}}>
+               <Ionicons name="arrow-back" size={26} color="#3c6fa5"/>
+             </TouchableOpacity>
          <Text style={{
           fontSize: 20,
           fontWeight: '700',
