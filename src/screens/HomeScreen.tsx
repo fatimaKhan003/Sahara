@@ -618,7 +618,30 @@ const HomeScreen = () => {
         {/* ADD BUTTON */}
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate("ScanPrescriptionScreen")}
+          onPress={() => {
+            if (dashboardMode === "caregiver") {
+              if (selectedDependent === "all") {
+                Alert.alert(
+                  "Select a Dependent",
+                  "Please select a specific dependent from the filter above before adding a medication",
+                );
+                return;
+              }
+              const depMed = dependentsMeds.find(
+                (m) => m.dependentName === selectedDependent,
+              );
+              if (!depMed) {
+                Alert.alert("Error", "Could not find dependent information.");
+                return;
+              }
+              navigation.navigate("ScanPrescriptionScreen", {
+                forDependentId: depMed.user._id || depMed.user,
+                forDependentName: selectedDependent,
+              });
+            } else {
+              navigation.navigate("ScanPrescriptionScreen");
+            }
+          }}
         >
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>

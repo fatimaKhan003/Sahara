@@ -21,7 +21,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-// ── TYPES ─────────────────────────────────────────────────────
 type OcrMedicine = {
   name: string;
   dose: string;
@@ -64,7 +63,6 @@ type ConfirmMedicationRouteProp = RouteProp<
   "ConfirmMedicationScreen"
 >;
 
-// ── HELPERS ───────────────────────────────────────────────────
 const mapFrequencyToRepeat = (times_per_day: string): string => {
   switch (times_per_day) {
     case "Once a day":
@@ -94,10 +92,14 @@ const ConfirmMedicationScreen = () => {
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
 
-  const { imageUri, backendImageUri, detectedName, ocrMedicines } =
-    route.params;
-
-  // ── INIT MEDS FROM OCR OR FALLBACK ───────────────────────────
+  const {
+    imageUri,
+    backendImageUri,
+    detectedName,
+    ocrMedicines,
+    forDependentId,
+    forDependentName,
+  } = route.params;
   const buildInitialMeds = (): MedEntry[] => {
     if (ocrMedicines && ocrMedicines.length > 0) {
       return ocrMedicines.map((m) =>
@@ -123,7 +125,6 @@ const ConfirmMedicationScreen = () => {
     fetchUser();
   }, []);
 
-  // ── HANDLERS ──────────────────────────────────────────────────
   const handleAddMore = () => {
     setMeds((prev) => [...prev, blankMed()]);
   };
@@ -148,10 +149,11 @@ const ConfirmMedicationScreen = () => {
 
     try {
       const formData = new FormData();
-      formData.append("userId", user._id);
+      const targetUserId = forDependentId || user._id;
+      formData.append("userId", targetUserId);
       formData.append("medicines", JSON.stringify(validMeds));
 
-      console.log("SENDING DATA:", { userId: user._id, medicines: validMeds });
+      console.log("SENDING DATA:", targetUserId, forDependentName || "self");
 
       if (imageUri) {
         formData.append("image", {
@@ -190,8 +192,10 @@ const ConfirmMedicationScreen = () => {
         });
 
         Alert.alert(
-          t("common.success") || "Success",
-          t("medication.saveSuccess") || "Medications saved successfully!",
+          "Success",
+          forDependentName
+            ? `Medications added for ${forDependentName} successfully!`
+            : "Medications saved successfully!",
         );
         navigation.navigate("HomeScreen");
       } else {
@@ -222,7 +226,6 @@ const ConfirmMedicationScreen = () => {
     });
   };
 
-  // ── STYLES ────────────────────────────────────────────────────
   const dynamicStyles = StyleSheet.create({
     container: {
       flex: 1,
@@ -321,7 +324,6 @@ const ConfirmMedicationScreen = () => {
     },
   });
 
-  // ── HEADER ────────────────────────────────────────────────────
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: t("medication.confirmTitle") || "Confirm Medication Details",
@@ -361,6 +363,25 @@ const ConfirmMedicationScreen = () => {
         <Text style={[dynamicStyles.title, { textAlign: "center" }]}>
           {t("medication.reviewTitle") || "Review and Edit Details"}
         </Text>
+
+        {forDependentName && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: darkMode ? "#1a2a3a" : "#e3f2fd",
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 16,
+              gap: 8,
+            }}
+          >
+            <Ionicons name="person-outline" size={16} color="#007AFF" />
+            <Text style={{ color: "#007AFF", fontWeight: "600", fontSize: 13 }}>
+              Adding medication for: {forDependentName}
+            </Text>
+          </View>
+        )}
 
         {imageUri ? (
           <Image
@@ -562,9 +583,7 @@ const ConfirmMedicationScreen = () => {
               />
             )}
             <Text style={dynamicStyles.primaryButtonText}>
-              {isSaving
-                ? t("common.saving") || "Saving..."
-                : t("common.done") || "Done"}
+              {isSaving ? "Saving..." : "Done"}
             </Text>
           </TouchableOpacity>
         </View>
