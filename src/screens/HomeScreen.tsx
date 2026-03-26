@@ -106,7 +106,7 @@ const dependentList = useMemo(() => {
     setCurrentWeekStart(newDate);
   };
 
-  // FETCH USER + MODE + MEDS
+ 
   const fetchUserData = useCallback(async () => {
     try {
       const userData = await AsyncStorage.getItem("user");
@@ -118,12 +118,12 @@ const dependentList = useMemo(() => {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
 
-      // SYNC MISSED DOSES
+      
       await fetch(`${API_BASE}/api/medications/sync-missed/${parsedUser._id}`, {
         method: "POST",
       });
 
-      // CAREGIVER
+     
       const caregiverRes = await fetch(
         `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
       );
@@ -152,7 +152,7 @@ const dependentList = useMemo(() => {
         const data = await res.json();
         const dependents = Array.isArray(data) ? data : [];
 
-        // MARK EXPIRED DOSES FOR EACH DEPENDENT
+        
         await Promise.all(
           dependents.map((med) =>
             fetch(`${API_BASE}/api/medications/expire-doses/${med.user}`, {
@@ -225,7 +225,7 @@ const dependentList = useMemo(() => {
     if (selectedTab === "missed") {
       return med.doseLogs.some((dose) => dose.status === "missed");
     }
-    return true; // "all" tab
+    return true; 
   });
 
   // const updateStatus = async (id: string, status: string) => {
@@ -322,7 +322,7 @@ const dependentList = useMemo(() => {
   };
 
   const toggleDashboard = async () => {
-    if (!isCaregiver) return; // 🚫 block non-caregiver users
+    if (!isCaregiver) return; 
 
     const newMode = dashboardMode === "personal" ? "caregiver" : "personal";
     setDashboardMode(newMode);
@@ -341,7 +341,7 @@ const dependentList = useMemo(() => {
   const getCurrentScheduledDose = (med) => {
     const now = new Date();
 
-    // Find a dose within +/- 30 minutes of current time
+    
     const currentDose = med.doseLogs.find((log) => {
       const sched = new Date(log.scheduledAt).getTime();
       const diff = now.getTime() - sched;
@@ -359,7 +359,7 @@ const dependentList = useMemo(() => {
         style={{ flex: 1, padding: 20 }}
         contentContainerStyle={{ paddingBottom: 30 }}
       >
-        {/* HEADER */}
+    
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.navigate("ProfileEditScreen")}
@@ -380,7 +380,7 @@ const dependentList = useMemo(() => {
             </Text>
             <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
 
-            {/* ✅ DASHBOARD SWITCH */}
+           
             {isCaregiver && (
   <>
     <TouchableOpacity onPress={toggleDashboard}>
@@ -391,7 +391,7 @@ const dependentList = useMemo(() => {
       </Text>
     </TouchableOpacity>
 
-    {/* 🔥 ADD THIS HERE */}
+   
     <TouchableOpacity
   onPress={() => navigation.navigate("CaregiverRequestsScreen")}
   style={{ marginTop: 6 }}
@@ -431,14 +431,14 @@ const dependentList = useMemo(() => {
           </TouchableOpacity>
         </View>
 
-        {/* CAREGIVER LABEL */}
+       
         {dashboardMode === "caregiver" && (
   <View style={styles.caregiverBadge}>
     <Text style={{ fontWeight: "700", marginBottom: 8 }}>
       Dependents’ Medication
     </Text>
 
-    {/* 🔽 DROPDOWN */}
+   
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       {dependentList.map((dep, index) => (
         <TouchableOpacity
@@ -466,7 +466,7 @@ const dependentList = useMemo(() => {
   </View>
 )}
 
-        {/* TABS */}
+      
         <View style={styles.tabs}>
           {[
             { key: "all", label: t("home.all"), count: totalCount },
@@ -492,7 +492,7 @@ const dependentList = useMemo(() => {
           ))}
         </View>
 
-        {/* MEDICATION LIST */}
+        
         {filteredMeds.map((med) => (
           <Swipeable
             key={med._id}
@@ -523,7 +523,7 @@ const dependentList = useMemo(() => {
                 ) : null;
               })()}
 
-              {/* CURRENT PENDING DOSE BUTTON */}
+              
               {(() => {
                 const currentDose = getCurrentScheduledDose(med);
 
@@ -582,11 +582,36 @@ const dependentList = useMemo(() => {
           </Swipeable>
         ))}
 
-        {/* ADD BUTTON */}
+       
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate("ScanPrescriptionScreen")}
-        >
+          onPress={() =>{ if (dashboardMode === "caregiver")
+          {
+            if(selectedDependent==="all"){Alert.alert("Select a Dependent",
+              "Please select a specific dependent from the filter above before adding a medication"
+            );
+          return;
+          }
+          const depMed=dependentsMeds.find((m)=>m.dependentName===selectedDependent);
+          if(!depMed)
+          {
+            Alert.alert("Error","Could not find dependent information.");
+            return;
+
+          }
+          navigation.navigate("ScanPrescriptionScreen",
+            {
+              forDependentId: depMed.user._id || depMed.user,
+              forDependentName: selectedDependent,
+            }
+          );
+          }
+          else
+          {
+            navigation.navigate("ScanPrescriptionScreen");
+          }
+            }}>
+        
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
         </TouchableOpacity>
