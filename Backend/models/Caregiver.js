@@ -1,4 +1,3 @@
-// models/Caregiver.js
 import mongoose from "mongoose";
 
 const caregiverSchema = new mongoose.Schema({
@@ -6,7 +5,7 @@ const caregiverSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-    unique: true, // ONE caregiver profile per user
+    unique: true, 
   },
 
   dependents: [
