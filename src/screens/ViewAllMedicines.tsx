@@ -1,50 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
+import {
+  View, Text, SectionList, ActivityIndicator, StyleSheet,
+  TouchableOpacity, SafeAreaView
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE } from '../../api';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { API_BASE } from '../../api';
+import { ThemeContext } from '../context/ThemeContext';
 
-const ViewAllMedicines = () => {
-  const [meds, setMeds] = useState<any[]>([]);
+type Medication = {
+  _id: string;
+  name: string;
+  dose: string;
+  doseLogs?: { status: 'taken' | 'missed' | 'not_taken' }[];
+  addedBy?: 'self' | 'caregiver';
+  dependentId?: string;
+  dependentName?: string;
+};
+
+type SectionData = {
+  title: string;
+  sectionKey: string;
+  data: Medication[];
+};
+
+export default function ViewAllMedicinesScreen() {
+  const { theme } = useContext(ThemeContext);
+  const darkMode = theme === 'dark';
+  const navigation = useNavigation<any>();
+
+  const [sections, setSections] = useState<SectionData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const navigation = useNavigation();
-
-  // Load user
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('user');
-        if (stored) setUser(JSON.parse(stored));
-      } catch (err) {
-        console.error('Failed to load user', err);
-      }
-    };
-    loadUser();
-  }, []);
-
-  // Fetch medications
-  useEffect(() => {
-    if (!user?._id) return;
-
-    const fetchMedications = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/api/medications/${user._id}`);
-        const data = await res.json();
-        setMeds(Array.isArray(data) ? data : data.medications || []);
-      } catch (err) {
-        console.error('Failed to fetch medications', err);
-        setMeds([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMedications();
-  }, [user]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isCaregiver, setIsCaregiver] = useState(false);
+  const [isDependent, setIsDependent] = useState(false);
 
   const getStatus = (doseLogs: any[]) => {
     if (!doseLogs || doseLogs.length === 0) return 'Not Taken';
@@ -53,65 +43,222 @@ const ViewAllMedicines = () => {
     return 'Not Taken';
   };
 
+  const loadAllMeds = useCallback(async () => {
+    try {
+      setLoading(true);
+      const storedUser = await AsyncStorage.getItem('user');
+      if (!storedUser) return;
+      const parsedUser = JSON.parse(storedUser);
+      setCurrentUser(parsedUser);
+
+      
+      const [caregiverRes, dependentRes] = await Promise.all([
+        fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`),
+        fetch(`${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`)
+      ]);
+      const caregiverData = await caregiverRes.json();
+      const dependentData = await dependentRes.json();
+      setIsCaregiver(caregiverData.isCaregiver === true);
+      setIsDependent(dependentData.isDependent === true);
+
+      const sectionsArr: SectionData[] = [];
+
+     
+      const personalRes = await fetch(`${API_BASE}/api/medications/${parsedUser._id}`);
+      const personalMeds: Medication[] = await personalRes.json();
+      if (personalMeds.length > 0) {
+        sectionsArr.push({
+          title: 'My Medications',
+          sectionKey: 'personal',
+          data: personalMeds.map(m => ({ ...m, addedBy: 'self' })),
+        });
+      }
+
+     
+      if (caregiverData.isCaregiver) {
+        const depRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/dependents`);
+        const dependents = await depRes.json();
+
+        for (const dep of dependents) {
+          const depMedRes = await fetch(`${API_BASE}/api/medications/${dep._id}`);
+          const depMeds: Medication[] = await depMedRes.json();
+          if (depMeds.length > 0) {
+            sectionsArr.push({
+              title: `${dep.name}'s Medications`,
+              sectionKey: dep._id,
+              data: depMeds.map(m => ({ ...m, dependentName: dep.name })),
+            });
+          }
+        }
+      }
+
+      setSections(sectionsArr);
+    } catch (err) {
+      console.error('Failed to load medications:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAllMeds();
+  }, [loadAllMeds]);
+
+  const totalCount = sections.reduce((acc, s) => acc + s.data.length, 0);
+
+
+  const renderItem = ({ item }: { item: Medication }) => (
+    <View style={[styles.card, { backgroundColor: darkMode ? '#2C2C2C' : '#fff' }]}>
+      <Text style={[styles.name, { color: darkMode ? '#fff' : '#000' }]}>{item.name}</Text>
+      <Text style={{ color: darkMode ? '#ccc' : '#333' }}>Dose: {item.dose}</Text>
+      <Text style={{ color: darkMode ? '#ccc' : '#333' }}>Status: {getStatus(item.doseLogs)}</Text>
+      {item.addedBy === 'caregiver' && (
+        <View style={styles.addedByBadge}>
+          <Ionicons name="person-circle-outline" size={12} color="#7C3AED" />
+          <Text style={styles.addedByText}>Added by caregiver</Text>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderSectionHeader = ({ section }: { section: SectionData }) => (
+    <View style={[styles.sectionHeader, { backgroundColor: darkMode ? '#1E1E1E' : '#F6F8FF' }]}>
+      <View style={[styles.sectionHeaderInner, {
+        backgroundColor:
+          section.sectionKey === 'personal'
+            ? (darkMode ? '#1a2a3a' : '#E8F0FE')
+            : (darkMode ? '#1a3a2a' : '#E8F8EE'),
+      }]}>
+        <Ionicons
+          name={section.sectionKey === 'personal' ? 'person-outline' : 'people-outline'}
+          size={16}
+          color={section.sectionKey === 'personal' ? '#1E5AF2' : '#059669'}
+        />
+        <Text style={[styles.sectionTitle, {
+          color: section.sectionKey === 'personal' ? '#1E5AF2' : '#059669',
+        }]}>
+          {section.title}
+        </Text>
+        <View style={[styles.countBadge, {
+          backgroundColor: section.sectionKey === 'personal' ? '#1E5AF2' : '#059669',
+        }]}>
+          <Text style={styles.countBadgeText}>{section.data.length}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: darkMode ? '#1E1E1E' : '#F6F8FF' }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={darkMode ? '#fff' : '#000'} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: darkMode ? '#fff' : '#000' }]}>Medications</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#1E5AF2" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView>
-    <ScrollView contentContainerStyle={{ padding: 12 }}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="#333" />
-        <Text style={{ marginLeft: 6, fontSize: 16 }}>Back</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: darkMode ? '#1E1E1E' : '#F6F8FF' }]}>
 
-      {meds.length > 0 ? (
-        meds.map(med => (
-          <View key={med._id} style={styles.medCard}>
-            <Text style={styles.name}>{med.name}</Text>
-            <Text>Dose: {med.dose}</Text>
-            <Text>Status: {getStatus(med.doseLogs)}</Text>
-          </View>
-        ))
-      ) : (
-        <Text style={styles.noMeds}>No medications found.</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={darkMode ? '#fff' : '#000'} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: darkMode ? '#fff' : '#000' }]}>
+          {isCaregiver ? 'All Medications' : 'My Medications'}
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+    
+      {totalCount > 0 && (
+        <View style={[styles.summaryStrip, { backgroundColor: darkMode ? '#2C2C2C' : '#fff' }]}>
+          <Ionicons name="medkit-outline" size={16} color="#1E5AF2" />
+          <Text style={[styles.summaryText, { color: darkMode ? '#ccc' : '#555' }]}>
+            {totalCount} medication{totalCount !== 1 ? 's' : ''} across {sections.length} section{sections.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
       )}
-    </ScrollView>
+
+      {totalCount === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="medkit-outline" size={64} color="#ccc" />
+          <Text style={[styles.emptyText, { color: darkMode ? '#aaa' : '#888' }]}>
+            No medications saved yet.
+          </Text>
+          <Text style={[styles.emptySubText, { color: darkMode ? '#666' : '#aaa' }]}>
+            Add a medication to get started.
+          </Text>
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={item => item._id}
+          renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          stickySectionHeadersEnabled={false}
+          renderSectionFooter={() => <View style={{ height: 8 }} />}
+        />
+      )}
     </SafeAreaView>
   );
-};
-
-export default ViewAllMedicines;
+}
 
 const styles = StyleSheet.create({
-  medCard: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+  container: { flex: 1 },
+
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: '#eee',
   },
-  name: {
-    fontWeight: '700',
-    fontSize: 16,
-    marginBottom: 4,
+  headerTitle: { fontSize: 18, fontWeight: '700' },
+
+  summaryStrip: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16, marginTop: 12,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 }, elevation: 1,
   },
-  noMeds: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#888',
+  summaryText: { fontSize: 13, fontWeight: '500' },
+
+  sectionHeader: { paddingTop: 16, paddingBottom: 8 },
+  sectionHeaderInner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 10,
   },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  sectionTitle: { fontSize: 14, fontWeight: '700', flex: 1 },
+  countBadge: {
+    borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2,
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  countBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+
+  card: {
+    flexDirection: 'column', borderRadius: 12,
+    marginBottom: 10, padding: 12, elevation: 2,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
+  name: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
+
+  addedByBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4,
+  },
+  addedByText: { fontSize: 11, color: '#7C3AED', fontWeight: '500' },
+
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
+  emptyText: { fontSize: 16, fontWeight: '600', marginTop: 12 },
+  emptySubText: { fontSize: 13 },
 });
