@@ -148,6 +148,8 @@ const [medications, setMedications] = useState<any[]>([]);
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('user');
+      setUser(null);
+      setUserName('');
       navigateSafe('OnboardingScreen');
     } catch (e) {
       
