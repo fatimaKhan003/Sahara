@@ -1,7 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useMemo, useState, useContext, useLayoutEffect } from "react";
+import React, {
+  useMemo,
+  useState,
+  useContext,
+  useLayoutEffect,
+  useEffect,
+} from "react";
 import {
   Alert,
   Image,
@@ -23,6 +29,7 @@ import {
   cancelLogNotification,
   cancelMedicationNotifications,
 } from "../services/notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const MedicationDetailScreen = () => {
   const { t } = useTranslation();
@@ -34,7 +41,25 @@ const MedicationDetailScreen = () => {
 
   const medParam = route.params?.med;
   const onUpdate = route.params?.onUpdate ?? (() => {});
+  const [isDependent, setIsDependent] = useState(false);
 
+  useEffect(() => {
+    const checkDependent = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("user");
+        if (!userData) return;
+        const parsedUser = JSON.parse(userData);
+        const res = await fetch(
+          `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+        );
+        const data = await res.json();
+        setIsDependent(data.isDependent);
+      } catch (err) {
+        console.error("Failed to check dependent status:", err);
+      }
+    };
+    checkDependent();
+  }, []);
   const med = useMemo(
     () =>
       medParam || {
@@ -142,51 +167,56 @@ const MedicationDetailScreen = () => {
   };
 
   const deleteMedication = async () => {
-    if (!med?._id) {
-      Alert.alert(
-        t("common.info") || "Info",
-        t("medication.deleteError") || "Delete not available for this entry.",
-      );
-      return;
-    }
-    Alert.alert(
-      t("medication.deleteConfirm") || "Confirm Deletion",
-      t("medication.deleteMessage") ||
-        "Are you sure you want to delete this medication?",
-      [
-        { text: t("common.cancel") || "Cancel", style: "cancel" },
-        {
-          text: t("common.delete") || "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
+    if (!med?._id) return;
+
+    const confirmTitle = isDependent ? "Request Deletion" : "Confirm Deletion";
+    const confirmMsg = isDependent
+      ? "A request will be sent to your caregiver to delete this medication."
+      : "Are you sure you want to delete this medication?";
+    const confirmBtn = isDependent ? "Send Request" : "Delete";
+
+    Alert.alert(confirmTitle, confirmMsg, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: confirmBtn,
+        style: "destructive",
+        onPress: async () => {
+          try {
+            if (isDependent) {
+              // Send delete request to caregiver
+              const userData = await AsyncStorage.getItem("user");
+              const parsedUser = JSON.parse(userData || "{}");
+              await fetch(`${API_BASE}/api/medications/request-delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  medicationId: med._id,
+                  userId: parsedUser._id,
+                }),
+              });
+              Alert.alert(
+                "Request Sent",
+                "Your caregiver will review and approve the deletion.",
+                [{ text: "OK", onPress: () => navigation.goBack() }],
+              );
+            } else {
+              // Direct delete
               await fetch(`${API_BASE}/api/medications/${med._id}`, {
                 method: "DELETE",
               });
               await cancelMedicationNotifications(med._id);
               if (onUpdate) onUpdate(null);
-              Alert.alert(
-                t("common.success") || "Success",
-                t("medication.deleteSuccess") ||
-                  "Medication deleted successfully!",
-                [
-                  {
-                    text: t("common.ok") || "OK",
-                    onPress: () => navigation.goBack(),
-                  },
-                ],
-              );
-            } catch (err) {
-              Alert.alert(
-                t("common.error") || "Error",
-                t("medication.deleteError") || "Failed to delete medication.",
-              );
-              console.error(err);
+              Alert.alert("Deleted", "Medication deleted successfully.", [
+                { text: "OK", onPress: () => navigation.goBack() },
+              ]);
             }
-          },
+          } catch (err) {
+            Alert.alert("Error", "Failed to process request.");
+            console.error(err);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const dynamicStyles = StyleSheet.create({

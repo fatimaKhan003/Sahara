@@ -21,6 +21,39 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
+// ── TYPES ─────────────────────────────────────────────────────
+type OcrMedicine = {
+  name: string;
+  dose: string;
+  frequency: string;
+  times_per_day: string;
+};
+
+type RootParamList = {
+  ConfirmMedicationScreen: {
+    imageUri: string;
+    backendImageUri: string;
+    detectedName: string;
+    ocrMedicines?: OcrMedicine[];
+  };
+};
+
+type MedEntry = {
+  name: string;
+  dose: string;
+  schedule: {
+    times: string[];
+    repeat: string;
+  };
+  isActive: boolean;
+  doseLogs: {
+    status: string;
+    scheduledAt: null;
+    takenAt: null;
+  }[];
+  showPickerIndex: number;
+};
+
 type ConfirmMedicationRouteParams = {
   imageUri: string;
   backendImageUri: string;
@@ -31,35 +64,54 @@ type ConfirmMedicationRouteProp = RouteProp<
   "ConfirmMedicationScreen"
 >;
 
+// ── HELPERS ───────────────────────────────────────────────────
+const mapFrequencyToRepeat = (times_per_day: string): string => {
+  switch (times_per_day) {
+    case "Once a day":
+      return "daily";
+    case "Twice a day":
+      return "twiceDaily";
+    case "Three times a day":
+      return "threeTimesDaily";
+    default:
+      return "daily";
+  }
+};
+
+const blankMed = (name = "", dose = "", repeat = "daily"): MedEntry => ({
+  name,
+  dose,
+  schedule: { times: [], repeat },
+  isActive: true,
+  doseLogs: [{ status: "pending", scheduledAt: null, takenAt: null }],
+  showPickerIndex: -1,
+});
+
 const ConfirmMedicationScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const route = useRoute<ConfirmMedicationRouteProp>();
+  const route = useRoute<RouteProp<RootParamList, "ConfirmMedicationScreen">>();
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
 
-  const { imageUri, backendImageUri, detectedName } = route.params;
+  const { imageUri, backendImageUri, detectedName, ocrMedicines } =
+    route.params;
 
-  const [meds, setMeds] = useState([
-    {
-      name: detectedName || "",
-      dose: "",
-      schedule: {
-        times: [],
-        repeat: "daily",
-      },
-      isActive: true,
-      doseLogs: [
-        {
-          status: "pending",
-          scheduledAt: null,
-          takenAt: null,
-        },
-      ],
-      showPickerIndex: -1,
-    },
-  ]);
+  // ── INIT MEDS FROM OCR OR FALLBACK ───────────────────────────
+  const buildInitialMeds = (): MedEntry[] => {
+    if (ocrMedicines && ocrMedicines.length > 0) {
+      return ocrMedicines.map((m) =>
+        blankMed(
+          m.name || "",
+          m.dose || "",
+          mapFrequencyToRepeat(m.times_per_day),
+        ),
+      );
+    }
+    return [blankMed(detectedName || "")];
+  };
 
+  const [meds, setMeds] = useState<MedEntry[]>(buildInitialMeds);
   const [user, setUser] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -71,24 +123,9 @@ const ConfirmMedicationScreen = () => {
     fetchUser();
   }, []);
 
+  // ── HANDLERS ──────────────────────────────────────────────────
   const handleAddMore = () => {
-    setMeds([
-      ...meds,
-      {
-        name: "",
-        dose: "",
-        schedule: { times: [], repeat: "daily" },
-        isActive: true,
-        doseLogs: [
-          {
-            status: "pending",
-            scheduledAt: null,
-            takenAt: null,
-          },
-        ],
-        showPickerIndex: -1,
-      },
-    ]);
+    setMeds((prev) => [...prev, blankMed()]);
   };
 
   const handleSave = async () => {
@@ -114,12 +151,14 @@ const ConfirmMedicationScreen = () => {
       formData.append("userId", user._id);
       formData.append("medicines", JSON.stringify(validMeds));
 
+      console.log("SENDING DATA:", { userId: user._id, medicines: validMeds });
+
       if (imageUri) {
         formData.append("image", {
           uri: imageUri,
           name: "med.jpg",
           type: "image/jpeg",
-        });
+        } as any);
       } else if (backendImageUri) {
         formData.append("backendImageUri", backendImageUri);
       }
@@ -128,6 +167,7 @@ const ConfirmMedicationScreen = () => {
         `${API_BASE}/api/medications/save-medications`,
         {
           method: "POST",
+          headers: { "Content-Type": "multipart/form-data" },
           body: formData,
         },
       );
@@ -135,6 +175,15 @@ const ConfirmMedicationScreen = () => {
       const data = await response.json();
 
       if (response.ok) {
+        if (data.requiresApproval) {
+          Alert.alert(
+            "Pending Approval",
+            "Your medication will be added once your caregiver confirms it.",
+          );
+          navigation.navigate("HomeScreen");
+          return;
+        }
+
         // Mark expired doses
         await fetch(`${API_BASE}/api/medications/sync-missed/${user._id}`, {
           method: "POST",
@@ -166,11 +215,14 @@ const ConfirmMedicationScreen = () => {
   };
 
   const updateMed = (index: number, field: string, value: any) => {
-    const updated = [...meds];
-    updated[index] = { ...updated[index], [field]: value };
-    setMeds(updated);
+    setMeds((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
+  // ── STYLES ────────────────────────────────────────────────────
   const dynamicStyles = StyleSheet.create({
     container: {
       flex: 1,
@@ -182,8 +234,7 @@ const ConfirmMedicationScreen = () => {
       borderRadius: 12,
       marginBottom: 20,
       backgroundColor: darkMode ? "#2C2C2C" : "#fff",
-
-      shadowColor: darkMode ? "#000" : "#000",
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
@@ -211,25 +262,28 @@ const ConfirmMedicationScreen = () => {
       marginBottom: 20,
       color: darkMode ? "#E5E5E5" : "#333",
     },
-
     primaryButton: {
       backgroundColor: "#007AFF",
       padding: 15,
       borderRadius: 12,
-      alignItems: "center",
+      alignItems: "center" as const,
       flex: 1,
-      flexDirection: "row",
-      justifyContent: "center",
+      flexDirection: "row" as const,
+      justifyContent: "center" as const,
       gap: 10,
     },
-
+    primaryButtonText: {
+      color: "#fff",
+      fontWeight: "700",
+      fontSize: 16,
+    },
     secondaryButton: {
       backgroundColor: darkMode ? "#3A3A3A" : "#E5E5E5",
       borderColor: "#007AFF",
       borderWidth: 1,
       padding: 15,
       borderRadius: 12,
-      alignItems: "center",
+      alignItems: "center" as const,
       flex: 1,
       marginRight: 10,
     },
@@ -238,9 +292,9 @@ const ConfirmMedicationScreen = () => {
       fontWeight: "600",
     },
     switchContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "space-between" as const,
       marginTop: 5,
       marginBottom: 10,
       paddingHorizontal: 5,
@@ -250,8 +304,24 @@ const ConfirmMedicationScreen = () => {
       fontSize: 14,
       fontWeight: "500",
     },
+    ocrBadge: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      backgroundColor: darkMode ? "#1a3a1a" : "#e8f5e9",
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      marginBottom: 15,
+      gap: 6,
+    },
+    ocrBadgeText: {
+      color: darkMode ? "#81c784" : "#2e7d32",
+      fontSize: 12,
+      fontWeight: "600",
+    },
   });
 
+  // ── HEADER ────────────────────────────────────────────────────
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: t("medication.confirmTitle") || "Confirm Medication Details",
@@ -292,16 +362,34 @@ const ConfirmMedicationScreen = () => {
           {t("medication.reviewTitle") || "Review and Edit Details"}
         </Text>
 
-        <Image
-          source={{ uri: imageUri }}
-          style={{
-            width: "100%",
-            height: 200,
-            marginBottom: 25,
-            borderRadius: 12,
-            resizeMode: "cover",
-          }}
-        />
+        {imageUri ? (
+          <Image
+            source={{ uri: imageUri }}
+            style={{
+              width: "100%",
+              height: 200,
+              marginBottom: 25,
+              borderRadius: 12,
+              resizeMode: "cover",
+            }}
+          />
+        ) : null}
+
+        {/* OCR auto-fill notice */}
+        {ocrMedicines && ocrMedicines.length > 0 && (
+          <View style={dynamicStyles.ocrBadge}>
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color={darkMode ? "#81c784" : "#2e7d32"}
+            />
+            <Text style={dynamicStyles.ocrBadgeText}>
+              {ocrMedicines.length} medication
+              {ocrMedicines.length > 1 ? "s" : ""} detected and auto-filled from
+              prescription
+            </Text>
+          </View>
+        )}
 
         {meds.map((med, idx) => (
           <View key={idx} style={dynamicStyles.medContainer}>
@@ -312,6 +400,7 @@ const ConfirmMedicationScreen = () => {
                 `Medication ${idx + 1}`}
             </Text>
 
+            {/* Name */}
             <Text style={dynamicStyles.label}>
               {t("common.name") || "Name"}
             </Text>
@@ -323,6 +412,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "name", text)}
             />
 
+            {/* Dose */}
             <Text style={dynamicStyles.label}>
               {t("medication.dose") || "Dose"}
             </Text>
@@ -334,6 +424,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "dose", text)}
             />
 
+            {/* Frequency */}
             <Text style={dynamicStyles.label}>
               {t("medication.frequency") || "Frequency"}
             </Text>
@@ -346,9 +437,11 @@ const ConfirmMedicationScreen = () => {
             >
               <Picker.Item label="Once a day" value="daily" />
               <Picker.Item label="Twice a day" value="twiceDaily" />
+              <Picker.Item label="Three times a day" value="threeTimesDaily" />
               <Picker.Item label="Weekly" value="weekly" />
             </Picker>
 
+            {/* Times */}
             <Text style={dynamicStyles.label}>
               {t("medication.timePlaceholder") || "Time"}
             </Text>
@@ -357,7 +450,7 @@ const ConfirmMedicationScreen = () => {
               <View key={tIdx} style={{ marginBottom: 10 }}>
                 <TouchableOpacity
                   style={[dynamicStyles.input, { justifyContent: "center" }]}
-                  onPress={() => updateMed(idx, "showPickerIndex", tIdx)} // UPDATED
+                  onPress={() => updateMed(idx, "showPickerIndex", tIdx)}
                 >
                   <Text
                     style={{
@@ -373,7 +466,7 @@ const ConfirmMedicationScreen = () => {
                   </Text>
                 </TouchableOpacity>
 
-                {med.showPickerIndex === tIdx && ( // UPDATED
+                {med.showPickerIndex === tIdx && (
                   <DateTimePicker
                     value={time ? new Date(time) : new Date()}
                     mode="time"
@@ -418,6 +511,7 @@ const ConfirmMedicationScreen = () => {
               <Text style={{ color: "#007AFF" }}>+ Add Time</Text>
             </TouchableOpacity>
 
+            {/* Active Switch */}
             <View style={dynamicStyles.switchContainer}>
               <Text style={dynamicStyles.switchLabel}>
                 {t("medication.active") || "Active Schedule"}
@@ -436,6 +530,7 @@ const ConfirmMedicationScreen = () => {
           </View>
         ))}
 
+        {/* Bottom Buttons */}
         <View
           style={{
             flexDirection: "row",
@@ -466,7 +561,7 @@ const ConfirmMedicationScreen = () => {
                 color="#fff"
               />
             )}
-            <Text style={dynamicStyles.saveButtonText}>
+            <Text style={dynamicStyles.primaryButtonText}>
               {isSaving
                 ? t("common.saving") || "Saving..."
                 : t("common.done") || "Done"}

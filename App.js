@@ -27,6 +27,10 @@ import {
   setupNotificationResponseListener,
 } from "./src/services/notifications";
 import { SettingsProvider } from "./src/context/SettingsContext";
+import CaregiverRequestsScreen from "./src/screens/CaregiverRequestsScreen";
+import ViewPrescriptionsScreen from "./src/screens/ViewPrescriptionsScreen";
+import EditMedicationRequestScreen from "./src/screens/EditMedicationRequestScreen";
+import ViewAllMedicines from "./src/screens/ViewAllMedicines";
 
 const Stack = createNativeStackNavigator();
 
@@ -85,6 +89,22 @@ export default function App() {
                 <Stack.Screen
                   name="AddDependentsScreen"
                   component={AddDependentsScreen}
+                />
+                <Stack.Screen
+                  name="CaregiverRequestsScreen"
+                  component={CaregiverRequestsScreen}
+                />
+                <Stack.Screen
+                  name="ViewPrescriptionsScreen"
+                  component={ViewPrescriptionsScreen}
+                />
+                <Stack.Screen
+                  name="EditMedicationRequestScreen"
+                  component={EditMedicationRequestScreen}
+                />
+                <Stack.Screen
+                  name="ViewAllMedicines"
+                  component={ViewAllMedicines}
                 />
               </Stack.Navigator>
             </NavigationContainer>

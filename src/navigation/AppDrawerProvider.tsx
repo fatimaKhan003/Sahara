@@ -1,13 +1,32 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, TouchableOpacity, View, Text, PanResponder, Switch, ScrollView, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { navigateSafe } from './navigationRef';
-import i18n, { changeLanguage } from '../i18n';
-import { ThemeContext } from '../context/ThemeContext';
-import { navigationRef } from './navigationRef';
-import EventBus from '../utils/EventBus';
-
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Animated,
+  Dimensions,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Text,
+  PanResponder,
+  Switch,
+  ScrollView,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { navigateSafe } from "./navigationRef";
+import i18n, { changeLanguage } from "../i18n";
+import { ThemeContext } from "../context/ThemeContext";
+import { navigationRef } from "./navigationRef";
+import EventBus from "../utils/EventBus";
+import { useNavigation } from "@react-navigation/native";
+import { API_BASE } from "../../api";
 
 type DrawerContextType = {
   openDrawer: () => void;
@@ -19,22 +38,27 @@ const DrawerContext = createContext<DrawerContextType | undefined>(undefined);
 
 export const useDrawer = () => {
   const ctx = useContext(DrawerContext);
-  if (!ctx) throw new Error('useDrawer must be used within AppDrawerProvider');
+  if (!ctx) throw new Error("useDrawer must be used within AppDrawerProvider");
   return ctx;
 };
 
-export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [userName, setUserName] = useState<string>('');
+  const [userName, setUserName] = useState<string>("");
   const { theme, toggleTheme } = useContext(ThemeContext);
-  const darkMode = theme === 'dark';
-  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || 'en');
-  const screenWidth = Dimensions.get('window').width;
-  const drawerWidth = useMemo(() => Math.min(screenWidth * 0.9, 380), [screenWidth]);
+  const darkMode = theme === "dark";
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
+  const screenWidth = Dimensions.get("window").width;
+  const drawerWidth = useMemo(
+    () => Math.min(screenWidth * 0.9, 380),
+    [screenWidth],
+  );
   const translateX = useRef(new Animated.Value(drawerWidth)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [user, setUser] = useState<any>(null);
-
+  const [medications, setMedications] = useState<any[]>([]);
   useEffect(() => {
     Animated.parallel([
       Animated.timing(translateX, {
@@ -53,25 +77,69 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const stored = await AsyncStorage.getItem('user');
+        const stored = await AsyncStorage.getItem("user");
         if (stored) {
           const parsed = JSON.parse(stored);
           setUser(parsed);
-          setUserName(parsed?.name || parsed?.email || '');
+          setUserName(parsed?.name || parsed?.email || "");
         }
-      } catch {
-      }
+      } catch {}
     };
     loadUser();
 
     // Listens for profile updates from ProfileEditScreen
     const handler = (u: any) => {
       setUser(u);
-      setUserName(u?.name || u?.email || '');
+      setUserName(u?.name || u?.email || "");
     };
-    EventBus.on('userUpdated', handler);
-    return () => EventBus.removeListener('userUpdated', handler);
+    EventBus.on("userUpdated", handler);
+    return () => EventBus.removeListener("userUpdated", handler);
   }, []);
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const fetchMedications = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/medications/${user._id}`);
+        const data = await res.json();
+        setMedications(data.medications || []);
+      } catch (err) {
+        console.error("Failed to fetch medications", err);
+        setMedications([]);
+      }
+    };
+
+    fetchMedications();
+  }, [user]);
+  const toggleThemeWithApproval = async () => {
+    const userData = await AsyncStorage.getItem("user");
+    if (!userData) {
+      toggleTheme();
+      return;
+    }
+    const parsedUser = JSON.parse(userData);
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+      );
+      const data = await res.json();
+
+      if (data.isDependent) {
+        const newTheme = theme === "light" ? "dark" : "light";
+        await fetch(`${API_BASE}/api/caregiver/request-theme`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: parsedUser._id, theme: newTheme }),
+        });
+        alert("Theme change request sent to caregiver");
+      } else {
+        toggleTheme();
+      }
+    } catch {
+      toggleTheme(); // fallback
+    }
+  };
 
   const closeDrawer = () => setIsOpen(false);
   const openDrawer = () => setIsOpen(true);
@@ -100,15 +168,14 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
-      navigateSafe('OnboardingScreen');
+      await AsyncStorage.removeItem("user");
+      navigateSafe("OnboardingScreen");
     } catch (e) {
-      
     } finally {
       closeDrawer();
     }
@@ -116,90 +183,102 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const fallbackMed = {
     _id: null,
-    name: 'Sample Medication',
-    dose: '1 tab',
+    name: "Sample Medication",
+    dose: "1 tab",
     schedule: {
-      repeat: 'daily',
-      times: ['08:00'],
+      repeat: "daily",
+      times: ["08:00"],
     },
-    status: 'pending',
+    status: "pending",
     imageUri: null,
   };
 
   const items = [
-    { label: 'Dashboard', icon: 'home-outline', route: 'HomeScreen' },
-    { label: 'Scan Prescription', icon: 'scan-outline', route: 'ScanPrescriptionScreen' },
+    { label: "Dashboard", icon: "home-outline", route: "HomeScreen" },
     {
-      label: 'Medications',
-      icon: 'medkit-outline',
-      route: 'MedicationDetailScreen',
-      params: { med: fallbackMed, onUpdate: () => {} },
+      label: "Scan Prescription",
+      icon: "scan-outline",
+      route: "ScanPrescriptionScreen",
     },
-    { label: 'Profile', icon: 'person-outline', route: 'ProfileEditScreen' },
-    { label: 'Logout', icon: 'log-out-outline', action: handleLogout },
-    {label:'Settings', icon:'settings-outline', route:'SettingsScreen'}
+    {
+      label: "Medications",
+      icon: "medkit-outline",
+      route: "ViewAllMedicines",
+      params: { user },
+    },
+    {
+      label: "View Prescriptions",
+      icon: "document-text-outline",
+      route: "ViewPrescriptionsScreen",
+    },
+    { label: "Profile", icon: "person-outline", route: "ProfileEditScreen" },
+    { label: "Logout", icon: "log-out-outline", action: handleLogout },
+    { label: "Settings", icon: "settings-outline", route: "SettingsScreen" },
   ];
 
   const dynamicStyles = StyleSheet.create({
     panel: {
-      backgroundColor: darkMode ? '#1E1E1E' : '#fff',
+      backgroundColor: darkMode ? "#1E1E1E" : "#fff",
     },
     name: {
-      color: darkMode ? '#F8FAFC' : '#0f172a',
+      color: darkMode ? "#F8FAFC" : "#0f172a",
     },
     subtext: {
-      color: darkMode ? '#94A3B8' : '#64748b',
+      color: darkMode ? "#94A3B8" : "#64748b",
     },
     itemLabel: {
-      color: darkMode ? '#F8FAFC' : '#0f172a',
+      color: darkMode ? "#F8FAFC" : "#0f172a",
     },
     borderColor: {
-      borderBottomColor: darkMode ? '#2D2D2D' : '#e2e8f0',
+      borderBottomColor: darkMode ? "#2D2D2D" : "#e2e8f0",
     },
     sectionTitle: {
-      color: darkMode ? '#94A3B8' : '#64748b',
+      color: darkMode ? "#94A3B8" : "#64748b",
     },
     languageValue: {
-      color: darkMode ? '#1E40AF' : '#0f172a',
+      color: darkMode ? "#1E40AF" : "#0f172a",
     },
     avatar: {
-      backgroundColor: darkMode ? '#2563EB' : '#e0e7ff',
+      backgroundColor: darkMode ? "#2563EB" : "#e0e7ff",
     },
     avatarText: {
-      color: '#fff',
+      color: "#fff",
     },
     iconWrapper: {
-      backgroundColor: darkMode ? '#1E3A8A' : '#eff6ff',
+      backgroundColor: darkMode ? "#1E3A8A" : "#eff6ff",
     },
     languageBadge: {
-      backgroundColor: darkMode ? '#1E3A8A' : '#eff6ff',
+      backgroundColor: darkMode ? "#1E3A8A" : "#eff6ff",
     },
     logoutButton: {
-      backgroundColor: darkMode ? '#7F1D1D' : '#fef2f2',
+      backgroundColor: darkMode ? "#7F1D1D" : "#fef2f2",
     },
     logoutText: {
-      color: darkMode ? '#FCA5A5' : '#ef4444',
+      color: darkMode ? "#FCA5A5" : "#ef4444",
     },
   });
 
-  const currentRoute = navigationRef.isReady() ? navigationRef.getCurrentRoute()?.name : undefined;
+  const currentRoute = navigationRef.isReady()
+    ? navigationRef.getCurrentRoute()?.name
+    : undefined;
 
-  const authScreens = ['LoginScreen', 'SignUpScreen'];
+  const authScreens = ["LoginScreen", "SignUpScreen"];
 
-  const isAuthScreen = currentRoute ? authScreens.includes(currentRoute) : false;
+  const isAuthScreen = currentRoute
+    ? authScreens.includes(currentRoute)
+    : false;
 
   return (
     <DrawerContext.Provider value={{ openDrawer, closeDrawer, toggleDrawer }}>
       <View style={{ flex: 1 }}>
         {children}
 
-
         <Animated.View
-          pointerEvents={isOpen ? 'auto' : 'none'}
+          pointerEvents={isOpen ? "auto" : "none"}
           style={[
             StyleSheet.absoluteFillObject,
             {
-              backgroundColor: 'rgba(0,0,0,0.35)',
+              backgroundColor: "rgba(0,0,0,0.35)",
               opacity: overlayOpacity,
               zIndex: 999,
             },
@@ -212,7 +291,6 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           />
         </Animated.View>
 
-    
         <Animated.View
           {...panResponder.panHandlers}
           style={[
@@ -222,7 +300,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               width: drawerWidth,
               transform: [{ translateX }],
               right: 0,
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               bottom: 0,
               zIndex: 1000,
@@ -230,18 +308,20 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ]}
         >
           <ScrollView showsVerticalScrollIndicator={false}>
-            
             <View style={styles.topBar}>
-              <TouchableOpacity 
-                onPress={closeDrawer} 
+              <TouchableOpacity
+                onPress={closeDrawer}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 style={styles.closeButtonWrapper}
               >
-                <Ionicons name="close" size={26} color={darkMode ? '#F8FAFC' : '#0f172a'} />
+                <Ionicons
+                  name="close"
+                  size={26}
+                  color={darkMode ? "#F8FAFC" : "#0f172a"}
+                />
               </TouchableOpacity>
             </View>
 
-            
             {!isAuthScreen && (
               <View style={[styles.profileSection, dynamicStyles.borderColor]}>
                 {user?.profileImage ? (
@@ -252,16 +332,19 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 ) : (
                   <View style={[styles.avatar, dynamicStyles.avatar]}>
                     <Text style={[styles.avatarText, dynamicStyles.avatarText]}>
-                      {(userName?.[0] || 'U').toUpperCase()}
+                      {(userName?.[0] || "U").toUpperCase()}
                     </Text>
                   </View>
                 )}
-                <Text style={[styles.name, dynamicStyles.name]}>{userName || 'Welcome'}</Text>
-                <Text style={[styles.subtext, dynamicStyles.subtext]}>Signed in</Text>
+                <Text style={[styles.name, dynamicStyles.name]}>
+                  {userName || "Welcome"}
+                </Text>
+                <Text style={[styles.subtext, dynamicStyles.subtext]}>
+                  Signed in
+                </Text>
               </View>
             )}
 
-            
             {!isAuthScreen && (
               <View style={styles.menuSection}>
                 {items.map((item) => (
@@ -279,32 +362,51 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     }}
                   >
                     <View style={styles.itemLeft}>
-                      <View style={[styles.iconWrapper, dynamicStyles.iconWrapper]}>
-                        <Ionicons name={item.icon as any} size={22} color={darkMode ? '#93C5FD' : '#3B5BFF'} />
+                      <View
+                        style={[styles.iconWrapper, dynamicStyles.iconWrapper]}
+                      >
+                        <Ionicons
+                          name={item.icon as any}
+                          size={22}
+                          color={darkMode ? "#93C5FD" : "#3B5BFF"}
+                        />
                       </View>
-                      <Text style={[styles.itemLabel, dynamicStyles.itemLabel]}>{item.label}</Text>
+                      <Text style={[styles.itemLabel, dynamicStyles.itemLabel]}>
+                        {item.label}
+                      </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={darkMode ? '#475569' : '#94a3b8'} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={darkMode ? "#475569" : "#94a3b8"}
+                    />
                   </TouchableOpacity>
                 ))}
               </View>
             )}
 
-            
             <View style={styles.preferencesSection}>
-              <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>PREFERENCES</Text>
-              
+              <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>
+                PREFERENCES
+              </Text>
+
               <View style={[styles.preferenceRow, dynamicStyles.borderColor]}>
                 <View style={styles.prefLeft}>
                   <View style={[styles.iconWrapper, dynamicStyles.iconWrapper]}>
-                    <Ionicons name="moon-outline" size={22} color={darkMode ? '#93C5FD' : '#3B5BFF'} />
+                    <Ionicons
+                      name="moon-outline"
+                      size={22}
+                      color={darkMode ? "#93C5FD" : "#3B5BFF"}
+                    />
                   </View>
-                  <Text style={[styles.itemLabel, dynamicStyles.itemLabel]}>Dark Mode</Text>
+                  <Text style={[styles.itemLabel, dynamicStyles.itemLabel]}>
+                    Dark Mode
+                  </Text>
                 </View>
                 <Switch
                   value={darkMode}
-                  onValueChange={toggleTheme}
-                  trackColor={{ false: '#d1d5db', true: '#3B5BFF' }}
+                  onValueChange={toggleThemeWithApproval}
+                  trackColor={{ false: "#d1d5db", true: "#3B5BFF" }}
                   thumbColor="#fff"
                   ios_backgroundColor="#d1d5db"
                 />
@@ -313,34 +415,49 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               <TouchableOpacity
                 style={[styles.preferenceRow, dynamicStyles.borderColor]}
                 onPress={async () => {
-                  const current = i18n.language || 'en';
-                  const next = current === 'en' ? 'ur' : 'en';
+                  const current = i18n.language || "en";
+                  const next = current === "en" ? "ur" : "en";
                   await changeLanguage(next);
                   setCurrentLanguage(next);
                 }}
               >
                 <View style={styles.prefLeft}>
                   <View style={[styles.iconWrapper, dynamicStyles.iconWrapper]}>
-                    <Ionicons name="language" size={22} color={darkMode ? '#93C5FD' : '#3B5BFF'} />
+                    <Ionicons
+                      name="language"
+                      size={22}
+                      color={darkMode ? "#93C5FD" : "#3B5BFF"}
+                    />
                   </View>
-                  <Text style={[styles.itemLabel, dynamicStyles.itemLabel]}>Language</Text>
+                  <Text style={[styles.itemLabel, dynamicStyles.itemLabel]}>
+                    Language
+                  </Text>
                 </View>
-                <View style={[styles.languageBadge, dynamicStyles.languageBadge]}>
-                  <Text style={[styles.languageValue, dynamicStyles.languageValue]}>
-                    {(currentLanguage || 'en').toUpperCase()}
+                <View
+                  style={[styles.languageBadge, dynamicStyles.languageBadge]}
+                >
+                  <Text
+                    style={[styles.languageValue, dynamicStyles.languageValue]}
+                  >
+                    {(currentLanguage || "en").toUpperCase()}
                   </Text>
                 </View>
               </TouchableOpacity>
             </View>
 
-            
             {!isAuthScreen && (
               <TouchableOpacity
                 style={[styles.logoutButton, dynamicStyles.logoutButton]}
                 onPress={handleLogout}
               >
-                <Ionicons name="log-out-outline" size={22} color={darkMode ? '#FCA5A5' : '#ef4444'} />
-                <Text style={[styles.logoutText, dynamicStyles.logoutText]}>Logout</Text>
+                <Ionicons
+                  name="log-out-outline"
+                  size={22}
+                  color={darkMode ? "#FCA5A5" : "#ef4444"}
+                />
+                <Text style={[styles.logoutText, dynamicStyles.logoutText]}>
+                  Logout
+                </Text>
               </TouchableOpacity>
             )}
           </ScrollView>
@@ -352,25 +469,29 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
   topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     marginBottom: 12,
   },
   closeButtonWrapper: {
     padding: 4,
   },
+  card: { padding: 4 },
+  subText: {
+    padding: 2,
+  },
   profileSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -379,8 +500,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   avatarImage: {
@@ -389,43 +510,43 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginBottom: 12,
   },
-  avatarText: { 
-    fontWeight: '700', 
-    fontSize: 24 
+  avatarText: {
+    fontWeight: "700",
+    fontSize: 24,
   },
-  name: { 
-    fontSize: 18, 
-    fontWeight: '700',
+  name: {
+    fontSize: 18,
+    fontWeight: "700",
     marginBottom: 2,
   },
-  subtext: { 
+  subtext: {
     fontSize: 13,
   },
   menuSection: {
     marginBottom: 16,
   },
   item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  itemLeft: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 12 
+  itemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   iconWrapper: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  itemLabel: { 
+  itemLabel: {
     fontSize: 15,
-    fontWeight: '600' 
+    fontWeight: "600",
   },
   preferencesSection: {
     marginTop: 4,
@@ -433,20 +554,20 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   preferenceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   prefLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   languageBadge: {
@@ -455,13 +576,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   languageValue: {
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 12,
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
     borderRadius: 10,
@@ -469,6 +590,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -21,7 +21,7 @@ import { SettingsContext } from "../context/SettingsContext";
 const CAREGIVER_KEY = "isCaregiver";
 
 const SettingsScreen = () => {
-  const { theme } = useContext(ThemeContext);
+  const { theme, toggleTheme, applyTheme } = useContext(ThemeContext);
   const { voiceReminderEnabled, toggleVoiceReminder } =
     useContext(SettingsContext);
   const darkMode = theme === "dark";
@@ -30,7 +30,9 @@ const SettingsScreen = () => {
   const [caregiverEnabled, setCaregiverEnabled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+  const [isDependent, setIsDependent] = useState(false);
   const navigation = useNavigation<any>();
+
   /** Load user + caregiver mode */
   const loadData = useCallback(async () => {
     try {
@@ -40,15 +42,14 @@ const SettingsScreen = () => {
       const caregiver = await AsyncStorage.getItem(CAREGIVER_KEY);
 
       if (caregiver === null) {
-        // First app launch → OFF
-        setCaregiverEnabled(false);
+        setCaregiverEnabled(false); // First app launch = OFF
         await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(false));
       } else {
         setCaregiverEnabled(JSON.parse(caregiver));
       }
     } catch (err) {
       console.error("Error loading settings:", err);
-      setCaregiverEnabled(false); // fallback to OFF
+      setCaregiverEnabled(false);
     }
   }, []);
 
@@ -66,6 +67,21 @@ const SettingsScreen = () => {
       i18n.off("languageChanged", langHandler);
     };
   }, [loadData]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const checkThemeApproval = async () => {
+      const res = await fetch(
+        `${API_BASE}/api/caregiver/my-theme-requests/${user._id}`,
+      );
+      const data = await res.json();
+      const approved = data.find((r: any) => r.status === "approved");
+      if (approved) applyTheme(approved.requestedTheme);
+    };
+
+    checkThemeApproval();
+  }, [user]);
 
   const toggleCaregiver = async () => {
     const newValue = !caregiverEnabled;
@@ -103,15 +119,46 @@ const SettingsScreen = () => {
     }
   };
 
+  const toggleThemeWithApproval = async () => {
+    if (!user?._id) {
+      console.log("User not loaded");
+      return;
+    }
+
+    const newTheme = theme === "light" ? "dark" : "light";
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/caregiver/is-dependent/${user._id}`,
+      );
+      const data = await res.json();
+
+      setIsDependent(data.isDependent);
+
+      if (data.isDependent) {
+        await fetch(`${API_BASE}/api/caregiver/request-theme`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user._id, theme: newTheme }),
+        });
+        alert("Theme change request sent to caregiver");
+      } else {
+        toggleTheme();
+      }
+    } catch (err) {
+      console.error("Theme toggle failed:", err);
+    }
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, paddingTop: 20 }}>
-      <ScrollView
-        style={[
-          styles.container,
-          { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
-        ]}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
+    <ScrollView
+      style={[
+        styles.container,
+        { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
+      ]}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
+      <SafeAreaView style={{ flex: 1, paddingTop: 20 }}>
         {/* Caregiver Banner */}
         {caregiverEnabled && (
           <View style={styles.banner}>
@@ -159,6 +206,20 @@ const SettingsScreen = () => {
             </Text>
             <Text style={styles.subText}>{t("settings.languageDesc")}</Text>
           </TouchableOpacity>
+
+          <View style={styles.cardRow}>
+            <Text style={{ color: darkMode ? "#fff" : "#000" }}>Dark Mode</Text>
+
+            <Switch
+              value={darkMode}
+              onValueChange={
+                caregiverEnabled
+                  ? toggleThemeWithApproval // dependent request
+                  : toggleTheme // normal user
+              }
+              disabled={caregiverEnabled && isDependent}
+            />
+          </View>
 
           <TouchableOpacity style={styles.card}>
             <Text style={{ color: darkMode ? "#fff" : "#000" }}>
@@ -246,8 +307,8 @@ const SettingsScreen = () => {
             {t("common.logout")}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScrollView>
   );
 };
 
@@ -285,6 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 15,
     borderRadius: 12,
+    marginBottom: 10,
   },
 
   primaryButton: {
