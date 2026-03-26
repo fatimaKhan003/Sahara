@@ -20,8 +20,6 @@ import { ThemeContext } from "../context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
-// ── TYPES ─────────────────────────────────────────────────────
 type OcrMedicine = {
   name: string;
   dose: string;
@@ -53,8 +51,6 @@ type MedEntry = {
   }[];
   showPickerIndex: number;
 };
-
-// ── HELPERS ───────────────────────────────────────────────────
 const mapFrequencyToRepeat = (times_per_day: string): string => {
   switch (times_per_day) {
     case "Once a day":        return "daily";
@@ -73,7 +69,6 @@ const blankMed = (name = "", dose = "", repeat = "daily"): MedEntry => ({
   showPickerIndex: -1,
 });
 
-// ── COMPONENT ─────────────────────────────────────────────────
 const ConfirmMedicationScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
@@ -81,9 +76,8 @@ const ConfirmMedicationScreen = () => {
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
 
-  const { imageUri, backendImageUri, detectedName, ocrMedicines } = route.params;
+  const { imageUri, backendImageUri, detectedName, ocrMedicines, forDependentId, forDependentName } = route.params;
 
-  // ── INIT MEDS FROM OCR OR FALLBACK ───────────────────────────
   const buildInitialMeds = (): MedEntry[] => {
     if (ocrMedicines && ocrMedicines.length > 0) {
       return ocrMedicines.map((m) =>
@@ -109,7 +103,7 @@ const ConfirmMedicationScreen = () => {
     fetchUser();
   }, []);
 
-  // ── HANDLERS ──────────────────────────────────────────────────
+  
   const updateMed = (index: number, field: string, value: any) => {
     setMeds((prev) => {
       const updated = [...prev];
@@ -142,10 +136,11 @@ const ConfirmMedicationScreen = () => {
 
     try {
       const formData = new FormData();
-      formData.append("userId", user._id);
+      const targetUserId = forDependentId || user._id;
+      formData.append("userId", targetUserId);
       formData.append("medicines", JSON.stringify(validMeds));
 
-      console.log("SENDING DATA:", { userId: user._id, medicines: validMeds });
+      console.log("SENDING DATA:",targetUserId, forDependentName||"self" );
 
       if (imageUri) {
         formData.append("image", {
@@ -180,8 +175,8 @@ const ConfirmMedicationScreen = () => {
         });
 
         Alert.alert(
-          t("common.success") || "Success",
-          t("medication.saveSuccess") || "Medications saved successfully!",
+           "Success",
+          forDependentName? `Medications added for ${forDependentName} successfully!`:"Medications saved successfully!"
         );
         navigation.navigate("HomeScreen");
       } else {
@@ -201,7 +196,6 @@ const ConfirmMedicationScreen = () => {
     }
   };
 
-  // ── STYLES ────────────────────────────────────────────────────
   const dynamicStyles = StyleSheet.create({
     container: {
       flex: 1,
@@ -300,7 +294,6 @@ const ConfirmMedicationScreen = () => {
     },
   });
 
-  // ── HEADER ────────────────────────────────────────────────────
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: t("medication.confirmTitle") || "Confirm Medication Details",
@@ -319,7 +312,7 @@ const ConfirmMedicationScreen = () => {
     });
   }, [navigation, darkMode, dynamicStyles.label.color, t]);
 
-  // ── RENDER ────────────────────────────────────────────────────
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: dynamicStyles.container.backgroundColor }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 50 }} style={dynamicStyles.container}>
@@ -327,7 +320,22 @@ const ConfirmMedicationScreen = () => {
         <Text style={[dynamicStyles.title, { textAlign: "center" }]}>
           {t("medication.reviewTitle") || "Review and Edit Details"}
         </Text>
-
+{forDependentName && (
+  <View style={{
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: darkMode ? "#1a2a3a" : "#e3f2fd",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 16,
+    gap: 8,
+  }}>
+    <Ionicons name="person-outline" size={16} color="#007AFF" />
+    <Text style={{ color: "#007AFF", fontWeight: "600", fontSize: 13 }}>
+      Adding medication for: {forDependentName}
+    </Text>
+  </View>
+)}
         {imageUri ? (
           <Image
             source={{ uri: imageUri }}
@@ -335,7 +343,7 @@ const ConfirmMedicationScreen = () => {
           />
         ) : null}
 
-        {/* OCR auto-fill notice */}
+        
         {ocrMedicines && ocrMedicines.length > 0 && (
           <View style={dynamicStyles.ocrBadge}>
             <Ionicons name="checkmark-circle" size={16} color={darkMode ? "#81c784" : "#2e7d32"} />
@@ -352,7 +360,7 @@ const ConfirmMedicationScreen = () => {
               {t("medication.medicationNumber", { number: idx + 1 }) || `Medication ${idx + 1}`}
             </Text>
 
-            {/* Name */}
+         
             <Text style={dynamicStyles.label}>{t("common.name") || "Name"}</Text>
             <TextInput
               placeholder={t("common.name") || "e.g., Panadol"}
@@ -362,7 +370,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "name", text)}
             />
 
-            {/* Dose */}
+            
             <Text style={dynamicStyles.label}>{t("medication.dose") || "Dose"}</Text>
             <TextInput
               placeholder={t("medication.dosePlaceholder") || "e.g., 500mg"}
@@ -372,7 +380,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "dose", text)}
             />
 
-            {/* Frequency */}
+           
             <Text style={dynamicStyles.label}>{t("medication.frequency") || "Frequency"}</Text>
             <Picker
               selectedValue={med.schedule.repeat}
@@ -387,7 +395,7 @@ const ConfirmMedicationScreen = () => {
               <Picker.Item label="Weekly"             value="weekly" />
             </Picker>
 
-            {/* Times */}
+            
             <Text style={dynamicStyles.label}>{t("medication.timePlaceholder") || "Time"}</Text>
 
             {med.schedule.times.map((time, tIdx) => (
@@ -433,7 +441,7 @@ const ConfirmMedicationScreen = () => {
               <Text style={{ color: "#007AFF" }}>+ Add Time</Text>
             </TouchableOpacity>
 
-            {/* Active Switch */}
+            
             <View style={dynamicStyles.switchContainer}>
               <Text style={dynamicStyles.switchLabel}>
                 {t("medication.active") || "Active Schedule"}
@@ -450,7 +458,7 @@ const ConfirmMedicationScreen = () => {
           </View>
         ))}
 
-        {/* Bottom Buttons */}
+       
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
           <TouchableOpacity onPress={handleAddMore} style={dynamicStyles.secondaryButton}>
             <Text style={dynamicStyles.secondaryButtonText}>
@@ -465,7 +473,7 @@ const ConfirmMedicationScreen = () => {
               <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
             )}
             <Text style={dynamicStyles.primaryButtonText}>
-              {isSaving ? t("common.saving") || "Saving..." : t("common.done") || "Done"}
+              {isSaving ? "Saving...": "Done"}
             </Text>
           </TouchableOpacity>
         </View>
