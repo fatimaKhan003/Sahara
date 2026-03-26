@@ -56,11 +56,11 @@ useEffect(() => {
     () =>
       medParam || {
         _id: null,
-        name: t("medication.sampleName") || "Sample Medication",
-        dose: t("medication.sampleDose") || "1 tab",
+        name: "Sample Medication",
+        dose:  "1 tab",
         schedule: {
-          repeat: t("medication.schedule.sampleRepeat") || "daily",
-          times: [t("medication.schedule.sampleTime") || "08:00"],
+          repeat: "daily",
+          times: ["08:00"],
         },
         imageUri: null,
       },
@@ -83,8 +83,8 @@ useEffect(() => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        t("scan.permissionRequired") || "Permission Required",
-        t("scan.galleryPermission") || "Please grant gallery permission.",
+        "Permission Required",
+        "Please grant gallery permission.",
       );
       return;
     }
@@ -101,7 +101,7 @@ useEffect(() => {
     }
   };
 
-  // HELPER FUNCTIONS
+  
   const removeTime = (index: number) => {
     const updated = schedule.times.filter((_, i) => i !== index);
     setSchedule({ ...schedule, times: updated });
@@ -110,8 +110,8 @@ useEffect(() => {
   const updateMedication = async () => {
     if (!med?._id) {
       Alert.alert(
-        t("common.info") || "Info",
-        t("medication.updateError") || "Update not available for this entry.",
+        "Info",
+         "Update not available for this entry.",
       );
       return;
     }
@@ -143,14 +143,14 @@ useEffect(() => {
       if (onUpdate) onUpdate(updated);
 
       Alert.alert(
-        t("common.success") || "Success",
-        t("medication.updateSuccess") || "Medication updated successfully!",
-        [{ text: t("common.ok") || "OK", onPress: () => navigation.goBack() }],
+        "Success",
+        "Medication updated successfully!",
+        [{ text:"OK", onPress: () => navigation.goBack() }],
       );
     } catch (err) {
       Alert.alert(
-        t("common.error") || "Error",
-        t("medication.updateError") || "Failed to update medication.",
+        "Error",
+        "Failed to update medication.",
       );
       console.error(err);
     } finally {
@@ -175,7 +175,7 @@ useEffect(() => {
       onPress: async () => {
         try {
           if (isDependent) {
-            // ✅ Send delete request to caregiver
+            
             const userData = await AsyncStorage.getItem("user");
             const parsedUser = JSON.parse(userData || "{}");
             await fetch(`${API_BASE}/api/medications/request-delete`, {
@@ -187,7 +187,7 @@ useEffect(() => {
               { text: "OK", onPress: () => navigation.goBack() },
             ]);
           } else {
-            // ✅ Direct delete
+          
             await fetch(`${API_BASE}/api/medications/${med._id}`, { method: "DELETE" });
             await cancelMedicationNotifications(med._id);
             if (onUpdate) onUpdate(null);
@@ -210,7 +210,7 @@ useEffect(() => {
       paddingHorizontal: 20,
       backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
     },
-
+ 
     card: {
       backgroundColor: darkMode ? "#2C2C2C" : "#fff",
       borderRadius: 15,
@@ -315,7 +315,7 @@ useEffect(() => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: t("medication.detailsTitle") || "Medication Details",
+      headerTitle: "Medication Details",
       headerStyle: {
         backgroundColor: dynamicStyles.container.backgroundColor,
         shadowOpacity: 0,
@@ -355,12 +355,16 @@ useEffect(() => {
   }, [navigation, darkMode, loading, name, dose, schedule, imageUri, t]);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: dynamicStyles.container.backgroundColor,
-      }}
-    >
+   <SafeAreaView style={{flex: 1, backgroundColor: "#F2F2F2"}}>
+   <View style={{flexDirection: "row", alignItems: "center", padding: 15, backgroundColor: "#c9d0d7", borderBottomWidth: 1, borderBottomColor: "#ddd" }}>
+   <TouchableOpacity onPress={()=> navigation.goBack()} style={{marginRight: 10}}>
+     <Ionicons name="arrow-back" size={26} color="#3c6fa5"/>
+   </TouchableOpacity>
+   <Text style={{
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1256DB',}}>Caregiver Requests</Text>
+   </View>
       <ScrollView
         style={dynamicStyles.container}
         contentContainerStyle={{ paddingBottom: 30 }}
@@ -379,12 +383,12 @@ useEffect(() => {
             style={dynamicStyles.medImage}
           />
           <Text style={dynamicStyles.changeImageText}>
-            {t("medication.changeImage") || "Change Image"}
+            {"Change Image"}
           </Text>
         </TouchableOpacity>
 
         <View style={dynamicStyles.card}>
-          <Text style={dynamicStyles.label}>{t("common.name") || "Name"}</Text>
+          <Text style={dynamicStyles.label}>{"Name"}</Text>
           <TextInput
             style={dynamicStyles.input}
             value={name}
@@ -393,7 +397,7 @@ useEffect(() => {
           />
 
           <Text style={dynamicStyles.label}>
-            {t("medication.dose") || "Dose"}
+            {"Dose"}
           </Text>
           <TextInput
             style={dynamicStyles.input}
@@ -403,7 +407,7 @@ useEffect(() => {
           />
 
           <Text style={dynamicStyles.label}>
-            {t("medication.frequency") || "Frequency"}
+            {"Frequency"}
           </Text>
           <Picker
             selectedValue={schedule.repeat}
@@ -418,7 +422,7 @@ useEffect(() => {
           </Picker>
 
           <Text style={dynamicStyles.label}>
-            {t("medication.time") || "Times"}
+            {"Times"}
           </Text>
 
           {schedule.times.map((time, tIdx) => (
@@ -527,8 +531,8 @@ useEffect(() => {
             )}
             <Text style={dynamicStyles.updateButtonText}>
               {loading
-                ? t("common.saving") || "Saving..."
-                : t("medication.updateMedication") || "Update Medication"}
+                ? "Saving..."
+                : "Update Medication"}
             </Text>
           </TouchableOpacity>
 
@@ -538,7 +542,7 @@ useEffect(() => {
           >
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
             <Text style={dynamicStyles.deleteButtonText}>
-              {t("common.delete") || "Delete Medication"}
+              {"Delete Medication"}
             </Text>
           </TouchableOpacity>
         </View>
