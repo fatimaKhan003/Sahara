@@ -83,6 +83,7 @@ const EditMedicationRequestScreen = () => {
   return (
 
    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
+  
   <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
     <Ionicons name="arrow-back" size={20} color="#fff" />
   </TouchableOpacity>
