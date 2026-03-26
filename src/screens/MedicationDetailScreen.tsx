@@ -363,7 +363,7 @@ useEffect(() => {
    <Text style={{
     fontSize: 20,
     fontWeight: '700',
-    color: '#1256DB',}}>Caregiver Requests</Text>
+    color: '#1256DB',}}>Medication Details</Text>
    </View>
       <ScrollView
         style={dynamicStyles.container}
