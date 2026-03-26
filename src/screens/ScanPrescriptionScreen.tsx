@@ -7,5 +7,5 @@ secondaryBtn: {
   padding: 14,
   borderRadius: 12,
   gap: 8,
-  backgroundColor: '#F5F9FF', // 👈 subtle fill
+  backgroundColor: '#F5F9FF'
 },
