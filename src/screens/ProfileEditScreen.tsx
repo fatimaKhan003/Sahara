@@ -125,11 +125,11 @@ const ProfileEditScreen = () => {
       EventBus.emit('userUpdated', updatedUser);
       console.log('Emitted userUpdated event:', updatedUser);
 
-      Alert.alert(t('common.success') || 'Success', t('profile.saved') || 'Profile updated successfully!');
+      Alert.alert('Success', 'Profile updated successfully!');
       navigation.goBack();
     } catch (error: any) {
       console.error('Save Profile Error:', error);
-      Alert.alert(t('common.error') || 'Error', error.message || t('profile.saveError') || 'An error occurred while saving profile.');
+      Alert.alert('Error', error.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
     }
@@ -139,7 +139,7 @@ const ProfileEditScreen = () => {
   const handleChangeProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('scan.permissionRequired'), t('scan.galleryPermission'));
+      Alert.alert('Permission required', 'Allow access to your gallery');
       return;
     }
 
@@ -219,7 +219,7 @@ const ProfileEditScreen = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
      
-      headerTitle: t('profile.editProfile') || 'Edit Profile', 
+      headerTitle: 'Edit Profile', 
       headerStyle: { backgroundColor: dynamicStyles.container.backgroundColor },
       headerTintColor: dynamicStyles.text.color,
       headerLeft: () => (
@@ -255,11 +255,11 @@ const ProfileEditScreen = () => {
         </View>
 
         
-        <Text style={dynamicStyles.label}>{t('common.name') || 'Name'}</Text> 
+        <Text style={dynamicStyles.label}>Name</Text> 
         <View style={dynamicStyles.inputWrapper}>
           <TextInput
             
-            placeholder={t('profile.enterName') || 'Enter your name'} 
+            placeholder="Enter your name"
             placeholderTextColor={darkMode ? '#888' : '#999'}
             style={[dynamicStyles.input, (containsUrdu(name)) && styles.urduInputStyle]}
             value={name}
@@ -269,7 +269,7 @@ const ProfileEditScreen = () => {
         </View>
 
         
-        <Text style={dynamicStyles.label}>{t('common.email') || 'Email'}</Text> 
+        <Text style={dynamicStyles.label}>Email</Text> 
         <View style={[dynamicStyles.inputWrapper, { borderColor: darkMode ? '#333' : '#eee', backgroundColor: darkMode ? '#3A3A3A' : '#f8f8f8' }]}>
           <TextInput
             placeholder={user?.email || 'N/A'}
@@ -283,11 +283,11 @@ const ProfileEditScreen = () => {
         </View>
 
         
-        <Text style={dynamicStyles.label}>{t('common.phone') || 'Phone'}</Text> 
+        <Text style={dynamicStyles.label}>Phone</Text> 
         <View style={dynamicStyles.inputWrapper}>
           <TextInput
             
-            placeholder={t('profile.enterPhone') || 'Enter phone number'} 
+            placeholder="Enter phone number" 
             placeholderTextColor={darkMode ? '#888' : '#999'}
             style={dynamicStyles.input}
             keyboardType="phone-pad"
@@ -309,7 +309,7 @@ const ProfileEditScreen = () => {
           )}
           <Text style={dynamicStyles.saveButtonText}>
             
-            {isSaving ? (t('common.saving') || 'Saving...') : (t('profile.saveChanges') || 'Save Changes')} 
+            {isSaving ? 'Saving...' : 'Save Changes'} 
           </Text>
         </TouchableOpacity>
 
