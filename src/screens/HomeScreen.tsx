@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo, useContext, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useContext,
+  useCallback,
+} from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   StyleSheet,
@@ -22,6 +28,10 @@ import { API_BASE } from "../../api";
 import { containsUrdu } from "../utils/textUtils";
 import { ThemeContext } from "../context/ThemeContext";
 import EventBus from "../utils/EventBus";
+import {
+  cancelMedicationNotifications,
+  scheduleMedicationNotifications,
+} from "../services/notifications";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -37,8 +47,10 @@ const HomeScreen = () => {
   const [medications, setMedications] = useState<any[]>([]);
   const [dependentsMeds, setDependentsMeds] = useState<any[]>([]);
 
-  const [dashboardMode, setDashboardMode] = useState<"personal" | "caregiver">("personal");
-const [isCaregiver, setIsCaregiver] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState<"personal" | "caregiver">(
+    "personal",
+  );
+  const [isCaregiver, setIsCaregiver] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTab, setSelectedTab] = useState("all");
@@ -51,7 +63,9 @@ const [isCaregiver, setIsCaregiver] = useState(false);
     return new Date(d.setDate(diff));
   };
 
-  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date()));
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    getStartOfWeek(new Date()),
+  );
 
   const days = [
     t("home.days.monday"),
@@ -71,7 +85,10 @@ const [isCaregiver, setIsCaregiver] = useState(false);
     });
   };
 
-  const weekDates = useMemo(() => getWeekDates(currentWeekStart), [currentWeekStart]);
+  const weekDates = useMemo(
+    () => getWeekDates(currentWeekStart),
+    [currentWeekStart],
+  );
 
   const goToPrevWeek = () => {
     const newDate = new Date(currentWeekStart);
@@ -85,7 +102,18 @@ const [isCaregiver, setIsCaregiver] = useState(false);
     setCurrentWeekStart(newDate);
   };
 
-  // ✅ FETCH USER + MODE + MEDS
+  function getClosestLog(doseLogs) {
+    const now = new Date();
+
+    return doseLogs.reduce((closest, current) => {
+      const currentDiff = Math.abs(new Date(current.scheduledAt) - now);
+      const closestDiff = Math.abs(new Date(closest.scheduledAt) - now);
+
+      return currentDiff < closestDiff ? current : closest;
+    });
+  }
+
+  // FETCH USER + MODE + MEDS
   const fetchUserData = useCallback(async () => {
     try {
       const userData = await AsyncStorage.getItem("user");
@@ -96,25 +124,50 @@ const [isCaregiver, setIsCaregiver] = useState(false);
 
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`);
-    const caregiverData = await caregiverRes.json();
-    setIsCaregiver(caregiverData.isCaregiver);
+
+      // SYNC MISSED DOSES
+      await fetch(`${API_BASE}/api/medications/sync-missed/${parsedUser._id}`, {
+        method: "POST",
+      });
+
+      // CAREGIVER
+      const caregiverRes = await fetch(
+        `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
+      );
+      const caregiverData = await caregiverRes.json();
+      setIsCaregiver(caregiverData.isCaregiver);
       const storedMode = await AsyncStorage.getItem("dashboardMode");
-      if (storedMode === "caregiver"&& caregiverData.isCaregiver) {setDashboardMode("caregiver");}
-      else
-      {
+      if (storedMode === "caregiver" && caregiverData.isCaregiver) {
+        setDashboardMode("caregiver");
+      } else {
         setDashboardMode("personal");
       }
 
       if (storedMode === "caregiver" && caregiverData.isCaregiver) {
-      const res = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/dependents-meds`);
-      const data = await res.json();
-      setDependentsMeds(Array.isArray(data) ? data : []);
-    } else {
-      const response = await fetch(`${API_BASE}/api/medications/${parsedUser._id}`);
-      const meds = await response.json();
-      setMedications(Array.isArray(meds) ? meds : []);
-    }
+        const res = await fetch(
+          `${API_BASE}/api/caregiver/${parsedUser._id}/dependents-meds`,
+        );
+        const data = await res.json();
+        const dependents = Array.isArray(data) ? data : [];
+
+        // MARK EXPIRED DOSES FOR EACH DEPENDENT
+        await Promise.all(
+          dependents.map((med) =>
+            fetch(`${API_BASE}/api/medications/expire-doses/${med.user}`, {
+              method: "POST",
+            }),
+          ),
+        );
+
+        setDependentsMeds(dependents);
+      } else {
+        const response = await fetch(
+          `${API_BASE}/api/medications/${parsedUser._id}`,
+        );
+        const meds = await response.json();
+        setMedications(Array.isArray(meds) ? meds : []);
+        await scheduleMedicationNotifications(meds);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -136,7 +189,7 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
-    }, [fetchUserData])
+    }, [fetchUserData]),
   );
 
   useEffect(() => {
@@ -145,41 +198,69 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
     return () => i18n.off("languageChanged", updateLanguage);
   }, []);
 
-  const medsToShow = dashboardMode === "personal" ? medications : dependentsMeds;
+  const medsToShow =
+    dashboardMode === "personal" ? medications : dependentsMeds;
 
   const totalCount = medsToShow.length;
-  const takenCount = medsToShow.filter((m) => m.status === "taken").length;
-  const missedCount = medsToShow.filter((m) => m.status === "missed").length;
+  const takenCount = medsToShow.filter((med) => {
+    const closest = getClosestLog(med.doseLogs);
+    return closest?.status === "taken";
+  }).length;
+
+  const missedCount = medsToShow.filter((med) => {
+    const closest = getClosestLog(med.doseLogs);
+    return closest?.status === "missed";
+  }).length;
 
   const filteredMeds = medsToShow.filter((med) => {
-    if (selectedTab === "taken") return med.status === "taken";
-    if (selectedTab === "missed") return med.status === "missed";
-    return true;
+    if (!med.doseLogs?.length) return false;
+
+    const closest = getClosestLog(med.doseLogs);
+
+    if (!closest) return false;
+
+    if (selectedTab === "taken") {
+      return closest.status === "taken";
+    }
+
+    if (selectedTab === "missed") {
+      return closest.status === "missed";
+    }
+
+    return true; // "all" tab
   });
 
-  const updateStatus = async (id: string, status: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/medications/update-status/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+  // const updateStatus = async (id: string, status: string) => {
+  //   try {
+  //     const res = await fetch(
+  //       `${API_BASE}/api/medications/update-status/${id}`,
+  //       {
+  //         method: "PATCH",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ status }),
+  //       },
+  //     );
 
-      const updated = await res.json();
+  //     const updated = await res.json();
 
-      if (dashboardMode === "personal") {
-        setMedications((prev) => prev.map((m) => (m._id === updated._id ? updated : m)));
-      } else {
-        setDependentsMeds((prev) => prev.map((m) => (m._id === updated._id ? updated : m)));
-      }
-    } catch (error) {
-      Alert.alert(t("common.error") || "Error", t("medication.updateError"));
-    }
-  };
+  //     if (dashboardMode === "personal") {
+  //       setMedications((prev) =>
+  //         prev.map((m) => (m._id === updated._id ? updated : m)),
+  //       );
+  //     } else {
+  //       setDependentsMeds((prev) =>
+  //         prev.map((m) => (m._id === updated._id ? updated : m)),
+  //       );
+  //     }
+  //   } catch (error) {
+  //     Alert.alert(t("common.error") || "Error", t("medication.updateError"));
+  //   }
+  // };
 
   const deleteMedication = async (id: string) => {
     try {
       await fetch(`${API_BASE}/api/medications/${id}`, { method: "DELETE" });
+      await cancelMedicationNotifications(id);
       if (dashboardMode === "personal") {
         setMedications((prev) => prev.filter((m) => m._id !== id));
       } else {
@@ -203,11 +284,11 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
         } else {
           if (dashboardMode === "personal") {
             setMedications((prev) =>
-              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m))
+              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m)),
             );
           } else {
             setDependentsMeds((prev) =>
-              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m))
+              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m)),
             );
           }
         }
@@ -216,13 +297,13 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
   };
 
   const toggleDashboard = async () => {
-  if (!isCaregiver) return; // 🚫 block non-caregiver users
+    if (!isCaregiver) return; // 🚫 block non-caregiver users
 
-  const newMode = dashboardMode === "personal" ? "caregiver" : "personal";
-  setDashboardMode(newMode);
-  await AsyncStorage.setItem("dashboardMode", newMode);
-  fetchUserData();
-};
+    const newMode = dashboardMode === "personal" ? "caregiver" : "personal";
+    setDashboardMode(newMode);
+    await AsyncStorage.setItem("dashboardMode", newMode);
+    fetchUserData();
+  };
 
   if (loading) {
     return (
@@ -232,16 +313,37 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
     );
   }
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" }}>
-      <ScrollView style={{ flex: 1, padding: 20 }} contentContainerStyle={{ paddingBottom: 30 }}>
+  const getCurrentScheduledDose = (med) => {
+    const now = new Date();
 
+    // Find a dose within +/- 30 minutes of current time
+    const currentDose = med.doseLogs.find((log) => {
+      const sched = new Date(log.scheduledAt).getTime();
+      const diff = now.getTime() - sched;
+      return diff >= 0 && diff <= 30 * 60 * 1000;
+    });
+
+    return currentDose || null;
+  };
+
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" }}
+    >
+      <ScrollView
+        style={{ flex: 1, padding: 20 }}
+        contentContainerStyle={{ paddingBottom: 30 }}
+      >
         {/* HEADER */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate("ProfileEditScreen")}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ProfileEditScreen")}
+          >
             <Image
               source={{
-                uri: user?.profileImage || "https://cdn-icons-png.flaticon.com/512/147/147144.png",
+                uri:
+                  user?.profileImage ||
+                  "https://cdn-icons-png.flaticon.com/512/147/147144.png",
               }}
               style={styles.avatar}
             />
@@ -255,18 +357,22 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
 
             {/* ✅ DASHBOARD SWITCH */}
             {isCaregiver && (
-  <TouchableOpacity onPress={toggleDashboard}>
-    <Text style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}>
-      {dashboardMode === "personal"
-        ? "Open Caregiver Dashboard"
-        : "Open Personal Dashboard"}
-    </Text>
-  </TouchableOpacity>
-)}
+              <TouchableOpacity onPress={toggleDashboard}>
+                <Text style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}>
+                  {dashboardMode === "personal"
+                    ? "Open Caregiver Dashboard"
+                    : "Open Personal Dashboard"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <TouchableOpacity onPress={openDrawer}>
-            <Ionicons name="menu-outline" size={26} color={darkMode ? "#fff" : "#000"} />
+            <Ionicons
+              name="menu-outline"
+              size={26}
+              color={darkMode ? "#fff" : "#000"}
+            />
           </TouchableOpacity>
         </View>
 
@@ -289,10 +395,14 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
               onPress={() => setSelectedTab(tab.key)}
               style={[
                 styles.tabButton,
-                { backgroundColor: selectedTab === tab.key ? "#007AFF" : "#eee" },
+                {
+                  backgroundColor: selectedTab === tab.key ? "#007AFF" : "#eee",
+                },
               ]}
             >
-              <Text style={{ color: selectedTab === tab.key ? "#fff" : "#000" }}>
+              <Text
+                style={{ color: selectedTab === tab.key ? "#fff" : "#000" }}
+              >
                 {tab.label} ({tab.count})
               </Text>
             </TouchableOpacity>
@@ -304,36 +414,99 @@ const caregiverRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/is
           <Swipeable
             key={med._id}
             renderRightActions={() => (
-              <TouchableOpacity onPress={() => deleteMedication(med._id)} style={styles.deleteBox}>
+              <TouchableOpacity
+                onPress={() => deleteMedication(med._id)}
+                style={styles.deleteBox}
+              >
                 <Ionicons name="trash" size={24} color="#fff" />
               </TouchableOpacity>
             )}
           >
-            <TouchableOpacity style={styles.savedMedContainer} onPress={() => goToDetail(med)}>
+            <TouchableOpacity
+              style={styles.savedMedContainer}
+              onPress={() => goToDetail(med)}
+            >
               {dashboardMode === "caregiver" && (
                 <Text style={styles.dependentName}>{med.dependentName}</Text>
               )}
               <Text style={styles.medName}>{med.name}</Text>
               <Text>{med.dose}</Text>
-              <Text>{med.frequency}</Text>
+              <Text>{med.schedule.repeat}</Text>
 
-              {med.status === "missed" && <Text style={styles.missed}>MISSED</Text>}
+              {(() => {
+                const currentDose = getCurrentScheduledDose(med);
+                return currentDose?.status === "missed" ? (
+                  <Text style={styles.missed}>MISSED</Text>
+                ) : null;
+              })()}
 
-              {med.status !== "taken" && (
-                <TouchableOpacity style={styles.takeButton} onPress={() => updateStatus(med._id, "taken")}>
-                  <Text style={{ color: "#fff" }}>{t("home.take")}</Text>
-                </TouchableOpacity>
-              )}
+              {/* CURRENT PENDING DOSE BUTTON */}
+              {(() => {
+                const currentDose = getCurrentScheduledDose(med);
+
+                let disableButton = false;
+                let buttonLabel = t("home.take");
+
+                if (currentDose) {
+                  const sched = new Date(currentDose.scheduledAt).getTime();
+                  const diffMins = (new Date().getTime() - sched) / 60000;
+
+                  if (currentDose.takenAt) {
+                    disableButton = true;
+                    buttonLabel = t("home.taken");
+                  }
+                }
+
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.takeButton,
+                      disableButton && { opacity: 0.5 },
+                    ]}
+                    disabled={disableButton}
+                    onPress={async () => {
+                      if (!currentDose) return;
+
+                      try {
+                        const res = await fetch(
+                          `${API_BASE}/api/medications/dose-log/${med._id}/${currentDose._id}`,
+                          {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ status: "taken" }),
+                          },
+                        );
+
+                        const updatedMed = await res.json();
+                        setMedications((prev) =>
+                          prev.map((m) =>
+                            m._id === updatedMed._id ? updatedMed : m,
+                          ),
+                        );
+                      } catch (error) {
+                        Alert.alert(
+                          t("common.error") || "Error",
+                          t("medication.updateError"),
+                        );
+                      }
+                    }}
+                  >
+                    <Text style={{ color: "#fff" }}>{buttonLabel}</Text>
+                  </TouchableOpacity>
+                );
+              })()}
             </TouchableOpacity>
           </Swipeable>
         ))}
 
         {/* ADD BUTTON */}
-        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("ScanPrescriptionScreen")}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate("ScanPrescriptionScreen")}
+        >
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -355,7 +528,11 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 
-  tabs: { flexDirection: "row", marginVertical: 20, justifyContent: "space-between" },
+  tabs: {
+    flexDirection: "row",
+    marginVertical: 20,
+    justifyContent: "space-between",
+  },
   tabButton: { padding: 10, borderRadius: 10 },
 
   savedMedContainer: {

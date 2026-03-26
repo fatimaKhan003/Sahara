@@ -118,8 +118,10 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     _id: null,
     name: 'Sample Medication',
     dose: '1 tab',
-    frequency: 'Once daily',
-    time: '08:00 AM',
+    schedule: {
+      repeat: 'daily',
+      times: ['08:00'],
+    },
     status: 'pending',
     imageUri: null,
   };

@@ -41,6 +41,9 @@
             "DEFAULT"
           ]
         }
+      ],
+      "permissions":[
+        "VIBRATE"
       ]
     },
     "web": {
