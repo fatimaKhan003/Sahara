@@ -6,8 +6,8 @@ const medicationRequestSchema = new mongoose.Schema({
   medicines: [{ name: String, dose: String, schedule: Object, isActive: Boolean }],
   status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
   deleteRequested: { type: Boolean, default: false },
-  medicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Medication", default: null }, // ✅ actual med to delete
-  type: { type: String, enum: ["add", "delete"], default: "add" }, // ✅ distinguish request types
+  medicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Medication", default: null }, 
+  type: { type: String, enum: ["add", "delete"], default: "add" }, 
 }, { timestamps: true });
 
 export default mongoose.model("MedicationRequest", medicationRequestSchema);
