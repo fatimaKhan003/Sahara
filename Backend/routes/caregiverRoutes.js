@@ -1,4 +1,3 @@
-// controllers/caregiverController.js
 import Caregiver from "../models/Caregiver.js";
 import User from "../models/User.js"; 
 import express from "express";
@@ -35,7 +34,7 @@ const createCaregiverIfNotExists = async (req, res) => {
 
 const addDependent = async (req, res) => {
   try {
-    console.log("ADD DEPENDENT HIT ✅");
+    console.log("ADD DEPENDENT Pressed");
     console.log("BODY:", req.body);
 
     const { caregiverUserId, email } = req.body;
@@ -62,7 +61,7 @@ const addDependent = async (req, res) => {
 
     res.json({ message: "Dependent added", dependent: dependentUser });
   } catch (err) {
-    console.error("ERROR ❌:", err);
+    console.error("ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -134,7 +133,7 @@ router.post("/request-theme", async (req, res) => {
     console.log("FOUND CAREGIVER:", caregiver);
 
     if (!caregiver) {
-      console.log("❌ No caregiver found");
+      console.log("No caregiver found");
       return res.status(400).json({ message: "No caregiver found" });
     }
 
@@ -144,25 +143,25 @@ router.post("/request-theme", async (req, res) => {
       requestedTheme: theme,
     });
 
-    console.log("✅ REQUEST CREATED:", request);
+    console.log("REQUEST CREATED:", request);
 
     res.json({ message: "Theme change request sent" });
   } catch (err) {
-    console.error("❌ ERROR:", err);
+    console.error("ERROR:", err);
     res.status(500).json({ message: "Error requesting theme change" });
   }
 });
-// GET REQUESTS
+
 router.get("/theme-requests/:caregiverId", async (req, res) => {
   const requests = await ThemeRequest.find({
     caregiver: req.params.caregiverId,
     status: "pending",
-  }).populate("dependent"); // ✅ already correct
+  }).populate("dependent");
 
   res.json(requests);
 });
 
-// APPROVE
+
 router.post("/approve-theme/:requestId", async (req, res) => {
   const request = await ThemeRequest.findById(req.params.requestId);
 
@@ -176,7 +175,7 @@ router.post("/approve-theme/:requestId", async (req, res) => {
   });
 });
 
-// REJECT
+
 router.post("/reject-theme/:requestId", async (req, res) => {
   const request = await ThemeRequest.findById(req.params.requestId);
 
@@ -196,12 +195,12 @@ router.get("/is-dependent/:userId", async (req, res) => {
     res.status(500).json({ message: "Error checking dependent" });
   }
 });
-// GET THEME REQUESTS FOR DEPENDENT
+
 router.get("/my-theme-requests/:userId", async (req, res) => {
   try {
     const requests = await ThemeRequest.find({
       dependent: req.params.userId,
-    }).populate("dependent"); // ✅ ADD THIS
+    }).populate("dependent"); 
 
     res.json(requests);
   } catch (err) {
