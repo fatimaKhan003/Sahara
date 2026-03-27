@@ -142,9 +142,8 @@ export default function ScanPrescriptionScreen() {
 
       if (!data.medicines || data.medicines.length === 0) {
         Alert.alert(
-          t("scan.noMedsFound") || "No medications found",
-          t("scan.noMedsFoundDesc") ||
-            "Could not detect any medications. You can enter them manually.",
+          'No medications found',
+          'Could not detect any medications. You can enter them manually.',,
         );
       }
 
@@ -159,9 +158,8 @@ export default function ScanPrescriptionScreen() {
     } catch (err) {
       console.error("OCR failed:", err);
       Alert.alert(
-        t("common.error") || "Error",
-        t("scan.ocrError") ||
-          "Failed to process image. Please try again or enter manually.",
+        'Error',
+        'Failed to process image. Please try again or enter manually.',,
       );
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,

@@ -78,14 +78,12 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
 
     const medsArray = JSON.parse(medicines);
 
-    // CHECK IF USER IS A DEPENDENT (HAS A CAREGIVER)
     console.log("Checking caregiver for user:", userId);
     const caregiver = await Caregiver.findOne({
       dependents: userId,
     });
     console.log("Caregiver found:", caregiver);
 
-    // CASE 1: HAS CAREGIVER so CREATE REQUEST
     if (caregiver) {
       await MedicationRequest.create({
         dependent: userId,
@@ -102,7 +100,6 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
       });
     }
 
-    // CASE 2: NO CAREGIVER so NORMAL FLOW
     const savedMeds = await Medication.insertMany(
       medsArray.map((med) => {
         if (
@@ -271,14 +268,12 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
       return res.status(404).json({ message: "Medication not found" });
     }
 
-    // Update schedule if provided
     if (schedule) {
       let parsedSchedule =
         typeof schedule === "string" ? JSON.parse(schedule) : schedule;
 
       updateData.schedule = parsedSchedule;
 
-      // Keep all taken logs
       const takenLogs = med.doseLogs.filter((log) => log.status === "taken");
       const newPendingLogs = generateDoseLogs(parsedSchedule.times, 7);
       updateData.doseLogs = [...takenLogs, ...newPendingLogs];
@@ -342,7 +337,6 @@ router.patch("/mark-notification/:medId/:logId", async (req, res) => {
 });
 
 //--------CAREGIVER/DEPENDENT REQUESTS
-// 1. GET PENDING REQUESTS (for caregiver)
 router.get("/requests/:caregiverId", async (req, res) => {
   try {
     const requests = await MedicationRequest.find({
@@ -355,7 +349,7 @@ router.get("/requests/:caregiverId", async (req, res) => {
     res.status(500).json({ message: "Error fetching requests" });
   }
 });
-// 2. APPROVE REQUEST
+
 router.post("/approve/:requestId", async (req, res) => {
   try {
     const request = await MedicationRequest.findById(req.params.requestId);
@@ -364,7 +358,6 @@ router.post("/approve/:requestId", async (req, res) => {
       return res.status(404).json({ message: "Not found" });
     }
 
-    // CREATE MEDICATIONS (WITH DOSE LOGS)
     const updatedMeds = req.body.medicines || request.medicines;
     const meds = updatedMeds.map((m) => {
       const doseLogs = generateDoseLogs(m.schedule.times || [], 7);
@@ -391,7 +384,6 @@ router.post("/approve/:requestId", async (req, res) => {
   }
 });
 
-// 3. REJECT REQUEST
 router.post("/reject/:requestId", async (req, res) => {
   try {
     const request = await MedicationRequest.findById(req.params.requestId);
@@ -409,7 +401,6 @@ router.post("/reject/:requestId", async (req, res) => {
   }
 });
 
-// DEPENDENT → REQUEST DELETE
 router.post("/request-delete", async (req, res) => {
   try {
     const { userId, medicationId } = req.body;
@@ -420,17 +411,16 @@ router.post("/request-delete", async (req, res) => {
         .json({ message: "Missing userId or medicationId" });
     }
 
-    // Find caregiver for this dependent
+    // To find caregiver for this dependent
     const caregiver = await Caregiver.findOne({ dependents: userId });
     if (!caregiver) {
-      // No caregiver so delete directly
       await Medication.findByIdAndDelete(medicationId);
       return res
         .status(200)
         .json({ message: "Medication deleted directly (no caregiver)" });
     }
 
-    // Check if a pending delete request already exists
+    // Checking if a pending delete request already exists
     const existing = await MedicationRequest.findOne({
       dependent: userId,
       medicationId,
@@ -443,7 +433,7 @@ router.post("/request-delete", async (req, res) => {
         .json({ message: "Delete request already pending" });
     }
 
-    // Create delete request
+    // Creating delete request
     await MedicationRequest.create({
       dependent: userId,
       caregiver: caregiver.user,
@@ -462,7 +452,7 @@ router.post("/request-delete", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-// APPROVE DELETE
+
 router.post("/approve-delete", async (req, res) => {
   try {
     const { requestId } = req.body;
@@ -470,7 +460,6 @@ router.post("/approve-delete", async (req, res) => {
     const request = await MedicationRequest.findById(requestId);
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    // Delete the actual medication
     await Medication.findByIdAndDelete(request.medicationId);
 
     request.status = "approved";
@@ -483,7 +472,6 @@ router.post("/approve-delete", async (req, res) => {
   }
 });
 
-// REJECT DELETE
 router.post("/reject-delete", async (req, res) => {
   try {
     const { requestId } = req.body;
@@ -500,7 +488,7 @@ router.post("/reject-delete", async (req, res) => {
     res.status(500).json({ message: "Error rejecting delete" });
   }
 });
-// GET DELETE REQUESTS for caregiver
+
 router.get("/delete-requests/:caregiverId", async (req, res) => {
   try {
     const requests = await MedicationRequest.find({

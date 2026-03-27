@@ -225,6 +225,32 @@ const SettingsScreen = () => {
       contentContainerStyle={{ paddingBottom: 40 }}
     >
       <SafeAreaView style={{ flex: 1, paddingTop: 20 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            padding: 15,
+            backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+            borderBottomWidth: 0.1,
+            borderBottomColor: "#ddd",
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ marginRight: 10 }}
+          >
+            <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
+          </TouchableOpacity>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "700",
+              color: "#1256DB",
+            }}
+          >
+            Settings
+          </Text>
+        </View>
         {/* Caregiver Banner */}
         {caregiverEnabled && (
           <View style={styles.banner}>
@@ -325,7 +351,7 @@ const SettingsScreen = () => {
             <Switch
               value={caregiverEnabled}
               onValueChange={toggleCaregiver}
-              disabled={caregiverEnabled && hasDependents}
+              disabled={(caregiverEnabled && hasDependents) || isDependent}
             />
           </View>
 

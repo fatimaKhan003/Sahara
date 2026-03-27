@@ -34,7 +34,7 @@ const ProfileEditScreen = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [profileImage, setProfileImage] = useState("");
-  const [isImageDirty, setIsImageDirty] = useState(false);
+  const [isImageDirty, setIsImageDirty] = useState(false); // Track if image was changed
 
   useEffect(() => {
     const loadUser = async () => {
@@ -253,6 +253,32 @@ const ProfileEditScreen = () => {
 
   return (
     <SafeAreaView style={dynamicStyles.container}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 15,
+          backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+          borderBottomWidth: 0.1,
+          borderBottomColor: "#ddd",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginRight: 10 }}
+        >
+          <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
+        </TouchableOpacity>
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "700",
+            color: "#1256DB",
+          }}
+        >
+          Edit Profile
+        </Text>
+      </View>
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 25, paddingVertical: 30 }}
         showsVerticalScrollIndicator={false}

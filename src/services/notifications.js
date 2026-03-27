@@ -43,22 +43,6 @@ export async function registerForNotifications() {
   return token;
 }
 
-/*--Test notification upon logging in---*/
-export async function sendLocalTestNotification() {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Test Notification",
-      body: "Welcome to Sahara",
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 3,
-      repeats: false,
-    },
-  });
-  // console.log("Scheduled notification");
-}
-
 /*--Notification actions*/
 export async function setupNotificationActions() {
   await Notifications.setNotificationCategoryAsync("MEDICATION_REMINDER", [

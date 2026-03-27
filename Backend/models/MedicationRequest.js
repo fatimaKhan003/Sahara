@@ -25,8 +25,8 @@ const medicationRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Medication",
       default: null,
-    }, // actual med to delete
-    type: { type: String, enum: ["add", "delete"], default: "add" }, // distinguish request types
+    },
+    type: { type: String, enum: ["add", "delete"], default: "add" },
   },
   { timestamps: true },
 );

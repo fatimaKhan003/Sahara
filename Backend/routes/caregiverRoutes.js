@@ -34,7 +34,7 @@ const createCaregiverIfNotExists = async (req, res) => {
 
 const addDependent = async (req, res) => {
   try {
-    console.log("ADD DEPENDENT HIT");
+    console.log("ADD DEPENDENT Pressed");
     console.log("BODY:", req.body);
 
     const { caregiverUserId, email } = req.body;
@@ -153,17 +153,15 @@ router.post("/request-theme", async (req, res) => {
   }
 });
 
-// GET REQUESTS
 router.get("/theme-requests/:caregiverId", async (req, res) => {
   const requests = await ThemeRequest.find({
     caregiver: req.params.caregiverId,
     status: "pending",
-  }).populate("dependent"); // already correct
+  }).populate("dependent");
 
   res.json(requests);
 });
 
-// APPROVE
 router.post("/approve-theme/:requestId", async (req, res) => {
   const request = await ThemeRequest.findById(req.params.requestId);
 
@@ -177,7 +175,6 @@ router.post("/approve-theme/:requestId", async (req, res) => {
   });
 });
 
-// REJECT
 router.post("/reject-theme/:requestId", async (req, res) => {
   const request = await ThemeRequest.findById(req.params.requestId);
 
@@ -232,24 +229,6 @@ router.patch("/mark-theme-applied", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error updating request" });
-  }
-});
-
-router.delete("/delete-theme-request", async (req, res) => {
-  try {
-    const { requestId } = req.query;
-
-    if (!requestId)
-      return res.status(400).json({ message: "requestId required" });
-
-    const deleted = await ThemeRequest.findByIdAndDelete(requestId);
-
-    if (!deleted) return res.status(404).json({ message: "Request not found" });
-
-    res.json({ message: "Theme request deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error deleting request" });
   }
 });
 

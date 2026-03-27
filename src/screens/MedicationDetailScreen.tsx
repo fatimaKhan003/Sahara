@@ -64,11 +64,11 @@ const MedicationDetailScreen = () => {
     () =>
       medParam || {
         _id: null,
-        name: t("medication.sampleName") || "Sample Medication",
-        dose: t("medication.sampleDose") || "1 tab",
+        name: "Sample Medication",
+        dose: "1 tab",
         schedule: {
-          repeat: t("medication.schedule.sampleRepeat") || "daily",
-          times: [t("medication.schedule.sampleTime") || "08:00"],
+          repeat: "daily",
+          times: ["08:00"],
         },
         imageUri: null,
       },
@@ -90,10 +90,7 @@ const MedicationDetailScreen = () => {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        t("scan.permissionRequired") || "Permission Required",
-        t("scan.galleryPermission") || "Please grant gallery permission.",
-      );
+      Alert.alert("Permission Required", "Please grant gallery permission.");
       return;
     }
 
@@ -109,7 +106,6 @@ const MedicationDetailScreen = () => {
     }
   };
 
-  // HELPER FUNCTIONS
   const removeTime = (index: number) => {
     const updated = schedule.times.filter((_, i) => i !== index);
     setSchedule({ ...schedule, times: updated });
@@ -117,10 +113,7 @@ const MedicationDetailScreen = () => {
 
   const updateMedication = async () => {
     if (!med?._id) {
-      Alert.alert(
-        t("common.info") || "Info",
-        t("medication.updateError") || "Update not available for this entry.",
-      );
+      Alert.alert("Info", "Update not available for this entry.");
       return;
     }
     setLoading(true);
@@ -150,16 +143,11 @@ const MedicationDetailScreen = () => {
       const updated = await res.json();
       if (onUpdate) onUpdate(updated);
 
-      Alert.alert(
-        t("common.success") || "Success",
-        t("medication.updateSuccess") || "Medication updated successfully!",
-        [{ text: t("common.ok") || "OK", onPress: () => navigation.goBack() }],
-      );
+      Alert.alert("Success", "Medication updated successfully!", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
     } catch (err) {
-      Alert.alert(
-        t("common.error") || "Error",
-        t("medication.updateError") || "Failed to update medication.",
-      );
+      Alert.alert("Error", "Failed to update medication.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -183,7 +171,6 @@ const MedicationDetailScreen = () => {
         onPress: async () => {
           try {
             if (isDependent) {
-              // Send delete request to caregiver
               const userData = await AsyncStorage.getItem("user");
               const parsedUser = JSON.parse(userData || "{}");
               await fetch(`${API_BASE}/api/medications/request-delete`, {
@@ -200,7 +187,6 @@ const MedicationDetailScreen = () => {
                 [{ text: "OK", onPress: () => navigation.goBack() }],
               );
             } else {
-              // Direct delete
               await fetch(`${API_BASE}/api/medications/${med._id}`, {
                 method: "DELETE",
               });
@@ -330,7 +316,7 @@ const MedicationDetailScreen = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: t("medication.detailsTitle") || "Medication Details",
+      headerTitle: "Medication Details",
       headerStyle: {
         backgroundColor: dynamicStyles.container.backgroundColor,
         shadowOpacity: 0,
@@ -370,12 +356,33 @@ const MedicationDetailScreen = () => {
   }, [navigation, darkMode, loading, name, dose, schedule, imageUri, t]);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: dynamicStyles.container.backgroundColor,
-      }}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F2F2F2" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 15,
+          backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+          borderBottomWidth: 0.1,
+          borderBottomColor: "#ddd",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginRight: 10 }}
+        >
+          <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
+        </TouchableOpacity>
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "700",
+            color: "#1256DB",
+          }}
+        >
+          Medication Details
+        </Text>
+      </View>
       <ScrollView
         style={dynamicStyles.container}
         contentContainerStyle={{ paddingBottom: 30 }}
@@ -393,13 +400,11 @@ const MedicationDetailScreen = () => {
             }}
             style={dynamicStyles.medImage}
           />
-          <Text style={dynamicStyles.changeImageText}>
-            {t("medication.changeImage") || "Change Image"}
-          </Text>
+          <Text style={dynamicStyles.changeImageText}>{"Change Image"}</Text>
         </TouchableOpacity>
 
         <View style={dynamicStyles.card}>
-          <Text style={dynamicStyles.label}>{t("common.name") || "Name"}</Text>
+          <Text style={dynamicStyles.label}>{"Name"}</Text>
           <TextInput
             style={dynamicStyles.input}
             value={name}
@@ -407,9 +412,7 @@ const MedicationDetailScreen = () => {
             placeholderTextColor={darkMode ? "#aaa" : "#888"}
           />
 
-          <Text style={dynamicStyles.label}>
-            {t("medication.dose") || "Dose"}
-          </Text>
+          <Text style={dynamicStyles.label}>{"Dose"}</Text>
           <TextInput
             style={dynamicStyles.input}
             value={dose}
@@ -417,9 +420,7 @@ const MedicationDetailScreen = () => {
             placeholderTextColor={darkMode ? "#aaa" : "#888"}
           />
 
-          <Text style={dynamicStyles.label}>
-            {t("medication.frequency") || "Frequency"}
-          </Text>
+          <Text style={dynamicStyles.label}>{"Frequency"}</Text>
           <Picker
             selectedValue={schedule.repeat}
             onValueChange={(value) =>
@@ -432,9 +433,7 @@ const MedicationDetailScreen = () => {
             <Picker.Item label="Weekly" value="weekly" />
           </Picker>
 
-          <Text style={dynamicStyles.label}>
-            {t("medication.time") || "Times"}
-          </Text>
+          <Text style={dynamicStyles.label}>{"Times"}</Text>
 
           {schedule.times.map((time, tIdx) => (
             <View key={tIdx} style={{ marginBottom: 10 }}>
@@ -541,9 +540,7 @@ const MedicationDetailScreen = () => {
               <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
             )}
             <Text style={dynamicStyles.updateButtonText}>
-              {loading
-                ? t("common.saving") || "Saving..."
-                : t("medication.updateMedication") || "Update Medication"}
+              {loading ? "Saving..." : "Update Medication"}
             </Text>
           </TouchableOpacity>
 
@@ -553,7 +550,7 @@ const MedicationDetailScreen = () => {
           >
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
             <Text style={dynamicStyles.deleteButtonText}>
-              {t("common.delete") || "Delete Medication"}
+              {"Delete Medication"}
             </Text>
           </TouchableOpacity>
         </View>

@@ -7,7 +7,7 @@ const caregiverSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // ONE caregiver profile per user
+      unique: true,
     },
 
     dependents: [
