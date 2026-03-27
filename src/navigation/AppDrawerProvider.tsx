@@ -145,6 +145,8 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("user");
+      setUser(null);
+      setUserName("");
       navigateSafe("OnboardingScreen");
     } catch (e) {
     } finally {
