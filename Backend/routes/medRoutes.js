@@ -1,5 +1,7 @@
 import express from "express";
 import Medication from "../models/Medication.js";
+import Caregiver from "../models/Caregiver.js";
+import MedicationRequest from "../models/MedicationRequest.js";
 import multer from "multer";
 import axios from "axios";
 import FormData from "form-data";
@@ -14,7 +16,7 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
-
+console.log("HIT SAVE MEDICATION ROUTE ");
 const generateDoseLogs = (times, days = 7) => {
   const logs = [];
   const today = new Date();
@@ -75,6 +77,28 @@ router.post("/save-medications", upload.single("image"), async (req, res) => {
     }
 
     const medsArray = JSON.parse(medicines);
+
+    console.log("Checking caregiver for user:", userId);
+    const caregiver = await Caregiver.findOne({
+      dependents: userId,
+    });
+    console.log("Caregiver found:", caregiver);
+
+    if (caregiver) {
+      await MedicationRequest.create({
+        dependent: userId,
+        caregiver: caregiver.user,
+        medicines: medsArray,
+        imageUri: req.file
+          ? `/uploads/${req.file.filename}`
+          : backendImageUri || "",
+      });
+
+      return res.status(200).json({
+        requiresApproval: true,
+        message: "Request sent to caregiver",
+      });
+    }
 
     const savedMeds = await Medication.insertMany(
       medsArray.map((med) => {
@@ -177,22 +201,6 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
-// router.patch("/update-status/:id", async (req, res) => {
-//   try {
-//     const { status } = req.body;
-
-//     const updated = await Medication.findByIdAndUpdate(
-//       req.params.id,
-//       { status },
-//       { new: true },
-//     );
-
-//     res.json(updated);
-//   } catch (error) {
-//     res.status(500).json({ message: "Status update failed" });
-//   }
-// });
-
 router.patch("/dose-log/:medId/:logId", async (req, res) => {
   try {
     const { status } = req.body;
@@ -260,14 +268,12 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
       return res.status(404).json({ message: "Medication not found" });
     }
 
-    // Update schedule if provided
     if (schedule) {
       let parsedSchedule =
         typeof schedule === "string" ? JSON.parse(schedule) : schedule;
 
       updateData.schedule = parsedSchedule;
 
-      // Keep all taken logs
       const takenLogs = med.doseLogs.filter((log) => log.status === "taken");
       const newPendingLogs = generateDoseLogs(parsedSchedule.times, 7);
       updateData.doseLogs = [...takenLogs, ...newPendingLogs];
@@ -327,6 +333,176 @@ router.patch("/mark-notification/:medId/:logId", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to mark notification" });
+  }
+});
+
+//--------CAREGIVER/DEPENDENT REQUESTS
+router.get("/requests/:caregiverId", async (req, res) => {
+  try {
+    const requests = await MedicationRequest.find({
+      caregiver: req.params.caregiverId,
+      status: "pending",
+    }).populate("dependent");
+
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching requests" });
+  }
+});
+
+router.post("/approve/:requestId", async (req, res) => {
+  try {
+    const request = await MedicationRequest.findById(req.params.requestId);
+
+    if (!request) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    const updatedMeds = req.body.medicines || request.medicines;
+    const meds = updatedMeds.map((m) => {
+      const doseLogs = generateDoseLogs(m.schedule.times || [], 7);
+
+      return {
+        user: request.dependent,
+        name: m.name,
+        dose: m.dose,
+        schedule: m.schedule || { times: [] },
+        doseLogs,
+        isActive: m.isActive ?? true,
+        imageUri: request.imageUri || "",
+      };
+    });
+
+    await Medication.insertMany(meds);
+
+    request.status = "approved";
+    await request.save();
+
+    res.json({ message: "Approved & medications added" });
+  } catch (err) {
+    res.status(500).json({ message: "Error approving request" });
+  }
+});
+
+router.post("/reject/:requestId", async (req, res) => {
+  try {
+    const request = await MedicationRequest.findById(req.params.requestId);
+
+    if (!request) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    request.status = "rejected";
+    await request.save();
+
+    res.json({ message: "Request rejected" });
+  } catch (err) {
+    res.status(500).json({ message: "Error rejecting request" });
+  }
+});
+
+router.post("/request-delete", async (req, res) => {
+  try {
+    const { userId, medicationId } = req.body;
+
+    if (!userId || !medicationId) {
+      return res
+        .status(400)
+        .json({ message: "Missing userId or medicationId" });
+    }
+
+    // To find caregiver for this dependent
+    const caregiver = await Caregiver.findOne({ dependents: userId });
+    if (!caregiver) {
+      await Medication.findByIdAndDelete(medicationId);
+      return res
+        .status(200)
+        .json({ message: "Medication deleted directly (no caregiver)" });
+    }
+
+    // Checking if a pending delete request already exists
+    const existing = await MedicationRequest.findOne({
+      dependent: userId,
+      medicationId,
+      type: "delete",
+      status: "pending",
+    });
+    if (existing) {
+      return res
+        .status(200)
+        .json({ message: "Delete request already pending" });
+    }
+
+    // Creating delete request
+    await MedicationRequest.create({
+      dependent: userId,
+      caregiver: caregiver.user,
+      medicines: [],
+      medicationId,
+      type: "delete",
+      status: "pending",
+      deleteRequested: true,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Delete request sent to caregiver" });
+  } catch (err) {
+    console.error("Error requesting delete:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/approve-delete", async (req, res) => {
+  try {
+    const { requestId } = req.body;
+
+    const request = await MedicationRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    await Medication.findByIdAndDelete(request.medicationId);
+
+    request.status = "approved";
+    await request.save();
+
+    res.json({ message: "Medication deletion approved" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error approving delete" });
+  }
+});
+
+router.post("/reject-delete", async (req, res) => {
+  try {
+    const { requestId } = req.body;
+
+    const request = await MedicationRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    request.status = "rejected";
+    await request.save();
+
+    res.json({ message: "Medication deletion rejected" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error rejecting delete" });
+  }
+});
+
+router.get("/delete-requests/:caregiverId", async (req, res) => {
+  try {
+    const requests = await MedicationRequest.find({
+      caregiver: req.params.caregiverId,
+      type: "delete",
+      status: "pending",
+    })
+      .populate("dependent", "name")
+      .populate("medicationId");
+
+    res.json(requests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching delete requests" });
   }
 });
 

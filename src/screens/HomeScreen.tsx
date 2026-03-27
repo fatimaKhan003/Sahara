@@ -36,17 +36,21 @@ import {
 const HomeScreen = () => {
   const { t } = useTranslation();
   const { openDrawer } = useDrawer();
-  const { theme } = useContext(ThemeContext);
+  const { theme, applyTheme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
+  const [selectedDependent, setSelectedDependent] = useState("all");
 
   const navigation = useNavigation<any>();
-
+  const [requestCount, setRequestCount] = useState(0);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [medications, setMedications] = useState<any[]>([]);
   const [dependentsMeds, setDependentsMeds] = useState<any[]>([]);
-
+  const dependentList = useMemo(() => {
+    const names = dependentsMeds.map((m) => m.dependentName);
+    return ["all", ...new Set(names)];
+  }, [dependentsMeds]);
   const [dashboardMode, setDashboardMode] = useState<"personal" | "caregiver">(
     "personal",
   );
@@ -130,6 +134,46 @@ const HomeScreen = () => {
         method: "POST",
       });
 
+      // DEPENDENT
+      try {
+        const depRes = await fetch(
+          `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+        );
+        const depData = await depRes.json();
+
+        if (depData.isDependent) {
+          const themeReqRes = await fetch(
+            `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
+          );
+
+          const approvedRequests = await themeReqRes.json();
+
+          if (approvedRequests.length > 0) {
+            const latest = approvedRequests[0];
+
+            if (
+              latest.status !== "applied" &&
+              latest.requestedTheme !== theme
+            ) {
+              applyTheme(latest.requestedTheme);
+
+              await fetch(`${API_BASE}/api/caregiver/mark-theme-applied`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ requestId: latest._id }),
+              });
+
+              Alert.alert(
+                "Theme Updated",
+                `Your caregiver approved your theme change request`,
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.log("Theme logic error:", err);
+      }
+
       // CAREGIVER
       const caregiverRes = await fetch(
         `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
@@ -141,6 +185,20 @@ const HomeScreen = () => {
         setDashboardMode("caregiver");
       } else {
         setDashboardMode("personal");
+      }
+
+      if (caregiverData.isCaregiver) {
+        const medRes = await fetch(
+          `${API_BASE}/api/medications/requests/${parsedUser._id}`,
+        );
+        const medRequests = await medRes.json();
+
+        const themeRes = await fetch(
+          `${API_BASE}/api/caregiver/theme-requests/${parsedUser._id}`,
+        );
+        const themeRequests = await themeRes.json();
+
+        setRequestCount(medRequests.length + themeRequests.length);
       }
 
       if (storedMode === "caregiver" && caregiverData.isCaregiver) {
@@ -199,7 +257,13 @@ const HomeScreen = () => {
   }, []);
 
   const medsToShow =
-    dashboardMode === "personal" ? medications : dependentsMeds;
+    dashboardMode === "personal"
+      ? medications
+      : dependentsMeds.filter((med) =>
+          selectedDependent === "all"
+            ? true
+            : med.dependentName === selectedDependent,
+        );
 
   const totalCount = medsToShow.length;
   const takenCount = medsToShow.filter((med) => {
@@ -258,17 +322,48 @@ const HomeScreen = () => {
   // };
 
   const deleteMedication = async (id: string) => {
-    try {
-      await fetch(`${API_BASE}/api/medications/${id}`, { method: "DELETE" });
-      await cancelMedicationNotifications(id);
-      if (dashboardMode === "personal") {
-        setMedications((prev) => prev.filter((m) => m._id !== id));
-      } else {
-        setDependentsMeds((prev) => prev.filter((m) => m._id !== id));
-      }
-    } catch (error) {
-      Alert.alert(t("common.error") || "Error", t("medication.deleteError"));
-    }
+    Alert.alert(
+      "Delete Medication",
+      "Are you sure you want to delete this medication?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const res = await fetch(
+                `${API_BASE}/api/caregiver/is-dependent/${user._id}`,
+              );
+              const data = await res.json();
+              if (data.isDependent) {
+                await fetch(`${API_BASE}/api/medications/request-delete`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ medicationId: id, userId: user._id }),
+                });
+                Alert.alert(
+                  "Request Sent",
+                  "Your caregiver will be notified to approve this deletion.",
+                );
+              } else {
+                await fetch(`${API_BASE}/api/medications/${id}`, {
+                  method: "DELETE",
+                });
+                await cancelMedicationNotifications(id);
+                if (dashboardMode === "personal") {
+                  setMedications((prev) => prev.filter((m) => m._id !== id));
+                } else {
+                  setDependentsMeds((prev) => prev.filter((m) => m._id !== id));
+                }
+              }
+            } catch (err) {
+              Alert.alert("Error", "Delete failed. Please try again.");
+            }
+          },
+        },
+      ],
+    );
   };
 
   const goToDetail = (med: any) => {
@@ -297,7 +392,7 @@ const HomeScreen = () => {
   };
 
   const toggleDashboard = async () => {
-    if (!isCaregiver) return; // 🚫 block non-caregiver users
+    if (!isCaregiver) return; // block non-caregiver users
 
     const newMode = dashboardMode === "personal" ? "caregiver" : "personal";
     setDashboardMode(newMode);
@@ -355,15 +450,48 @@ const HomeScreen = () => {
             </Text>
             <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
 
-            {/* ✅ DASHBOARD SWITCH */}
+            {/* DASHBOARD SWITCH */}
             {isCaregiver && (
-              <TouchableOpacity onPress={toggleDashboard}>
-                <Text style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}>
-                  {dashboardMode === "personal"
-                    ? "Open Caregiver Dashboard"
-                    : "Open Personal Dashboard"}
-                </Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity onPress={toggleDashboard}>
+                  <Text
+                    style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}
+                  >
+                    {dashboardMode === "personal"
+                      ? "Open Caregiver Dashboard"
+                      : "Open Personal Dashboard"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("CaregiverRequestsScreen")}
+                  style={{ marginTop: 6 }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons
+                      name="notifications-outline"
+                      size={22}
+                      color="#007AFF"
+                    />
+
+                    {requestCount > 0 && (
+                      <View
+                        style={{
+                          marginLeft: 6,
+                          backgroundColor: "red",
+                          borderRadius: 10,
+                          paddingHorizontal: 6,
+                          paddingVertical: 1,
+                        }}
+                      >
+                        <Text style={{ color: "#fff", fontSize: 11 }}>
+                          {requestCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </>
             )}
           </View>
 
@@ -379,7 +507,35 @@ const HomeScreen = () => {
         {/* CAREGIVER LABEL */}
         {dashboardMode === "caregiver" && (
           <View style={styles.caregiverBadge}>
-            <Text style={{ fontWeight: "700" }}>Dependents’ Medication</Text>
+            <Text style={{ fontWeight: "700", marginBottom: 8 }}>
+              Dependents’ Medication
+            </Text>
+
+            {/* DEPENDENTS DROPDOWN */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {dependentList.map((dep, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => setSelectedDependent(dep)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    backgroundColor:
+                      selectedDependent === dep ? "#007AFF" : "#eee",
+                    borderRadius: 10,
+                    marginRight: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: selectedDependent === dep ? "#fff" : "#000",
+                    }}
+                  >
+                    {dep === "all" ? "All" : dep}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
 
@@ -502,7 +658,30 @@ const HomeScreen = () => {
         {/* ADD BUTTON */}
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate("ScanPrescriptionScreen")}
+          onPress={() => {
+            if (dashboardMode === "caregiver") {
+              if (selectedDependent === "all") {
+                Alert.alert(
+                  "Select a Dependent",
+                  "Please select a specific dependent from the filter above before adding a medication",
+                );
+                return;
+              }
+              const depMed = dependentsMeds.find(
+                (m) => m.dependentName === selectedDependent,
+              );
+              if (!depMed) {
+                Alert.alert("Error", "Could not find dependent information.");
+                return;
+              }
+              navigation.navigate("ScanPrescriptionScreen", {
+                forDependentId: depMed.user._id || depMed.user,
+                forDependentName: selectedDependent,
+              });
+            } else {
+              navigation.navigate("ScanPrescriptionScreen");
+            }
+          }}
         >
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>

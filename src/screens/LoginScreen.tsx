@@ -16,7 +16,7 @@ import { API_BASE } from "../../api";
 import i18n, { changeLanguage } from "../i18n";
 import { useDrawer } from "../navigation/AppDrawerProvider";
 import { ThemeContext } from "../context/ThemeContext";
-import { sendLocalTestNotification } from "../services/notifications";
+import EventBus from "../utils/EventBus";
 
 const LoginScreen = () => {
   const { t } = useTranslation();
@@ -59,7 +59,7 @@ const LoginScreen = () => {
         setEmail("");
         setPassword("");
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
-        await sendLocalTestNotification();
+        EventBus.emit("userUpdated", data.user);
         navigation.replace("HomeScreen");
       } else {
         alert(data.message || t("errors.invalidCredentials"));
