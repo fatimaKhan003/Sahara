@@ -13,7 +13,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { OCR_BASE } from "../../api";
+import { API_BASE, OCR_BASE } from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const getPersonalKey = (userId: string) => `prescriptions_${userId}`;
@@ -123,13 +123,14 @@ export default function ScanPrescriptionScreen() {
 
     try {
       const formData = new FormData();
-      formData.append("file", {
+      formData.append("image", {
         uri: localUri,
         name: "prescription.jpg",
         type: "image/jpeg",
       } as any);
 
-      const resp = await fetch(`${OCR_BASE}/ocr`, {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         headers: { "Content-Type": "multipart/form-data" },
         body: formData,
@@ -143,9 +144,27 @@ export default function ScanPrescriptionScreen() {
       if (!data.medicines || data.medicines.length === 0) {
         Alert.alert(
           'No medications found',
-          'Could not detect any medications. You can enter them manually.',,
+          'Could not detect any medications. You can enter them manually.',
         );
       }
+
+      // const resp = await fetch(`${OCR_BASE}/ocr`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "multipart/form-data" },
+      //   body: formData,
+      // });
+
+      // if (!resp.ok) throw new Error(`OCR server error: ${resp.status}`);
+
+      // const data = await resp.json();
+      // console.log("OCR Response:", JSON.stringify(data, null, 2));
+
+      // if (!data.medicines || data.medicines.length === 0) {
+      //   Alert.alert(
+      //     "No medications found",
+      //     "Could not detect any medications. You can enter them manually.",
+      //   );
+      // }
 
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,
@@ -158,8 +177,8 @@ export default function ScanPrescriptionScreen() {
     } catch (err) {
       console.error("OCR failed:", err);
       Alert.alert(
-        'Error',
-        'Failed to process image. Please try again or enter manually.',,
+        "Error",
+        "Failed to process image. Please try again or enter manually.",
       );
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: localUri,

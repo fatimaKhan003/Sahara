@@ -185,6 +185,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
       route: "ViewPrescriptionsScreen",
     },
     { label: "Profile", icon: "person-outline", route: "ProfileEditScreen" },
+    { label: "Logout", icon: "log-out-outline", action: handleLogout },
     { label: "Settings", icon: "settings-outline", route: "SettingsScreen" },
   ];
 
@@ -362,7 +363,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 PREFERENCES
               </Text>
 
-              {/* <View style={[styles.preferenceRow, dynamicStyles.borderColor]}>
+              <View style={[styles.preferenceRow, dynamicStyles.borderColor]}>
                 <View style={styles.prefLeft}>
                   <View style={[styles.iconWrapper, dynamicStyles.iconWrapper]}>
                     <Ionicons
@@ -377,12 +378,12 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 </View>
                 <Switch
                   value={darkMode}
-                  onValueChange={toggleThemeWithApproval}
+                  onValueChange={toggleTheme}
                   trackColor={{ false: "#d1d5db", true: "#3B5BFF" }}
                   thumbColor="#fff"
                   ios_backgroundColor="#d1d5db"
                 />
-              </View> */}
+              </View>
 
               <TouchableOpacity
                 style={[styles.preferenceRow, dynamicStyles.borderColor]}
