@@ -25,6 +25,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDrawer } from "../navigation/AppDrawerProvider";
 import { API_BASE } from "../../api";
+import DefaultPFP from "../assets/default-pfp.png";
 import { containsUrdu } from "../utils/textUtils";
 import { ThemeContext } from "../context/ThemeContext";
 import EventBus from "../utils/EventBus";
@@ -436,9 +437,11 @@ const HomeScreen = () => {
           >
             <Image
               source={{
-                uri:
-                  user?.profileImage ||
-                  "https://cdn-icons-png.flaticon.com/512/147/147144.png",
+                uri: user?.profileImage
+                  ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
+                      ? `${API_BASE}${user.profileImage}`
+                      : user.profileImage)
+                  : Image.resolveAssetSource(DefaultPFP).uri,
               }}
               style={styles.avatar}
             />

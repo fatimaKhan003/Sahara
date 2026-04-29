@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import DefaultPFP from "../assets/default-pfp.png";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { ThemeContext } from "../context/ThemeContext";
@@ -34,7 +35,7 @@ const ProfileEditScreen = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [profileImage, setProfileImage] = useState("");
-  const [isImageDirty, setIsImageDirty] = useState(false); // Track if image was changed
+  const [isImageDirty, setIsImageDirty] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -46,16 +47,23 @@ const ProfileEditScreen = () => {
 
           setName(parsedUser.name || "");
           setPhone(parsedUser.phone || "");
-          setProfileImage(
-            parsedUser.profileImage ||
-              "https://cdn-icons-png.flaticon.com/512/147/147144.png",
-          );
+          const initialImage = parsedUser.profileImage;
+          if (
+            initialImage &&
+            (initialImage.startsWith("/") || initialImage.startsWith("uploads"))
+          ) {
+            setProfileImage(`${API_BASE}${initialImage}`);
+          } else {
+            setProfileImage(
+              initialImage || Image.resolveAssetSource(DefaultPFP).uri,
+            );
+          }
         }
       } catch (err) {
         console.error("Error loading user data:", err);
 
         setProfileImage(
-          "https://cdn-icons-png.flaticon.com/512/147/147144.png",
+          Image.resolveAssetSource(DefaultPFP).uri,
         );
       } finally {
         setLoading(false);
@@ -66,24 +74,23 @@ const ProfileEditScreen = () => {
 
   const uploadProfileImage = async (localUri: string) => {
     try {
-      const response = await fetch(localUri);
-      const blob = await response.blob();
-
       const formData = new FormData();
-      formData.append("image", blob, "profile.jpg");
+      const filename = localUri.split("/").pop() || "profile.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-      console.log(
-        "Uploading to:",
-        `${API_BASE}/api/medications/upload-profile`,
-      );
+      formData.append("image", {
+        uri: localUri,
+        name: filename,
+        type,
+      } as any);
 
-      const uploadResp = await fetch(
-        `${API_BASE}/api/medications/upload-profile`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+      console.log("Uploading to:", `${API_BASE}/api/upload-profile`);
+
+      const uploadResp = await fetch(`${API_BASE}/api/upload-profile`, {
+        method: "POST",
+        body: formData,
+      });
 
       console.log("Upload response status:", uploadResp.status);
       const uploadData = await uploadResp.json();
@@ -93,9 +100,7 @@ const ProfileEditScreen = () => {
         throw new Error(uploadData.message || "Image upload failed");
       }
 
-      const backendImageUrl = `${API_BASE}${uploadData.imageUrl}`;
-      console.log("Final image URL:", backendImageUrl);
-      return backendImageUrl;
+      return uploadData.imageUrl;
     } catch (err) {
       console.error("Image upload error details:", err);
       throw err;
@@ -109,21 +114,35 @@ const ProfileEditScreen = () => {
     try {
       let finalImageUrl = profileImage;
 
-      if (
-        isImageDirty &&
-        !profileImage.startsWith("http") &&
-        !profileImage.startsWith("file://")
-      ) {
+      if (isImageDirty) {
         console.log("Image is dirty, uploading...");
         finalImageUrl = await uploadProfileImage(profileImage);
       }
 
-      const updatedUser = {
-        ...user,
-        name,
-        phone,
-        profileImage: finalImageUrl,
-      };
+      const updateResp = await fetch(
+        `${API_BASE}/api/update-profile/${user._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            phone,
+            profileImage: finalImageUrl.startsWith(API_BASE)
+              ? finalImageUrl.replace(API_BASE, "")
+              : finalImageUrl,
+          }),
+        },
+      );
+
+      if (!updateResp.ok) {
+        const errData = await updateResp.json();
+        throw new Error(
+          errData.message || "Failed to update profile in database",
+        );
+      }
+
+      const updateData = await updateResp.json();
+      const updatedUser = updateData.user;
 
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);

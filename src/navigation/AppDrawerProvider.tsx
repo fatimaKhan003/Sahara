@@ -27,6 +27,7 @@ import { navigationRef } from "./navigationRef";
 import EventBus from "../utils/EventBus";
 import { useNavigation } from "@react-navigation/native";
 import { API_BASE } from "../../api";
+import DefaultPFP from "../assets/default-pfp.png";
 
 type DrawerContextType = {
   openDrawer: () => void;
@@ -297,18 +298,16 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
 
             {!isAuthScreen && (
               <View style={[styles.profileSection, dynamicStyles.borderColor]}>
-                {user?.profileImage ? (
-                  <Image
-                    source={{ uri: user.profileImage }}
-                    style={[styles.avatarImage]}
-                  />
-                ) : (
-                  <View style={[styles.avatar, dynamicStyles.avatar]}>
-                    <Text style={[styles.avatarText, dynamicStyles.avatarText]}>
-                      {(userName?.[0] || "U").toUpperCase()}
-                    </Text>
-                  </View>
-                )}
+                <Image
+                  source={{
+                    uri: user?.profileImage
+                      ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
+                        ? `${API_BASE}${user.profileImage}`
+                        : user.profileImage)
+                      : Image.resolveAssetSource(DefaultPFP).uri,
+                  }}
+                  style={[styles.avatarImage]}
+                />
                 <Text style={[styles.name, dynamicStyles.name]}>
                   {userName || "Welcome"}
                 </Text>
