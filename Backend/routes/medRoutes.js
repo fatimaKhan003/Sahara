@@ -296,22 +296,6 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-router.post("/upload-profile", upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res
-      .status(200)
-      .json({ imageUrl, message: "Profile image uploaded successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to upload profile image" });
-  }
-});
-
 router.patch("/mark-notification/:medId/:logId", async (req, res) => {
   try {
     const { medId, logId } = req.params;

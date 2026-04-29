@@ -66,19 +66,24 @@ const ProfileEditScreen = () => {
 
   const uploadProfileImage = async (localUri: string) => {
     try {
-      const response = await fetch(localUri);
-      const blob = await response.blob();
-
       const formData = new FormData();
-      formData.append("image", blob, "profile.jpg");
+      const filename = localUri.split("/").pop() || "profile.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      formData.append("image", {
+        uri: localUri,
+        name: filename,
+        type,
+      } as any);
 
       console.log(
         "Uploading to:",
-        `${API_BASE}/api/medications/upload-profile`,
+        `${API_BASE}/api/upload-profile`,
       );
 
       const uploadResp = await fetch(
-        `${API_BASE}/api/medications/upload-profile`,
+        `${API_BASE}/api/upload-profile`,
         {
           method: "POST",
           body: formData,
@@ -109,21 +114,33 @@ const ProfileEditScreen = () => {
     try {
       let finalImageUrl = profileImage;
 
-      if (
-        isImageDirty &&
-        !profileImage.startsWith("http") &&
-        !profileImage.startsWith("file://")
-      ) {
+      if (isImageDirty) {
         console.log("Image is dirty, uploading...");
         finalImageUrl = await uploadProfileImage(profileImage);
       }
 
-      const updatedUser = {
-        ...user,
-        name,
-        phone,
-        profileImage: finalImageUrl,
-      };
+      const updateResp = await fetch(
+        `${API_BASE}/api/update-profile/${user._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            phone,
+            profileImage: finalImageUrl,
+          }),
+        },
+      );
+
+      if (!updateResp.ok) {
+        const errData = await updateResp.json();
+        throw new Error(
+          errData.message || "Failed to update profile in database",
+        );
+      }
+
+      const updateData = await updateResp.json();
+      const updatedUser = updateData.user;
 
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
