@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
@@ -20,6 +21,11 @@ const AddDependentsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // New States for Creating a User
+  const [creationModalVisible, setCreationModalVisible] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     loadUser();
@@ -39,128 +45,220 @@ const AddDependentsScreen = () => {
       const data = await res.json();
       setDependents(data);
     } catch (err) {
-      console.log(err);
+      console.log("Error fetching dependents:", err);
     }
   };
 
   const handleAddDependent = async () => {
-  if (!email.trim()) {
-    Alert.alert("Error", "Please enter email");
-    return;
-  }
+    if (!email.trim()) {
+      Alert.alert("Error", "Please enter email");
+      return;
+    }
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await fetch(
-      `${API_BASE}/api/caregiver/add-dependent`,
-      {
+      const res = await fetch(`${API_BASE}/api/caregiver/add-dependent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           caregiverUserId: user._id,
-          email: email.trim(),
+          email: email.trim().toLowerCase(),
         }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // If user doesn't exist, offer to create one
+        if (data.error === "User not found" || res.status === 404) {
+          Alert.alert(
+            "Account Not Found",
+            "This dependent does not have an account. Would you like to create one for them?",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Create Account",
+                onPress: () => {
+                  setModalVisible(false);
+                  setCreationModalVisible(true);
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Error", data.error || "User not found");
+        }
+        return;
       }
-    );
 
-    const data = await res.json();
+      Alert.alert("Success", "Dependent linked successfully!");
+      setEmail("");
+      setModalVisible(false);
+      fetchDependents(user._id);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    console.log("API RESPONSE:", data); 
-
-    if (!res.ok) {
-      Alert.alert("Error", data.error || "User not found");
+  const handleCreateNewDependent = async () => {
+    if (!newName.trim() || !newPassword.trim()) {
+      Alert.alert("Error", "Please provide a name and password for the new account.");
       return;
     }
 
-    Alert.alert("Success", "Dependent added!");
-    setEmail("");
-    setModalVisible(false);
-    fetchDependents(user._id);
+    try {
+      setLoading(true);
+      // Calls new endpoint that handles Registration + Linking in one go
+      const res = await fetch(`${API_BASE}/api/caregiver/register-and-add-dependent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caregiverUserId: user._id,
+          email: email.trim().toLowerCase(),
+          name: newName.trim(),
+          password: newPassword,
+        }),
+      });
 
-  } catch (err: any) {
-    console.log("FETCH ERROR:", err); 
-    Alert.alert("Error", err.message || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+      const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create account");
+      }
+
+      Alert.alert("Success", "Account created and linked!");
+      setCreationModalVisible(false);
+      setNewName("");
+      setNewPassword("");
+      setEmail("");
+      fetchDependents(user._id);
+    } catch (err: any) {
+      Alert.alert("Error", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    
-    <View style={styles.container}><SafeAreaView>
-      <Text style={styles.title}>Add dependents</Text>
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <Text style={styles.title}>Add dependents</Text>
 
-      <View style={styles.card}>
-        <FlatList
-          data={dependents}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <Image
-                source={{
-                  uri:
-                    item.avatar ||
-                    "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-                }}
-                style={styles.avatar}
-              />
-              <Text style={styles.name}>{item.name}</Text>
-            </View>
-          )}
-          ListFooterComponent={
-            <TouchableOpacity
-              style={styles.addRow}
-              onPress={() => setModalVisible(true)}
-            >
-              <View style={styles.plusCircle}>
-                <Text style={styles.plus}>+</Text>
+        <View style={styles.card}>
+          <FlatList
+            data={dependents}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+              <View style={styles.row}>
+                <Image
+                  source={{
+                    uri:
+                      item.avatar ||
+                      "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                  }}
+                  style={styles.avatar}
+                />
+                <Text style={styles.name}>{item.name}</Text>
               </View>
-              <Text style={styles.addText}>Add another account</Text>
-            </TouchableOpacity>
-          }
-        />
-      </View>
-
-      {/* MODAL */}
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add dependent by email</Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Enter email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-            />
-
-            <View style={styles.modalButtons}>
+            )}
+            ListFooterComponent={
               <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setModalVisible(false)}
+                style={styles.addRow}
+                onPress={() => setModalVisible(true)}
               >
-                <Text>Cancel</Text>
+                <View style={styles.plusCircle}>
+                  <Text style={styles.plus}>+</Text>
+                </View>
+                <Text style={styles.addText}>Add another account</Text>
               </TouchableOpacity>
+            }
+          />
+        </View>
 
-              <TouchableOpacity
-                style={styles.addBtn}
-                onPress={handleAddDependent}
-                disabled={loading}
-              >
-                <Text style={{ color: "#fff" }}>
-                  {loading ? "Adding..." : "Add"}
-                </Text>
-              </TouchableOpacity>
+        {/* MODAL 1: LINK BY EMAIL */}
+        <Modal visible={modalVisible} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Add dependent by email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter email"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={handleAddDependent}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={{ color: "#fff" }}>Add</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+
+        {/* MODAL 2: CREATE NEW DEPENDENT */}
+        <Modal visible={creationModalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Register New Dependent</Text>
+              <Text style={styles.subtitle}>Email: {email}</Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                value={newName}
+                onChangeText={setNewName}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Initial Password"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setCreationModalVisible(false)}
+                >
+                  <Text>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={handleCreateNewDependent}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={{ color: "#fff" }}>Create & Link</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </View>
-    
   );
 };
 
@@ -169,23 +267,35 @@ export default AddDependentsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
     backgroundColor: "#F7F8FA",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
+    marginVertical: 15,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
     marginBottom: 15,
   },
   card: {
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   avatar: {
     width: 36,
@@ -199,7 +309,7 @@ const styles = StyleSheet.create({
   addRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 15,
   },
   plusCircle: {
     width: 36,
@@ -219,22 +329,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalBox: {
     width: "85%",
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 25,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
     marginBottom: 10,
   },
   input: {
@@ -242,18 +352,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginBottom: 15,
+    fontSize: 16,
   },
   modalButtons: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    marginTop: 5,
   },
   cancelBtn: {
-    marginRight: 10,
-    padding: 10,
+    marginRight: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
   },
   addBtn: {
     backgroundColor: "#4F6EF7",
-    padding: 10,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

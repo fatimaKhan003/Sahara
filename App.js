@@ -41,6 +41,7 @@ export default function App() {
     setupForegroundNotificationListener();
     setupNotificationResponseListener();
   }, []);
+  
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -112,5 +113,6 @@ export default function App() {
         </ThemeProvider>
       </SettingsProvider>
     </GestureHandlerRootView>
+    
   );
 }
