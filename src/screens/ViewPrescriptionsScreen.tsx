@@ -102,17 +102,61 @@ export default function ViewPrescriptionsScreen() {
           const depRaw = await AsyncStorage.getItem(depKey);
           const depList: Prescription[] = depRaw ? JSON.parse(depRaw) : [];
 
-          if (depList.length > 0) {
-            if (!depMap[dep._id])
-              depMap[dep._id] = { name: dep.name, items: [] };
+          if (!depMap[dep._id]) depMap[dep._id] = { name: dep.name, items: [] };
 
+          if (depList.length > 0) {
             depMap[dep._id].items.push(
               ...depList.filter((p) => p.addedBy === "self"),
             );
           }
+
+          try {
+            const serverRes = await fetch(
+              `${API_BASE}/api/medications/${dep._id}`,
+            );
+            const serverMeds = await serverRes.json();
+            if (Array.isArray(serverMeds)) {
+              for (const m of serverMeds) {
+                if (
+                  m.imageUri &&
+                  !depMap[dep._id].items.some((p) => p.id === m._id)
+                ) {
+                  depMap[dep._id].items.push({
+                    id: m._id,
+                    imageUri: m.imageUri,
+                    date: m.createdAt,
+                    addedBy: "self",
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.log("Server sync error", e);
+          }
         }
 
         const builtSections: SectionData[] = [];
+
+        try {
+          const serverRes = await fetch(
+            `${API_BASE}/api/medications/${parsedUser._id}`,
+          );
+          const serverMeds = await serverRes.json();
+          if (Array.isArray(serverMeds)) {
+            for (const m of serverMeds) {
+              if (m.imageUri && !personalList.some((p) => p.id === m._id)) {
+                personalList.push({
+                  id: m._id,
+                  imageUri: m.imageUri,
+                  date: m.createdAt,
+                  addedBy: "self",
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.log("Personal server sync error", e);
+        }
 
         if (personalList.length > 0) {
           builtSections.push({
@@ -162,6 +206,27 @@ export default function ViewPrescriptionsScreen() {
               .map((p) => ({ ...p, addedBy: "caregiver" as const }));
           }
         } catch (_) {}
+      }
+
+      try {
+        const serverRes = await fetch(
+          `${API_BASE}/api/medications/${parsedUser._id}`,
+        );
+        const serverMeds = await serverRes.json();
+        if (Array.isArray(serverMeds)) {
+          for (const m of serverMeds) {
+            if (m.imageUri && !personalList.some((p) => p.id === m._id)) {
+              personalList.push({
+                id: m._id,
+                imageUri: m.imageUri,
+                date: m.createdAt,
+                addedBy: "self",
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.log("Dependent server sync error", e);
       }
 
       const builtSections: SectionData[] = [];
@@ -282,7 +347,11 @@ export default function ViewPrescriptionsScreen() {
       activeOpacity={0.85}
     >
       <Image
-        source={{ uri: item.imageUri }}
+        source={{
+          uri: item.imageUri.startsWith("/uploads/")
+            ? `${API_BASE}/api/medications/image/${item.imageUri.split("/").pop()}?userId=${currentUser?._id}`
+            : item.imageUri,
+        }}
         style={styles.thumbnail}
         resizeMode="cover"
       />
@@ -504,7 +573,11 @@ export default function ViewPrescriptionsScreen() {
           </TouchableOpacity>
           {selectedImage && (
             <Image
-              source={{ uri: selectedImage }}
+              source={{
+                uri: selectedImage?.startsWith("/uploads/")
+                  ? `${API_BASE}/api/medications/image/${selectedImage.split("/").pop()}?userId=${currentUser?._id}`
+                  : selectedImage || "",
+              }}
               style={styles.fullImage}
               resizeMode="contain"
             />

@@ -81,11 +81,27 @@ const MedicationDetailScreen = () => {
     repeat: med.schedule?.repeat || "daily",
     times: med.schedule?.times || ["08:00"],
   });
-  const [imageUri, setImageUri] = useState(
-    med.imageUri ? `${API_BASE}${med.imageUri}` : null,
-  );
+  const [imageUri, setImageUri] = useState(null);
+  const [isActive, setIsActive] = useState(med.isActive ?? true);
   const [loading, setLoading] = useState(false);
   const [showPickerIndex, setShowPickerIndex] = useState(-1);
+
+  useEffect(() => {
+    const initImage = async () => {
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData || !med.imageUri) return;
+      const parsed = JSON.parse(userData);
+      
+      // Convert /uploads/filename.jpg to /api/medications/image/filename.jpg?userId=...
+      if (med.imageUri.startsWith("/uploads/")) {
+        const filename = med.imageUri.split("/").pop();
+        setImageUri(`${API_BASE}/api/medications/image/${filename}?userId=${parsed._id}`);
+      } else {
+        setImageUri(med.imageUri);
+      }
+    };
+    initImage();
+  }, [med.imageUri]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
