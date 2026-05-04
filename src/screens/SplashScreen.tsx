@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, Image, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SplashScreen = () => {
   const { t } = useTranslation();
@@ -13,7 +14,7 @@ const SplashScreen = () => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => navigation.replace("OnboardingScreen"), 500);
+          checkLoginStatus();
           return 100;
         }
         return prev + 5;
@@ -21,6 +22,24 @@ const SplashScreen = () => {
     }, 100);
     return () => clearInterval(interval);
   }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const user = await AsyncStorage.getItem("user");
+      const onboardingCompleted = await AsyncStorage.getItem("onboardingCompleted");
+
+      if (user) {
+        navigation.replace("HomeScreen");
+      } else if (onboardingCompleted === "true") {
+        navigation.replace("LoginScreen");
+      } else {
+        navigation.replace("OnboardingScreen");
+      }
+    } catch (err) {
+      console.error("Auth check error:", err);
+      navigation.replace("OnboardingScreen");
+    }
+  };
 
   return (
     <View style={styles.container}>

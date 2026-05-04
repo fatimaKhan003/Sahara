@@ -114,7 +114,7 @@ export function setupNotificationResponseListener() {
 
 /*--Schedule notifications--*/
 export async function scheduleMedicationNotifications(medications) {
-  // First, clear all existing scheduled notifications to avoid duplicates or stale reminders
+  // clear all existing scheduled notifications to avoid duplicates or stale reminders
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   for (const med of medications) {
@@ -142,9 +142,6 @@ export async function scheduleMedicationNotifications(medications) {
           date: scheduledDate,
         },
       });
-
-      // Optional: Mark as scheduled on backend if needed, but since we clear all every time,
-      // the 'notificationScheduled' flag in DB is less critical for the local device.
     }
   }
 }
