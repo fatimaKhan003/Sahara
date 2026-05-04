@@ -114,9 +114,14 @@ export function setupNotificationResponseListener() {
 
 /*--Schedule notifications--*/
 export async function scheduleMedicationNotifications(medications) {
+  // First, clear all existing scheduled notifications to avoid duplicates or stale reminders
+  await Notifications.cancelAllScheduledNotificationsAsync();
+
   for (const med of medications) {
+    if (med.isActive === false) continue;
+
     for (const log of med.doseLogs) {
-      if (log.status !== "pending" || log.notificationScheduled) continue;
+      if (log.status !== "pending") continue;
       const scheduledDate = new Date(log.scheduledAt);
 
       if (scheduledDate < new Date()) continue;
@@ -138,18 +143,8 @@ export async function scheduleMedicationNotifications(medications) {
         },
       });
 
-      fetch(
-        `${API_BASE}/api/medications/mark-notification/${med._id}/${log._id}`,
-        {
-          method: "PATCH",
-        },
-      ).catch((err) => console.error("Failed to mark notification", err));
-      console.log(
-        "Scheduled notification for",
-        med.name,
-        "at",
-        log.scheduledAt,
-      );
+      // Optional: Mark as scheduled on backend if needed, but since we clear all every time,
+      // the 'notificationScheduled' flag in DB is less critical for the local device.
     }
   }
 }

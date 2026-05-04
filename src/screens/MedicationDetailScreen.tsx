@@ -19,6 +19,7 @@ import {
   View,
   SafeAreaView,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
@@ -91,11 +92,13 @@ const MedicationDetailScreen = () => {
       const userData = await AsyncStorage.getItem("user");
       if (!userData || !med.imageUri) return;
       const parsed = JSON.parse(userData);
-      
+
       // Convert /uploads/filename.jpg to /api/medications/image/filename.jpg?userId=...
       if (med.imageUri.startsWith("/uploads/")) {
         const filename = med.imageUri.split("/").pop();
-        setImageUri(`${API_BASE}/api/medications/image/${filename}?userId=${parsed._id}`);
+        setImageUri(
+          `${API_BASE}/api/medications/image/${filename}?userId=${parsed._id}`,
+        );
       } else {
         setImageUri(med.imageUri);
       }
@@ -141,6 +144,7 @@ const MedicationDetailScreen = () => {
       formData.append("name", name);
       formData.append("dose", dose);
       formData.append("schedule", JSON.stringify(schedule));
+      formData.append("isActive", String(isActive));
 
       if (imageUri && !imageUri.startsWith("http")) {
         const localResponse = await fetch(imageUri);
@@ -158,6 +162,10 @@ const MedicationDetailScreen = () => {
 
       const updated = await res.json();
       if (onUpdate) onUpdate(updated);
+
+      if (isActive === false) {
+        await cancelMedicationNotifications(med._id);
+      }
 
       Alert.alert("Success", "Medication updated successfully!", [
         { text: "OK", onPress: () => navigation.goBack() },
@@ -448,6 +456,23 @@ const MedicationDetailScreen = () => {
             <Picker.Item label="Twice a day" value="twiceDaily" />
             <Picker.Item label="Weekly" value="weekly" />
           </Picker>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 20,
+            }}
+          >
+            <Text style={dynamicStyles.label}>{"Active"}</Text>
+            <Switch
+              value={isActive}
+              onValueChange={setIsActive}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={isActive ? "#007AFF" : "#f4f3f4"}
+            />
+          </View>
 
           <Text style={dynamicStyles.label}>{"Times"}</Text>
 
