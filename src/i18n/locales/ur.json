@@ -148,7 +148,9 @@
     "dosePlaceholder": "خوراک (مثال: 2 گولیاں)",
     "frequencyPlaceholder": "تعدد (مثال: دن میں دو بار)",
     "reviewTitle": "دوائیوں کا جائزہ لیں",
-    "namePlaceholder": "دوائی کا نام درج کریں"
+    "namePlaceholder": "دوائی کا نام درج کریں",
+    "voiceReminderText": "یاد دہانی۔ {{name}} لیں، خوراک {{dose}}",
+    "voiceReminderTextHindi": "याद दहानी। {{name}} लें, खुराक {{dose}}"
   },
   "errors": {
     "fillAllFields": "براہ کرم تمام فیلڈز بھریں",
