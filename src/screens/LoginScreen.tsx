@@ -59,6 +59,7 @@ const LoginScreen = () => {
         setEmail("");
         setPassword("");
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        await AsyncStorage.setItem("onboardingCompleted", "true");
         EventBus.emit("userUpdated", data.user);
         navigation.replace("HomeScreen");
       } else {

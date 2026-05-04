@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   SafeAreaView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -62,9 +63,14 @@ const OnboardingScreen = () => {
     }
   };
 
-  const handleSkip = () => navigation.navigate('SignUpScreen', { fromOnboarding: true });
-  const handleCreateAccount = () => navigation.navigate('SignUpScreen', { fromOnboarding: true });
-  const handleLogin = () => navigation.navigate('LoginScreen', { fromOnboarding: true }); // Update if you add a LoginScreen later
+  const completeOnboarding = async (target: string) => {
+    await AsyncStorage.setItem('onboardingCompleted', 'true');
+    navigation.navigate(target as any, { fromOnboarding: true });
+  };
+
+  const handleSkip = () => completeOnboarding('SignUpScreen');
+  const handleCreateAccount = () => completeOnboarding('SignUpScreen');
+  const handleLogin = () => completeOnboarding('LoginScreen');
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) setCurrentIndex(viewableItems[0].index);
