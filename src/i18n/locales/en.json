@@ -148,7 +148,8 @@
     "deleteError": "Failed to delete medication",
     "dosePlaceholder": "Dose (e.g. 2 pills)",
     "frequencyPlaceholder": "Frequency (e.g. Twice a day)",
-    "reviewTitle": "Review Medications"
+    "reviewTitle": "Review Medications",
+    "voiceReminderText": "Reminder. Take {{name}}, dose {{dose}}"
   },
   "errors": {
     "fillAllFields": "Please fill all fields",
