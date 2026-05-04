@@ -2,24 +2,23 @@ import express from "express";
 import multer from "multer";
 import axios from "axios";
 import FormData from "form-data";
-import fs from "fs";
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname),
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post("/extract", upload.single("image"), async (req, res) => {
   try {
-    const imagePath = req.file.path;
+    if (!req.file) {
+      return res.status(400).json({ message: "No image provided" });
+    }
 
     const form = new FormData();
-    form.append("file", fs.createReadStream(imagePath));
+    form.append("file", req.file.buffer, {
+      filename: req.file.originalname || "image.jpg",
+      contentType: req.file.mimetype,
+    });
 
     const ocrResponse = await axios.post("http://localhost:8000/ocr", form, {
       headers: form.getHeaders(),
@@ -27,9 +26,8 @@ router.post("/extract", upload.single("image"), async (req, res) => {
 
     return res.json({
       ocrText: ocrResponse.data.text,
-      imageUri: `/uploads/${req.file.filename}`,
+      ...ocrResponse.data,
     });
-
   } catch (err) {
     console.log("OCR server unreachable: ", err.message);
     res.status(500).json({ message: "OCR failed" });

@@ -3,8 +3,6 @@ import Medication from "../models/Medication.js";
 import Caregiver from "../models/Caregiver.js";
 import MedicationRequest from "../models/MedicationRequest.js";
 import multer from "multer";
-import axios from "axios";
-import FormData from "form-data";
 import fs from "fs";
 
 const router = express.Router();
@@ -66,6 +64,16 @@ const markExpiredDosesAsMissed = async (userId) => {
       ],
     },
   );
+};
+
+const deleteImageFile = (imageUri) => {
+  if (!imageUri || !imageUri.startsWith("/uploads/")) return;
+  const filePath = imageUri.slice(1); // strip leading slash → "uploads/filename.jpg"
+  fs.unlink(filePath, (err) => {
+    if (err && err.code !== "ENOENT") {
+      console.error("Failed to delete image file:", err.message);
+    }
+  });
 };
 
 router.post("/save-medications", upload.single("image"), async (req, res) => {
@@ -251,6 +259,8 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ message: "Medication not found" });
     }
 
+    deleteImageFile(deleted.imageUri);
+
     res.json({ message: "Medication deleted successfully" });
   } catch (err) {
     console.error(err);
@@ -398,7 +408,8 @@ router.post("/request-delete", async (req, res) => {
     // To find caregiver for this dependent
     const caregiver = await Caregiver.findOne({ dependents: userId });
     if (!caregiver) {
-      await Medication.findByIdAndDelete(medicationId);
+      const med = await Medication.findByIdAndDelete(medicationId);
+      if (med) deleteImageFile(med.imageUri);
       return res
         .status(200)
         .json({ message: "Medication deleted directly (no caregiver)" });
@@ -444,7 +455,8 @@ router.post("/approve-delete", async (req, res) => {
     const request = await MedicationRequest.findById(requestId);
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    await Medication.findByIdAndDelete(request.medicationId);
+    const med = await Medication.findByIdAndDelete(request.medicationId);
+    if (med) deleteImageFile(med.imageUri);
 
     request.status = "approved";
     await request.save();
