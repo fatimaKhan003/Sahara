@@ -1,0 +1,181 @@
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
+import { API_BASE } from "../../api";
+import { speakMedication } from "./tts";
+import { getVoiceReminderEnabled } from "../context/SettingsContext";
+
+/*--Notification characteristics---*/
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+/*--Notification permissions---*/
+export async function registerForNotifications() {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") {
+    console.log("Notification permission denied");
+    return null;
+  }
+
+  const token = (await Notifications.getExpoPushTokenAsync()).data;
+  console.log("Expo push token:", token);
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+    });
+  }
+
+  return token;
+}
+
+/*--Notification actions*/
+export async function setupNotificationActions() {
+  await Notifications.setNotificationCategoryAsync("MEDICATION_REMINDER", [
+    {
+      identifier: "TAKEN",
+      buttonTitle: "Mark as Taken",
+      options: { opensAppToForeground: true },
+    },
+    {
+      identifier: "SNOOZE",
+      buttonTitle: "Snooze 10 min",
+      options: { opensAppToForeground: false },
+    },
+  ]);
+}
+
+export function setupNotificationResponseListener() {
+  Notifications.addNotificationResponseReceivedListener(async (response) => {
+    const action = response.actionIdentifier;
+
+    const data = response.notification.request.content.data;
+
+    const { medId, logId, name, dose } = data;
+
+    if (getVoiceReminderEnabled()) {
+      speakMedication(name, dose);
+    }
+
+    try {
+      await Notifications.dismissNotificationAsync(
+        response.notification.request.identifier,
+      );
+    } catch (err) {
+      console.warn("Failed to dismiss notification", err);
+    }
+
+    if (action === "TAKEN") {
+      try {
+        await fetch(`${API_BASE}/api/medications/dose-log/${medId}/${logId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "taken" }),
+        });
+      } catch (err) {
+        console.error("Failed to mark dose taken", err);
+      }
+    }
+
+    if (action === "SNOOZE") {
+      const snoozeTime = new Date(Date.now() + 10 * 60 * 1000); // minutes * seconds * milliseconds
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Medication Reminder",
+          body: `Time to take ${med.name}`,
+          data: { medId, logId, name },
+          categoryIdentifier: "MEDICATION_REMINDER",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: snoozeTime,
+        },
+      });
+      console.log("Snoozed notification for", name, "until", snoozeTime);
+    }
+  });
+}
+
+/*--Schedule notifications--*/
+export async function scheduleMedicationNotifications(medications) {
+  // clear all existing scheduled notifications to avoid duplicates or stale reminders
+  await Notifications.cancelAllScheduledNotificationsAsync();
+
+  for (const med of medications) {
+    if (med.isActive === false) continue;
+
+    for (const log of med.doseLogs) {
+      if (log.status !== "pending") continue;
+      const scheduledDate = new Date(log.scheduledAt);
+
+      if (scheduledDate < new Date()) continue;
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Medication Reminder",
+          body: `Time to take ${med.name}, dose ${med.dose}`,
+          data: {
+            medId: med._id,
+            logId: log._id,
+            name: med.name,
+          },
+          categoryIdentifier: "MEDICATION_REMINDER",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: scheduledDate,
+        },
+      });
+    }
+  }
+}
+
+export async function cancelMedicationNotifications(medId) {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
+  for (const notif of scheduled) {
+    const data = notif.content?.data;
+
+    if (data?.medId === medId) {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    }
+  }
+}
+
+export async function cancelLogNotification(logId) {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
+  for (const notif of scheduled) {
+    const data = notif.content?.data;
+
+    if (data?.logId === logId) {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    }
+  }
+}
+
+export function setupForegroundNotificationListener() {
+  Notifications.addNotificationReceivedListener((notification) => {
+    const data = notification.request.content.data;
+
+    if (data?.name && getVoiceReminderEnabled()) {
+      speakMedication(data.name, data?.dose ? data.dose : "");
+    }
+  });
+}

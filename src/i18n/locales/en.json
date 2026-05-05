@@ -30,10 +30,19 @@
     "urdu": "Urdu",
     "and": "and",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "phone": "Phone",
+    "editProfile": "Edit Profile",
+    "logout": "Logout",
+    "user": "User"
   },
   "splash": {
     "title": "Sahara"
+  },
+  "profile": {
+    "enterPhone": "Enter your phone number",
+    "saveChanges": "Save Changes",
+    "saved:": "Profile updated successfully"
   },
   "onboarding": {
     "slide1": {
@@ -136,7 +145,11 @@
     "saveSuccess": "Medications saved!",
     "saveError": "Could not save medications",
     "updateError": "Failed to update medication",
-    "deleteError": "Failed to delete medication"
+    "deleteError": "Failed to delete medication",
+    "dosePlaceholder": "Dose (e.g. 2 pills)",
+    "frequencyPlaceholder": "Frequency (e.g. Twice a day)",
+    "reviewTitle": "Review Medications",
+    "voiceReminderText": "Reminder. Take {{name}}, dose {{dose}}"
   },
   "errors": {
     "fillAllFields": "Please fill all fields",
@@ -150,6 +163,25 @@
     "somethingWentWrong": "Something went wrong",
     "enterAtLeastOne": "Please enter at least one medication",
     "userNotFoundError": "User not found"
+  },
+  "settings": {
+    "reminders": "Reminders & Alarms",
+    "notificationSettings": "Notification Settings",
+    "notificationDesc": "Manage notification preferences",
+    "reminderPreferences": "Reminder Preferences",
+    "reminderDesc": "Customize your reminders",
+    "general": "General",
+    "language": "Language",
+    "languageDesc": "Change app language",
+    "appearance": "Appearance",
+    "appearanceDesc": "Light or Dark mode",
+    "caregiverAccount": "Caregiver Account",
+    "caregiverToggle": "Enable Caregiver Mode",
+    "addDependents": "Add Dependents",
+    "caregiverEnabled": "Account changed to Caregiver!",
+    "caregiverDesc": "You can now add dependents and manage their medications.",
+    "voiceReminders": "Voice Reminders",
+    "voiceRemindersDesc": "Enable spoken reminders for your medications.",
+    "logoutDesc": "Click here to log out of this device."
   }
 }
-

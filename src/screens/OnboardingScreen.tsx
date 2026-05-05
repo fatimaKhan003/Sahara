@@ -7,7 +7,9 @@ import {
   Image,
   TouchableOpacity,
   useWindowDimensions,
+  SafeAreaView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -61,16 +63,21 @@ const OnboardingScreen = () => {
     }
   };
 
-  const handleSkip = () => navigation.navigate('SignUpScreen', { fromOnboarding: true });
-  const handleCreateAccount = () => navigation.navigate('SignUpScreen', { fromOnboarding: true });
-  const handleLogin = () => navigation.navigate('LoginScreen', { fromOnboarding: true }); // Update if you add a LoginScreen later
+  const completeOnboarding = async (target: string) => {
+    await AsyncStorage.setItem('onboardingCompleted', 'true');
+    navigation.navigate(target as any, { fromOnboarding: true });
+  };
+
+  const handleSkip = () => completeOnboarding('SignUpScreen');
+  const handleCreateAccount = () => completeOnboarding('SignUpScreen');
+  const handleLogin = () => completeOnboarding('LoginScreen');
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) setCurrentIndex(viewableItems[0].index);
   }).current;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {currentIndex > 0 && (
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="black" />
@@ -110,21 +117,24 @@ const OnboardingScreen = () => {
         ))}
       </View>
 
-      {currentIndex === slides.length - 1 ? (
-        <View style={styles.bottomButtons}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleCreateAccount}>
-            <Text style={styles.primaryText}>{t('common.createAccount')}</Text>
+      
+      <View style={styles.buttonsContainer}>
+        {currentIndex === slides.length - 1 ? (
+          <View style={styles.bottomButtons}>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleCreateAccount}>
+              <Text style={styles.primaryText}>{t('common.createAccount')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleLogin}>
+              <Text style={styles.secondaryText}>{t('common.login')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+            <Text style={styles.nextText}>{t('common.next')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleLogin}>
-            <Text style={styles.secondaryText}>{t('common.login')}</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextText}>{t('common.next')}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -149,4 +159,12 @@ const styles = StyleSheet.create({
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   secondaryButton: { backgroundColor: '#f5f5f5', borderRadius: 10, paddingVertical: 14, paddingHorizontal: 120 },
   secondaryText: { color: '#aaa', fontSize: 16, fontWeight: '600' },
+  buttonsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+
+
+    marginBottom: 40, 
+
+  },
 });

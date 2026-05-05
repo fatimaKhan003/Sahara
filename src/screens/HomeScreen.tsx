@@ -1,4 +1,11 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useContext,
+  useCallback,
+} from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   StyleSheet,
   Text,
@@ -9,28 +16,50 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import i18n, { changeLanguage } from "../i18n";
+import i18n from "../i18n";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import * as ImagePicker from "expo-image-picker";
 import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDrawer } from "../navigation/AppDrawerProvider";
 import { API_BASE } from "../../api";
-import { containsUrdu, getTextDirection } from "../utils/textUtils";
+import DefaultPFP from "../assets/default-pfp.png";
+import { containsUrdu } from "../utils/textUtils";
+import { ThemeContext } from "../context/ThemeContext";
+import EventBus from "../utils/EventBus";
+import {
+  cancelMedicationNotifications,
+  scheduleMedicationNotifications,
+} from "../services/notifications";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
+  const { openDrawer } = useDrawer();
+  const { theme, applyTheme } = useContext(ThemeContext);
+  const darkMode = theme === "dark";
+  const [selectedDependent, setSelectedDependent] = useState("all");
+
+  const navigation = useNavigation<any>();
+  const [requestCount, setRequestCount] = useState(0);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+
   const [medications, setMedications] = useState<any[]>([]);
-  const navigation = useNavigation<any>();
+  const [dependentsMeds, setDependentsMeds] = useState<any[]>([]);
+  const dependentList = useMemo(() => {
+    const names = dependentsMeds.map((m) => m.dependentName);
+    return ["all", ...new Set(names)];
+  }, [dependentsMeds]);
+  const [dashboardMode, setDashboardMode] = useState<"personal" | "caregiver">(
+    "personal",
+  );
+  const [isCaregiver, setIsCaregiver] = useState(false);
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTab, setSelectedTab] = useState("all");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-
-  // ================= WEEK ================= 
 
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
@@ -40,7 +69,7 @@ const HomeScreen = () => {
   };
 
   const [currentWeekStart, setCurrentWeekStart] = useState(
-    getStartOfWeek(new Date())
+    getStartOfWeek(new Date()),
   );
 
   const days = [
@@ -53,13 +82,6 @@ const HomeScreen = () => {
     t("home.days.sunday"),
   ];
 
-  // ================= Language Switcher =================
-  const handleLanguageChange = async () => {
-    const newLang = currentLanguage === "en" ? "ur" : "en";
-    await changeLanguage(newLang);
-    setCurrentLanguage(newLang);
-  };
-
   const getWeekDates = (startDate: Date) => {
     return Array.from({ length: 7 }, (_, i) => {
       const newDate = new Date(startDate);
@@ -70,7 +92,7 @@ const HomeScreen = () => {
 
   const weekDates = useMemo(
     () => getWeekDates(currentWeekStart),
-    [currentWeekStart]
+    [currentWeekStart],
   );
 
   const goToPrevWeek = () => {
@@ -85,149 +107,299 @@ const HomeScreen = () => {
     setCurrentWeekStart(newDate);
   };
 
-  // ================= Fetching users and meds ================= 
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const userData = await AsyncStorage.getItem("user");
-        if (!userData) return;
-
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-
-        const response = await fetch(
-          `${API_BASE}/api/medications/${parsedUser._id}`
-        );
-
-        const meds = await response.json();
-        setMedications(Array.isArray(meds) ? meds : []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // ================= Status ================= 
-
-  const totalCount = medications.length;
-  const takenCount = medications.filter(
-    (m) => m.status === "taken"
-  ).length;
-  const missedCount = medications.filter(
-    (m) => m.status === "missed"
-  ).length;
-
-  // ================= Auto mark missed ================= 
-
-  const checkMissedMeds = () => {
+  function getClosestLog(doseLogs) {
     const now = new Date();
 
-    setMedications((prev) =>
-      prev.map((med) => {
-        if (med.status === "pending" && med.time) {
-          let [time, period] = med.time.split(" ");
-          let [hours, minutes] = time.split(":").map(Number);
+    return doseLogs.reduce((closest, current) => {
+      const currentDiff = Math.abs(new Date(current.scheduledAt) - now);
+      const closestDiff = Math.abs(new Date(closest.scheduledAt) - now);
 
-          if (period?.toLowerCase() === "pm" && hours !== 12) hours += 12;
-          if (period?.toLowerCase() === "am" && hours === 12) hours = 0;
+      return currentDiff < closestDiff ? current : closest;
+    });
+  }
 
-          const medTime = new Date();
-          medTime.setHours(hours, minutes, 0, 0);
+  // FETCH USER + MODE + MEDS
+  const fetchUserData = useCallback(async () => {
+    try {
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) {
+        setUser(null);
+        return;
+      }
 
-          if (now > medTime) {
-            updateStatus(med._id, "missed");
-            return { ...med, status: "missed" };
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+
+      // SYNC MISSED DOSES
+      await fetch(`${API_BASE}/api/medications/sync-missed/${parsedUser._id}`, {
+        method: "POST",
+      });
+
+      // DEPENDENT
+      try {
+        const depRes = await fetch(
+          `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
+        );
+        const depData = await depRes.json();
+
+        if (depData.isDependent) {
+          const themeReqRes = await fetch(
+            `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
+          );
+
+          const approvedRequests = await themeReqRes.json();
+
+          if (approvedRequests.length > 0) {
+            const latest = approvedRequests[0];
+
+            if (
+              latest.status !== "applied" &&
+              latest.requestedTheme !== theme
+            ) {
+              applyTheme(latest.requestedTheme);
+
+              await fetch(`${API_BASE}/api/caregiver/mark-theme-applied`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ requestId: latest._id }),
+              });
+
+              Alert.alert(
+                "Theme Updated",
+                `Your caregiver approved your theme change request`,
+              );
+            }
           }
         }
-        return med;
-      })
+      } catch (err) {
+        console.log("Theme logic error:", err);
+      }
+
+      // CAREGIVER
+      const caregiverRes = await fetch(
+        `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
+      );
+      const caregiverData = await caregiverRes.json();
+      setIsCaregiver(caregiverData.isCaregiver);
+      const storedMode = await AsyncStorage.getItem("dashboardMode");
+      if (storedMode === "caregiver" && caregiverData.isCaregiver) {
+        setDashboardMode("caregiver");
+      } else {
+        setDashboardMode("personal");
+      }
+
+      if (caregiverData.isCaregiver) {
+        const medRes = await fetch(
+          `${API_BASE}/api/medications/requests/${parsedUser._id}`,
+        );
+        const medRequests = await medRes.json();
+
+        const themeRes = await fetch(
+          `${API_BASE}/api/caregiver/theme-requests/${parsedUser._id}`,
+        );
+        const themeRequests = await themeRes.json();
+
+        setRequestCount(medRequests.length + themeRequests.length);
+      }
+
+      if (storedMode === "caregiver" && caregiverData.isCaregiver) {
+        const res = await fetch(
+          `${API_BASE}/api/caregiver/${parsedUser._id}/dependents-meds`,
+        );
+        const data = await res.json();
+        const dependents = Array.isArray(data) ? data : [];
+
+        // MARK EXPIRED DOSES FOR EACH DEPENDENT
+        await Promise.all(
+          dependents.map((med) =>
+            fetch(`${API_BASE}/api/medications/expire-doses/${med.user}`, {
+              method: "POST",
+            }),
+          ),
+        );
+
+        setDependentsMeds(dependents);
+      } else {
+        const response = await fetch(
+          `${API_BASE}/api/medications/${parsedUser._id}`,
+        );
+        const meds = await response.json();
+        setMedications(Array.isArray(meds) ? meds : []);
+        await scheduleMedicationNotifications(meds);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUserData();
+
+    const handler = (u: any) => {
+      setUser(u);
+    };
+    EventBus.on("userUpdated", handler);
+
+    return () => EventBus.off("userUpdated", handler);
+  }, [fetchUserData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [fetchUserData]),
+  );
+
+  useEffect(() => {
+    const updateLanguage = () => setCurrentLanguage(i18n.language);
+    i18n.on("languageChanged", updateLanguage);
+    return () => i18n.off("languageChanged", updateLanguage);
+  }, []);
+
+  const medsToShow =
+    dashboardMode === "personal"
+      ? medications
+      : dependentsMeds.filter((med) =>
+          selectedDependent === "all"
+            ? true
+            : med.dependentName === selectedDependent,
+        );
+
+  const totalCount = medsToShow.length;
+  const takenCount = medsToShow.filter((med) => {
+    const closest = getClosestLog(med.doseLogs);
+    return closest?.status === "taken";
+  }).length;
+
+  const missedCount = medsToShow.filter((med) => {
+    const closest = getClosestLog(med.doseLogs);
+    return closest?.status === "missed";
+  }).length;
+
+  const filteredMeds = medsToShow.filter((med) => {
+    if (!med.doseLogs?.length) return false;
+
+    const closest = getClosestLog(med.doseLogs);
+
+    if (!closest) return false;
+
+    if (selectedTab === "taken") {
+      return closest.status === "taken";
+    }
+
+    if (selectedTab === "missed") {
+      return closest.status === "missed";
+    }
+
+    return true; // "all" tab
+  });
+
+  // const updateStatus = async (id: string, status: string) => {
+  //   try {
+  //     const res = await fetch(
+  //       `${API_BASE}/api/medications/update-status/${id}`,
+  //       {
+  //         method: "PATCH",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ status }),
+  //       },
+  //     );
+
+  //     const updated = await res.json();
+
+  //     if (dashboardMode === "personal") {
+  //       setMedications((prev) =>
+  //         prev.map((m) => (m._id === updated._id ? updated : m)),
+  //       );
+  //     } else {
+  //       setDependentsMeds((prev) =>
+  //         prev.map((m) => (m._id === updated._id ? updated : m)),
+  //       );
+  //     }
+  //   } catch (error) {
+  //     Alert.alert(t("common.error") || "Error", t("medication.updateError"));
+  //   }
+  // };
+
+  const deleteMedication = async (id: string) => {
+    Alert.alert(
+      "Delete Medication",
+      "Are you sure you want to delete this medication?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const res = await fetch(
+                `${API_BASE}/api/caregiver/is-dependent/${user._id}`,
+              );
+              const data = await res.json();
+              if (data.isDependent) {
+                await fetch(`${API_BASE}/api/medications/request-delete`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ medicationId: id, userId: user._id }),
+                });
+                Alert.alert(
+                  "Request Sent",
+                  "Your caregiver will be notified to approve this deletion.",
+                );
+              } else {
+                await fetch(`${API_BASE}/api/medications/${id}`, {
+                  method: "DELETE",
+                });
+                await cancelMedicationNotifications(id);
+                if (dashboardMode === "personal") {
+                  setMedications((prev) => prev.filter((m) => m._id !== id));
+                } else {
+                  setDependentsMeds((prev) => prev.filter((m) => m._id !== id));
+                }
+              }
+            } catch (err) {
+              Alert.alert("Error", "Delete failed. Please try again.");
+            }
+          },
+        },
+      ],
     );
   };
 
-  useEffect(() => {
-    checkMissedMeds();
-    const interval = setInterval(checkMissedMeds, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Update language state when i18n language changes
-  useEffect(() => {
-    const updateLanguage = () => {
-      setCurrentLanguage(i18n.language);
-    };
-    i18n.on("languageChanged", updateLanguage);
-    return () => {
-      i18n.off("languageChanged", updateLanguage);
-    };
-  }, []);
-
-
-  const updateStatus = async (id: string, status: string) => {
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/medications/update-status/${id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
+  const goToDetail = (med: any) => {
+    navigation.navigate("MedicationDetailScreen", {
+      med,
+      onUpdate: (updatedMed: any) => {
+        if (!updatedMed) {
+          if (dashboardMode === "personal") {
+            setMedications((prev) => prev.filter((m) => m._id !== med._id));
+          } else {
+            setDependentsMeds((prev) => prev.filter((m) => m._id !== med._id));
+          }
+        } else {
+          if (dashboardMode === "personal") {
+            setMedications((prev) =>
+              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m)),
+            );
+          } else {
+            setDependentsMeds((prev) =>
+              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m)),
+            );
+          }
         }
-      );
-
-      const updated = await res.json();
-
-      setMedications((prev) =>
-        prev.map((m) => (m._id === updated._id ? updated : m))
-      );
-    } catch (error) {
-      Alert.alert(t("common.error") || "Error", t("medication.updateError"));
-    }
-  };
-
-
-  const deleteMedication = async (id: string) => {
-    try {
-      await fetch(`${API_BASE}/api/medications/${id}`, {
-        method: "DELETE",
-      });
-
-      setMedications((prev) => prev.filter((m) => m._id !== id));
-    } catch (error) {
-      Alert.alert(t("common.error") || "Error", t("medication.deleteError"));
-    }
-  };
-
-
-  const handleChangeProfileImage = async () => {
-    const { status } =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
+      },
     });
-
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-
-      const updatedUser = { ...user, profileImage: uri };
-      setUser(updatedUser);
-      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-    }
   };
 
-  const filteredMeds = medications.filter((med) => {
-    if (selectedTab === "taken") return med.status === "taken";
-    if (selectedTab === "missed") return med.status === "missed";
-    return true;
-  });
+  const toggleDashboard = async () => {
+    if (!isCaregiver) return; // block non-caregiver users
+
+    const newMode = dashboardMode === "personal" ? "caregiver" : "personal";
+    setDashboardMode(newMode);
+    await AsyncStorage.setItem("dashboardMode", newMode);
+    fetchUserData();
+  };
 
   if (loading) {
     return (
@@ -236,285 +408,326 @@ const HomeScreen = () => {
       </View>
     );
   }
-const goToDetail = (med: any) => {
-  navigation.navigate("MedicationDetailScreen", {
-    med,
-    onUpdate: (updatedMed: any) => {
-      if(!updatedMed)
-      {
-        setMedications((prev)=>prev.filter((m)=>m._id!==med._id));
-      }
-      else{
-        setMedications((prev) =>
-        prev.map((m) => (m._id === updatedMed._id ? updatedMed : m))
-      );
-      }
-      
-    },
-  });
-};
+
+  const getCurrentScheduledDose = (med) => {
+    const now = new Date();
+
+    // Find a dose within +/- 30 minutes of current time
+    const currentDose = med.doseLogs.find((log) => {
+      const sched = new Date(log.scheduledAt).getTime();
+      const diff = now.getTime() - sched;
+      return diff >= 0 && diff <= 30 * 60 * 1000;
+    });
+
+    return currentDose || null;
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F6F8FF" }}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 30 }}
-      showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" }}
     >
-<View style={styles.header}>
-  <TouchableOpacity onPress={handleChangeProfileImage}>
-    <Image
-      source={{
-        uri:
-          user?.profileImage ||
-          "https://cdn-icons-png.flaticon.com/512/147/147144.png",
-      }}
-      style={styles.avatar}
-    />
-  </TouchableOpacity>
+      <ScrollView
+        style={{ flex: 1, padding: 20 }}
+        contentContainerStyle={{ paddingBottom: 30 }}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ProfileEditScreen")}
+          >
+            <Image
+              source={{
+                uri: user?.profileImage
+                  ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
+                      ? `${API_BASE}${user.profileImage}`
+                      : user.profileImage)
+                  : Image.resolveAssetSource(DefaultPFP).uri,
+              }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
 
-  <View style={{ flex: 1 }}>
-    <Text 
-      style={[
-        styles.helloText,
-        (currentLanguage === 'ur' || (user?.name && containsUrdu(user.name))) && styles.urduText
-      ]}
-    >
-      {t("common.hello")}, {user?.name}
-    </Text>
-    <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
-  </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.helloText}>
+              {t("common.hello")}, {user?.name}
+            </Text>
+            <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
 
-  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-    <TouchableOpacity
-      onPress={handleLanguageChange}
-      style={styles.languageButton}
-    >
-      <Ionicons name="language" size={24} color="#007AFF" />
-      <Text style={styles.languageText}>
-        {currentLanguage === "en" ? "اردو" : "EN"}
-      </Text>
-    </TouchableOpacity>
+            {/* DASHBOARD SWITCH */}
+            {isCaregiver && (
+              <>
+                <TouchableOpacity onPress={toggleDashboard}>
+                  <Text
+                    style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}
+                  >
+                    {dashboardMode === "personal"
+                      ? "Open Caregiver Dashboard"
+                      : "Open Personal Dashboard"}
+                  </Text>
+                </TouchableOpacity>
 
-    <TouchableOpacity
-      onPress={() =>
-        Alert.alert(
-          t("home.logoutConfirm"),
-          t("home.logoutMessage"),
-          [
-            { text: t("common.cancel"), style: "cancel" },
-            {
-              text: t("common.yes"),
-              onPress: async () => {
-                await AsyncStorage.removeItem("user");
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "OnboardingScreen" }],
-                });
-              },
-              style: "destructive",
-            },
-          ]
-        )
-      }
-    >
-      <Ionicons name="log-out-outline" size={28} color="#007AFF" />
-    </TouchableOpacity>
-  </View>
-</View>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("CaregiverRequestsScreen")}
+                  style={{ marginTop: 6 }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons
+                      name="notifications-outline"
+                      size={22}
+                      color="#007AFF"
+                    />
 
-      <Text style={styles.todayText}>
-        {t("common.today")}, {new Date().toDateString()}
-      </Text>
+                    {requestCount > 0 && (
+                      <View
+                        style={{
+                          marginLeft: 6,
+                          backgroundColor: "red",
+                          borderRadius: 10,
+                          paddingHorizontal: 6,
+                          paddingVertical: 1,
+                        }}
+                      >
+                        <Text style={{ color: "#fff", fontSize: 11 }}>
+                          {requestCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
 
-      <View style={styles.weekNav}>
-        <TouchableOpacity onPress={goToPrevWeek}>
-          <Ionicons name="chevron-back" size={22} />
-        </TouchableOpacity>
+          <TouchableOpacity onPress={openDrawer}>
+            <Ionicons
+              name="menu-outline"
+              size={26}
+              color={darkMode ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity onPress={goToNextWeek}>
-          <Ionicons name="chevron-forward" size={22} />
-        </TouchableOpacity>
-      </View>
+        {/* CAREGIVER LABEL */}
+        {dashboardMode === "caregiver" && (
+          <View style={styles.caregiverBadge}>
+            <Text style={{ fontWeight: "700", marginBottom: 8 }}>
+              Dependents’ Medication
+            </Text>
 
-      <View style={styles.calendarRow}>
-        {weekDates.map((date, index) => {
-          const selected =
-            date.toDateString() === selectedDate.toDateString();
+            {/* DEPENDENTS DROPDOWN */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {dependentList.map((dep, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => setSelectedDependent(dep)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    backgroundColor:
+                      selectedDependent === dep ? "#007AFF" : "#eee",
+                    borderRadius: 10,
+                    marginRight: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: selectedDependent === dep ? "#fff" : "#000",
+                    }}
+                  >
+                    {dep === "all" ? "All" : dep}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-          return (
+        {/* TABS */}
+        <View style={styles.tabs}>
+          {[
+            { key: "all", label: t("home.all"), count: totalCount },
+            { key: "taken", label: t("home.taken"), count: takenCount },
+            { key: "missed", label: t("home.missed"), count: missedCount },
+          ].map((tab) => (
             <TouchableOpacity
-              key={index}
-              onPress={() => setSelectedDate(date)}
+              key={tab.key}
+              onPress={() => setSelectedTab(tab.key)}
               style={[
-                styles.dayContainer,
-                selected && styles.selectedDay,
+                styles.tabButton,
+                {
+                  backgroundColor: selectedTab === tab.key ? "#007AFF" : "#eee",
+                },
               ]}
             >
               <Text
-                style={[
-                  styles.dayText,
-                  selected && styles.selectedDayText,
-                ]}
+                style={{ color: selectedTab === tab.key ? "#fff" : "#000" }}
               >
-                {days[index]}
-              </Text>
-              <Text
-                style={[
-                  styles.dateText,
-                  selected && styles.selectedDayText,
-                ]}
-              >
-                {date.getDate()}
+                {tab.label} ({tab.count})
               </Text>
             </TouchableOpacity>
-          );
-        })}
-      </View>
-      <View style={styles.tabs}>
-        {[
-          { key: "all", label: t("home.all"), count: totalCount },
-          { key: "taken", label: t("home.taken"), count: takenCount },
-          { key: "missed", label: t("home.missed"), count: missedCount },
-        ].map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            onPress={() => setSelectedTab(tab.key)}
-            style={[
-              styles.tabButton,
-              selectedTab === tab.key && styles.activeTab,
-            ]}
+          ))}
+        </View>
+
+        {/* MEDICATION LIST */}
+        {filteredMeds.map((med) => (
+          <Swipeable
+            key={med._id}
+            renderRightActions={() => (
+              <TouchableOpacity
+                onPress={() => deleteMedication(med._id)}
+                style={styles.deleteBox}
+              >
+                <Ionicons name="trash" size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
           >
-            <Text
-              style={
-                selectedTab === tab.key
-                  ? styles.activeTabText
-                  : styles.tabText
-              }
+            <TouchableOpacity
+              style={styles.savedMedContainer}
+              onPress={() => goToDetail(med)}
             >
-              {tab.label} ({tab.count})
-            </Text>
-          </TouchableOpacity>
+              {dashboardMode === "caregiver" && (
+                <Text style={styles.dependentName}>{med.dependentName}</Text>
+              )}
+              <Text style={styles.medName}>{med.name}</Text>
+              <Text>{med.dose}</Text>
+              <Text>{med.schedule.repeat}</Text>
+
+              {(() => {
+                const currentDose = getCurrentScheduledDose(med);
+                return currentDose?.status === "missed" ? (
+                  <Text style={styles.missed}>MISSED</Text>
+                ) : null;
+              })()}
+
+              {/* CURRENT PENDING DOSE BUTTON */}
+              {(() => {
+                const currentDose = getCurrentScheduledDose(med);
+
+                let disableButton = false;
+                let buttonLabel = t("home.take");
+
+                if (currentDose) {
+                  const sched = new Date(currentDose.scheduledAt).getTime();
+                  const diffMins = (new Date().getTime() - sched) / 60000;
+
+                  if (currentDose.takenAt) {
+                    disableButton = true;
+                    buttonLabel = t("home.taken");
+                  }
+                }
+
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.takeButton,
+                      disableButton && { opacity: 0.5 },
+                    ]}
+                    disabled={disableButton}
+                    onPress={async () => {
+                      if (!currentDose) return;
+
+                      try {
+                        const res = await fetch(
+                          `${API_BASE}/api/medications/dose-log/${med._id}/${currentDose._id}`,
+                          {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ status: "taken" }),
+                          },
+                        );
+
+                        const updatedMed = await res.json();
+                        setMedications((prev) =>
+                          prev.map((m) =>
+                            m._id === updatedMed._id ? updatedMed : m,
+                          ),
+                        );
+                      } catch (error) {
+                        Alert.alert(
+                          t("common.error") || "Error",
+                          t("medication.updateError"),
+                        );
+                      }
+                    }}
+                  >
+                    <Text style={{ color: "#fff" }}>{buttonLabel}</Text>
+                  </TouchableOpacity>
+                );
+              })()}
+            </TouchableOpacity>
+          </Swipeable>
         ))}
-      </View>
-{filteredMeds.map((med) => (
-  <Swipeable
-    key={med._id}
-    renderRightActions={() => (
-      <TouchableOpacity
-        onPress={() => deleteMedication(med._id)}
-        style={styles.deleteBox}
-      >
-        <Ionicons name="trash" size={24} color="#fff" />
-      </TouchableOpacity>
-    )}
-  >
-    <TouchableOpacity
-      style={styles.savedMedContainer}
-      onPress={() =>
-        goToDetail(med) }>
-      
-    
-      <Text style={styles.medName}>{med.name}</Text>
-      <Text>{med.dose}</Text>
-      <Text>{med.frequency}</Text>
 
-      {med.status === "missed" && (
-        <Text style={styles.missed}>{t("home.missed").toUpperCase()}</Text>
-      )}
-
-      {med.status !== "taken" && (
+        {/* ADD BUTTON */}
         <TouchableOpacity
-          style={styles.takeButton}
-          onPress={() => updateStatus(med._id, "taken")}
+          style={styles.addButton}
+          onPress={() => {
+            if (dashboardMode === "caregiver") {
+              if (selectedDependent === "all") {
+                Alert.alert(
+                  "Select a Dependent",
+                  "Please select a specific dependent from the filter above before adding a medication",
+                );
+                return;
+              }
+              const depMed = dependentsMeds.find(
+                (m) => m.dependentName === selectedDependent,
+              );
+              if (!depMed) {
+                Alert.alert("Error", "Could not find dependent information.");
+                return;
+              }
+              navigation.navigate("ScanPrescriptionScreen", {
+                forDependentId: depMed.user._id || depMed.user,
+                forDependentName: selectedDependent,
+              });
+            } else {
+              navigation.navigate("ScanPrescriptionScreen");
+            }
+          }}
         >
-          <Text style={{ color: "#fff" }}>{t("home.take")}</Text>
+          <Ionicons name="add" size={20} color="#fff" />
+          <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
         </TouchableOpacity>
-      )}
-    </TouchableOpacity>
-  </Swipeable>
-))}
-
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate("ScanPrescriptionScreen")}
-      >
-        <Ionicons name="add" size={20} color="#fff" />
-        <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
-      </TouchableOpacity>
-        </ScrollView>
-  </SafeAreaView>
-
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F6F8FF", padding: 20 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   avatar: { width: 70, height: 70, borderRadius: 35, marginRight: 15 },
-  helloText: { fontSize: 22, fontWeight: "700" },
-  urduText: { 
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  welcomeText: { fontSize: 16, color: "gray" },
-  todayText: { fontSize: 18, marginTop: 20 },
+  helloText: { fontSize: 18, fontWeight: "700" },
+  welcomeText: { fontSize: 14, color: "gray" },
 
-  weekNav: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  caregiverBadge: {
+    backgroundColor: "#FADDDD",
+    padding: 10,
+    borderRadius: 20,
     marginVertical: 10,
   },
-
-  calendarRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  dayContainer: {
-    padding: 10,
-    alignItems: "center",
-    borderRadius: 10,
-  },
-
-  selectedDay: {
-    borderWidth: 1,
-    borderColor: "#007AFF",
-  },
-
-  dayText: { color: "gray" },
-  dateText: { fontWeight: "bold" },
-
-  selectedDayText: { color: "#007AFF" },
 
   tabs: {
     flexDirection: "row",
     marginVertical: 20,
     justifyContent: "space-between",
   },
-
-  tabButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#eee",
-  },
-
-  activeTab: {
-    backgroundColor: "#007AFF",
-  },
-
-  tabText: { color: "#333" },
-  activeTabText: { color: "#fff" },
+  tabButton: { padding: 10, borderRadius: 10 },
 
   savedMedContainer: {
     backgroundColor: "#fff",
     padding: 15,
     borderRadius: 15,
     marginBottom: 15,
+  },
+
+  dependentName: {
+    color: "#FF6B6B",
+    fontWeight: "700",
+    marginBottom: 4,
   },
 
   medName: { fontSize: 18, fontWeight: "bold" },
@@ -526,11 +739,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  missed: {
-    color: "red",
-    fontWeight: "bold",
-    marginVertical: 4,
-  },
+  missed: { fontWeight: "bold", color: "red", marginVertical: 4 },
 
   deleteBox: {
     backgroundColor: "red",
@@ -550,23 +759,5 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
 
-  addButtonText: {
-    color: "#fff",
-    marginLeft: 8,
-    fontWeight: "600",
-  },
-  languageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "#f0f0f0",
-  },
-  languageText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
+  addButtonText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
 });
