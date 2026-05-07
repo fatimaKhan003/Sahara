@@ -164,7 +164,13 @@ const CaregiverRequestsScreen = () => {
           <Text style={styles.emptyText}>No pending acceptance requests.</Text>
         )}
         {requests.map((req: any) => (
-          <View key={req._id} style={styles.card}>
+          <View 
+            key={req._id} 
+            style={[
+              styles.card, 
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff", borderColor: darkMode ? "#333" : "#E8E8E8" }
+            ]}
+          >
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("EditMedicationRequestScreen", {
@@ -190,7 +196,7 @@ const CaregiverRequestsScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleRejectRequest(req._id)}
-                style={[styles.button, { backgroundColor: "#FF3B30" }]}
+                style={[styles.button, { backgroundColor: "#C62828" }]}
               >
                 <Text style={styles.buttonText}>Reject</Text>
               </TouchableOpacity>
@@ -203,7 +209,13 @@ const CaregiverRequestsScreen = () => {
           <Text style={styles.emptyText}>No pending deletion requests.</Text>
         )}
         {medDeleteRequests.map((req: any) => (
-          <View key={req._id} style={styles.card}>
+          <View 
+            key={req._id} 
+            style={[
+              styles.card, 
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff", borderColor: darkMode ? "#333" : "#E8E8E8" }
+            ]}
+          >
             <Text style={styles.cardTitle}>
               Dependent: {req.dependent?.name}
             </Text>
@@ -220,7 +232,7 @@ const CaregiverRequestsScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleRejectMedDelete(req._id)}
-                style={[styles.button, { backgroundColor: "#FF3B30" }]}
+                style={[styles.button, { backgroundColor: "#C62828" }]}
               >
                 <Text style={styles.buttonText}>Reject</Text>
               </TouchableOpacity>
@@ -233,7 +245,13 @@ const CaregiverRequestsScreen = () => {
           <Text style={styles.emptyText}>No pending theme requests.</Text>
         )}
         {themeRequests.map((req: any) => (
-          <View key={req._id} style={styles.card}>
+          <View 
+            key={req._id} 
+            style={[
+              styles.card, 
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff", borderColor: darkMode ? "#333" : "#E8E8E8" }
+            ]}
+          >
             <Text style={styles.cardTitle}>
               {req.dependent.name} wants {req.requestedTheme} mode
             </Text>
@@ -246,7 +264,7 @@ const CaregiverRequestsScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleRejectTheme(req._id)}
-                style={[styles.button, { backgroundColor: "#FF3B30" }]}
+                style={[styles.button, { backgroundColor: "#C62828" }]}
               >
                 <Text style={styles.buttonText}>Reject</Text>
               </TouchableOpacity>
@@ -285,15 +303,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
     padding: 15,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
+    borderRadius: 15,
+    marginBottom: 15,
+    borderWidth: 1,
   },
   cardTitle: { fontWeight: "bold", fontSize: 16, color: "#333" },
   cardText: { marginTop: 4, color: "#555" },

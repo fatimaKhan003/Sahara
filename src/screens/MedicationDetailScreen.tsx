@@ -304,7 +304,7 @@ const MedicationDetailScreen = () => {
     },
 
     deleteButton: {
-      backgroundColor: "#FF3B30",
+      backgroundColor: "#C62828",
       padding: 14,
       borderRadius: 12,
       alignItems: "center",
@@ -319,13 +319,16 @@ const MedicationDetailScreen = () => {
       fontSize: 16,
     },
     secondaryButton: {
-      backgroundColor: darkMode ? "#3A3A3A" : "#E5E5E5",
+      backgroundColor: "transparent",
       borderColor: "#007AFF",
       borderWidth: 1,
-      padding: 15,
+      borderStyle: "dashed",
+      padding: 12,
       borderRadius: 12,
       alignItems: "center",
-      flex: 1,
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: 8,
     },
     secondaryButtonText: {
       color: "#007AFF",
@@ -531,6 +534,7 @@ const MedicationDetailScreen = () => {
             }
             style={[dynamicStyles.secondaryButton, { marginBottom: 20 }]}
           >
+            <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
             <Text style={dynamicStyles.secondaryButtonText}>Add Time</Text>
           </TouchableOpacity>
 

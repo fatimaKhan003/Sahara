@@ -510,7 +510,7 @@ const HomeScreen = () => {
         {/* CAREGIVER LABEL */}
         {dashboardMode === "caregiver" && (
           <View style={styles.caregiverBadge}>
-            <Text style={{ fontWeight: "700", marginBottom: 8 }}>
+            <Text style={{ fontWeight: "700", marginBottom: 8, color: "#fff" }}>
               Dependents’ Medication
             </Text>
 
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   missed: { fontWeight: "bold", color: "red", marginVertical: 4 },
 
   deleteBox: {
-    backgroundColor: "red",
+    backgroundColor: "#C62828",
     justifyContent: "center",
     alignItems: "center",
     width: 80,
