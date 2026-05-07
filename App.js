@@ -31,6 +31,7 @@ import CaregiverRequestsScreen from "./src/screens/CaregiverRequestsScreen";
 import ViewPrescriptionsScreen from "./src/screens/ViewPrescriptionsScreen";
 import EditMedicationRequestScreen from "./src/screens/EditMedicationRequestScreen";
 import ViewAllMedicines from "./src/screens/ViewAllMedicines";
+import AdherenceScreen from "./src/screens/AdherenceScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -106,6 +107,10 @@ export default function App() {
                 <Stack.Screen
                   name="ViewAllMedicines"
                   component={ViewAllMedicines}
+                />
+                <Stack.Screen
+                name="Adherence"
+                component={AdherenceScreen}
                 />
               </Stack.Navigator>
             </NavigationContainer>

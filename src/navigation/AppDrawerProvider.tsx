@@ -185,6 +185,11 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
       icon: "document-text-outline",
       route: "ViewPrescriptionsScreen",
     },
+    {
+label:"Adherence Tracking",
+icon:"stats-chart-outline",
+route:"Adherence"
+    },
     { label: "Profile", icon: "person-outline", route: "ProfileEditScreen" },
     { label: "Logout", icon: "log-out-outline", action: handleLogout },
     { label: "Settings", icon: "settings-outline", route: "SettingsScreen" },

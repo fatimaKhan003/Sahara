@@ -489,5 +489,50 @@ router.get("/delete-requests/:caregiverId", async (req, res) => {
     res.status(500).json({ message: "Error fetching delete requests" });
   }
 });
+router.get("/adherence/:userId", async(req,res)=>
+{
+   try {
+    const { userId } = req.params;
+    const { period } = req.query;
+
+    const meds = await Medication.find({ user: userId });
+
+    let total = 0;
+    let taken = 0;
+    let missed = 0;
+
+    const now = new Date();
+    let startDate = new Date();
+
+    if (period === "daily") {
+      startDate.setDate(now.getDate() - 1);
+    } else if (period === "weekly") {
+      startDate.setDate(now.getDate() - 7);
+    } else {
+      startDate.setMonth(now.getMonth() - 1);
+    }
+
+    meds.forEach((med) => {
+      med.doseLogs.forEach((log) => {
+        const logDate = new Date(log.scheduledAt);
+
+        if (logDate >= startDate) {
+          total++;
+
+          if (log.status === "taken") taken++;
+          if (log.status === "missed") missed++;
+        }
+      });
+    });
+
+    const percentage =
+      total === 0 ? 0 : Math.round((taken / total) * 100);
+
+    res.json({ total, taken, missed, percentage });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+
+});
 
 export default router;
