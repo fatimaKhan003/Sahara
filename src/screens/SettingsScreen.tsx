@@ -238,10 +238,12 @@ const SettingsScreen = () => {
           paddingTop: insets.top + 10,
         }}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={darkMode ? "#fff" : "#000"}
+          />
         </TouchableOpacity>
         <Text
           style={{
@@ -262,20 +264,6 @@ const SettingsScreen = () => {
         ]}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Caregiver Banner */}
-        {caregiverEnabled && (
-          <View style={styles.banner}>
-            <Text style={styles.bannerTitle}>
-              {t("settings.caregiverEnabled") ||
-                "Account changed to Caregiver!"}
-            </Text>
-            <Text style={styles.bannerText}>
-              {t("settings.caregiverDesc") ||
-                "You can now add dependents and manage their medications."}
-            </Text>
-          </View>
-        )}
-
         {/* Profile Section */}
         <View style={styles.section}>
           <Text
@@ -295,6 +283,41 @@ const SettingsScreen = () => {
           >
             <Text style={styles.link}>{t("common.editProfile")}</Text>
           </TouchableOpacity>
+
+          {/* Logout Moved to Top */}
+          <TouchableOpacity
+            style={[
+              styles.logoutButton,
+              {
+                backgroundColor: darkMode ? "#450A0A" : "#FEE2E2",
+                marginTop: 15,
+              },
+            ]}
+            onPress={async () => {
+              try {
+                await AsyncStorage.removeItem("user");
+                navigation.navigate("OnboardingScreen");
+              } catch (err) {
+                console.error("Logout failed:", err);
+              }
+            }}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color={darkMode ? "#F87171" : "#DC2626"}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{
+                color: darkMode ? "#F87171" : "#DC2626",
+                fontWeight: "700",
+                fontSize: 15,
+              }}
+            >
+              {t("common.logout")}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* General */}
@@ -303,24 +326,60 @@ const SettingsScreen = () => {
             {t("settings.general")}
           </Text>
 
-          <TouchableOpacity style={styles.card}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
-              {t("settings.language")}
+          <TouchableOpacity
+            style={[
+              styles.card,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+            onPress={async () => {
+              const current = i18n.language || "en";
+              const next = current === "en" ? "ur" : "en";
+              await i18n.changeLanguage(next);
+              setCurrentLanguage(next);
+            }}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
+              {t("settings.language")} (
+              {(currentLanguage || "en").toUpperCase()})
             </Text>
             <Text style={styles.subText}>{t("settings.languageDesc")}</Text>
           </TouchableOpacity>
 
-          <View style={styles.cardRow}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>Dark Mode</Text>
+          <View
+            style={[
+              styles.cardRow,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
+              Dark Mode
+            </Text>
 
             <Switch
               value={darkMode}
-              onValueChange={toggleThemeWithApproval} // already checks dependent inside
+              onValueChange={toggleThemeWithApproval}
+              trackColor={{
+                false: darkMode ? "#3A3A3C" : "#D1D1D6",
+                true: "#3B5BFF",
+              }}
+              thumbColor="#fff"
+              ios_backgroundColor={darkMode ? "#3A3A3C" : "#D1D1D6"}
             />
           </View>
 
-          <TouchableOpacity style={styles.card}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
+          <TouchableOpacity
+            style={[
+              styles.card,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
               {t("settings.appearance")}
             </Text>
             <Text style={styles.subText}>{t("settings.appearanceDesc")}</Text>
@@ -334,13 +393,26 @@ const SettingsScreen = () => {
           </Text>
 
           {/* Voice Reminder Switch */}
-          <View style={styles.cardRow}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
+          <View
+            style={[
+              styles.cardRow,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
               {t("settings.voiceReminders") || "Voice Reminders"}
             </Text>
             <Switch
               value={voiceReminderEnabled}
               onValueChange={toggleVoiceReminder}
+              trackColor={{
+                false: darkMode ? "#3A3A3C" : "#D1D1D6",
+                true: "#3B5BFF",
+              }}
+              thumbColor="#fff"
+              ios_backgroundColor={darkMode ? "#3A3A3C" : "#D1D1D6"}
             />
           </View>
           <Text style={[styles.subText, { marginBottom: 10 }]}>
@@ -355,16 +427,54 @@ const SettingsScreen = () => {
             {t("settings.caregiverAccount")}
           </Text>
 
-          <View style={styles.cardRow}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
-              {t("settings.caregiverAccount")}
-            </Text>
-            <Switch
-              value={caregiverEnabled}
-              onValueChange={toggleCaregiver}
-              disabled={(caregiverEnabled && hasDependents) || isDependent}
-            />
-          </View>
+          {caregiverEnabled && (
+            <View style={[styles.banner, { marginBottom: 10 }]}>
+              <Text style={styles.bannerTitle}>
+                {t("settings.caregiverEnabled") ||
+                  "Account changed to Caregiver!"}
+              </Text>
+              <Text style={styles.bannerText}>
+                {t("settings.caregiverDesc") ||
+                  "You can now add dependents and manage their medications."}
+              </Text>
+            </View>
+          )}
+
+          {(() => {
+            const isCaregiverDisabled =
+              (caregiverEnabled && hasDependents) || isDependent;
+            return (
+              <View
+                style={[
+                  styles.cardRow,
+                  {
+                    backgroundColor: darkMode ? "#1E1E1E" : "#fff",
+                    opacity: isCaregiverDisabled ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: darkMode ? "#fff" : "#000",
+                    fontWeight: "600",
+                  }}
+                >
+                  {t("settings.caregiverAccount")}
+                </Text>
+                <Switch
+                  value={caregiverEnabled}
+                  onValueChange={toggleCaregiver}
+                  disabled={isCaregiverDisabled}
+                  trackColor={{
+                    false: darkMode ? "#3A3A3C" : "#D1D1D6",
+                    true: "#3B5BFF",
+                  }}
+                  thumbColor={isCaregiverDisabled ? "#aaa" : "#fff"}
+                  ios_backgroundColor={darkMode ? "#3A3A3C" : "#D1D1D6"}
+                />
+              </View>
+            );
+          })()}
 
           {caregiverEnabled && (
             <TouchableOpacity
@@ -377,38 +487,6 @@ const SettingsScreen = () => {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Logout */}
-        <TouchableOpacity
-          style={[
-            styles.logoutButton,
-            { backgroundColor: darkMode ? "#7F1D1D" : "#FEE2E2" },
-          ]}
-          onPress={async () => {
-            try {
-              await AsyncStorage.removeItem("user");
-              navigation.navigate("OnboardingScreen");
-            } catch (err) {
-              console.error("Logout failed:", err);
-            }
-          }}
-        >
-          <Ionicons
-            name="log-out-outline"
-            size={22}
-            color={darkMode ? "#FCA5A5" : "#EF4444"}
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={{
-              color: darkMode ? "#FCA5A5" : "#EF4444",
-              fontWeight: "600",
-              fontSize: 16,
-            }}
-          >
-            {t("common.logout")}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -433,6 +511,8 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
   },
 
   subText: {
@@ -445,9 +525,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
     marginBottom: 10,
   },
 
