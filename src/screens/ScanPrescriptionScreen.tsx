@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { API_BASE, OCR_BASE } from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const getPersonalKey = (userId: string) => `prescriptions_${userId}`;
 const getCaregiverKey = (userId: string) => `prescriptions_caregiver_${userId}`;
@@ -77,6 +78,7 @@ export default function ScanPrescriptionScreen() {
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const btn1Scale = useRef(new Animated.Value(1)).current;
   const btn2Scale = useRef(new Animated.Value(1)).current;
+  const insets = useSafeAreaInsets();
   const scanLineY = scanLineAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 150],
@@ -246,71 +248,73 @@ export default function ScanPrescriptionScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1256DB" />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backBtn}
         >
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Scan Prescription</Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      {forDependentName && (
-        <View style={styles.dependentBanner}>
-          <Ionicons name="person-outline" size={16} color="#1256DB" />
-          <Text style={styles.dependentText}>{forDependentName}</Text>
-        </View>
-      )}
+      <View style={styles.content}>
+        {forDependentName && (
+          <View style={styles.dependentBanner}>
+            <Ionicons name="person-outline" size={16} color="#1256DB" />
+            <Text style={styles.dependentText}>{forDependentName}</Text>
+          </View>
+        )}
 
-      {isProcessing ? (
-        <Animated.View
-          style={[styles.scanner, { transform: [{ scale: pulseAnim }] }]}
-        >
-          <View style={styles.cornerTL} />
-          <View style={styles.cornerTR} />
-          <View style={styles.cornerBL} />
-          <View style={styles.cornerBR} />
-
+        {isProcessing ? (
           <Animated.View
-            style={[
-              styles.scanLine,
-              { transform: [{ translateY: scanLineY }] },
-            ]}
-          />
+            style={[styles.scanner, { transform: [{ scale: pulseAnim }] }]}
+          >
+            <View style={styles.cornerTL} />
+            <View style={styles.cornerTR} />
+            <View style={styles.cornerBL} />
+            <View style={styles.cornerBR} />
 
-          <ActivityIndicator size="large" color="#1256DB" />
-          <Text style={styles.processingText}>Scanning...</Text>
-        </Animated.View>
-      ) : (
-        <View style={styles.scanner}>
-          <View style={styles.cornerTL} />
-          <View style={styles.cornerTR} />
-          <View style={styles.cornerBL} />
-          <View style={styles.cornerBR} />
+            <Animated.View
+              style={[
+                styles.scanLine,
+                { transform: [{ translateY: scanLineY }] },
+              ]}
+            />
 
-          <Ionicons name="document-text-outline" size={40} color="#1256DB" />
-        </View>
-      )}
+            <ActivityIndicator size="large" color="#1256DB" />
+            <Text style={styles.processingText}>Scanning...</Text>
+          </Animated.View>
+        ) : (
+          <View style={styles.scanner}>
+            <View style={styles.cornerTL} />
+            <View style={styles.cornerTR} />
+            <View style={styles.cornerBL} />
+            <View style={styles.cornerBR} />
 
-      {!isProcessing && (
-        <View style={styles.buttons}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={openCamera}>
-            <Ionicons name="camera" size={20} color="#fff" />
-            <Text style={styles.primaryText}>Take Photo</Text>
-          </TouchableOpacity>
+            <Ionicons name="document-text-outline" size={40} color="#1256DB" />
+          </View>
+        )}
 
-          <TouchableOpacity style={styles.secondaryBtn} onPress={openGallery}>
-            <Ionicons name="images" size={20} color="#1256DB" />
-            <Text style={styles.secondaryText}>Gallery</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+        {!isProcessing && (
+          <View style={styles.buttons}>
+            <TouchableOpacity style={styles.primaryBtn} onPress={openCamera}>
+              <Ionicons name="camera" size={20} color="#fff" />
+              <Text style={styles.primaryText}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.secondaryBtn} onPress={openGallery}>
+              <Ionicons name="images" size={20} color="#1256DB" />
+              <Text style={styles.secondaryText}>Gallery</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -320,15 +324,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  content: {
+    flex: 1,
     padding: 20,
   },
 
   header: {
-    fontSize: 18,
-    fontWeight: "600",
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 30,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
 
   backBtn: {
@@ -342,9 +351,9 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
-    color: "#1256DB",
+    color: "#000",
   },
 
   dependentBanner: {

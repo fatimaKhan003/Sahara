@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -12,10 +12,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { ThemeContext } from "../context/ThemeContext";
 const CaregiverRequestsScreen = () => {
+  const { theme } = useContext(ThemeContext);
+  const darkMode = theme === "dark";
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
 
   const [requests, setRequests] = useState<any[]>([]);
   const [medDeleteRequests, setMedDeleteRequests] = useState<any[]>([]);
@@ -138,19 +142,19 @@ const CaregiverRequestsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
+          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Caregiver Requests</Text>
+        <Text style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}>Caregiver Requests</Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refreshAll} />
         }
@@ -257,7 +261,7 @@ const CaregiverRequestsScreen = () => {
 export default CaregiverRequestsScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f2f2f2" },
+  container: { flex: 1, padding: 20 },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -265,20 +269,20 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   emptyText: { color: "#888", marginBottom: 12 },
-  safeArea: { flex: 1, backgroundColor: "#F2F2F2" },
+  safeArea: { flex: 1 },
   backButton: { marginRight: 10 },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
-    backgroundColor: "#c9d0d7",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "#eee",
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
-    color: "#1256DB",
   },
   card: {
     backgroundColor: "#fff",

@@ -8,6 +8,7 @@ import {
   ScrollView,
   SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemeContext } from "../context/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
@@ -27,6 +28,7 @@ const SettingsScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const darkMode = theme === "dark";
+  const insets = useSafeAreaInsets();
 
   const [user, setUser] = useState<any>(null);
   const [caregiverEnabled, setCaregiverEnabled] = useState(false);
@@ -217,40 +219,49 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={[
-        styles.container,
-        { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
-      ]}
-      contentContainerStyle={{ paddingBottom: 40 }}
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+      }}
     >
-      <SafeAreaView style={{ flex: 1, paddingTop: 20 }}>
-        <View
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+          borderBottomWidth: 1,
+          borderBottomColor: "#eee",
+          paddingTop: insets.top + 10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
+        </TouchableOpacity>
+        <Text
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            padding: 15,
-            backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
-            borderBottomWidth: 0.1,
-            borderBottomColor: "#ddd",
+            fontSize: 22,
+            fontWeight: "700",
+            color: darkMode ? "#fff" : "#000",
           }}
         >
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginRight: 10 }}
-          >
-            <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
-          </TouchableOpacity>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: "700",
-              color: "#1256DB",
-            }}
-          >
-            Settings
-          </Text>
-        </View>
+          Settings
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <ScrollView
+        style={[
+          styles.container,
+          { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
+        ]}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Caregiver Banner */}
         {caregiverEnabled && (
           <View style={styles.banner}>
@@ -398,8 +409,8 @@ const SettingsScreen = () => {
             {t("common.logout")}
           </Text>
         </TouchableOpacity>
-      </SafeAreaView>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

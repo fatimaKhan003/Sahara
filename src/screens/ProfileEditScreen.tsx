@@ -21,12 +21,14 @@ import { useTranslation } from "react-i18next";
 import { containsUrdu } from "../utils/textUtils";
 import { API_BASE } from "../../api";
 import EventBus from "../utils/EventBus";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ProfileEditScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
+  const insets = useSafeAreaInsets();
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -276,27 +278,30 @@ const ProfileEditScreen = () => {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          padding: 15,
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingBottom: 16,
           backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
-          borderBottomWidth: 0.1,
-          borderBottomColor: "#ddd",
+          borderBottomWidth: 1,
+          borderBottomColor: "#eee",
+          paddingTop: insets.top + 10,
         }}
       >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ marginRight: 10 }}
         >
-          <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
+          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
         </TouchableOpacity>
         <Text
           style={{
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: "700",
-            color: "#1256DB",
+            color: darkMode ? "#fff" : "#000",
           }}
         >
           Edit Profile
         </Text>
+        <View style={{ width: 24 }} />
       </View>
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 25, paddingVertical: 30 }}

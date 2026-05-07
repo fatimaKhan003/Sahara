@@ -699,7 +699,7 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  header: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
   avatar: { width: 70, height: 70, borderRadius: 35, marginRight: 15 },
   helloText: { fontSize: 18, fontWeight: "700" },
   welcomeText: { fontSize: 14, color: "gray" },
