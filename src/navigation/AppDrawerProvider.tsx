@@ -186,7 +186,6 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
       route: "ViewPrescriptionsScreen",
     },
     { label: "Profile", icon: "person-outline", route: "ProfileEditScreen" },
-    { label: "Logout", icon: "log-out-outline", action: handleLogout },
     { label: "Settings", icon: "settings-outline", route: "SettingsScreen" },
   ];
 
@@ -225,10 +224,10 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
       backgroundColor: darkMode ? "#1E3A8A" : "#eff6ff",
     },
     logoutButton: {
-      backgroundColor: darkMode ? "#7F1D1D" : "#fef2f2",
+      backgroundColor: darkMode ? "#450A0A" : "#FEE2E2",
     },
     logoutText: {
-      color: darkMode ? "#FCA5A5" : "#ef4444",
+      color: darkMode ? "#F87171" : "#DC2626",
     },
   });
 
@@ -301,9 +300,10 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 <Image
                   source={{
                     uri: user?.profileImage
-                      ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
+                      ? user.profileImage.startsWith("/") ||
+                        user.profileImage.startsWith("uploads")
                         ? `${API_BASE}${user.profileImage}`
-                        : user.profileImage)
+                        : user.profileImage
                       : Image.resolveAssetSource(DefaultPFP).uri,
                   }}
                   style={[styles.avatarImage]}
@@ -416,22 +416,33 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 </View>
               </TouchableOpacity>
             </View>
-
-            {!isAuthScreen && (
-              <TouchableOpacity
-                style={[styles.logoutButton, dynamicStyles.logoutButton]}
-                onPress={handleLogout}
-              >
-                <Ionicons
-                  name="log-out-outline"
-                  size={22}
-                  color={darkMode ? "#FCA5A5" : "#ef4444"}
-                />
-                <Text style={[styles.logoutText, dynamicStyles.logoutText]}>
+            <TouchableOpacity
+              style={[styles.logoutRow, dynamicStyles.logoutButton]}
+              onPress={handleLogout}
+            >
+              <View style={styles.prefLeft}>
+                <View
+                  style={[
+                    styles.iconWrapper,
+                    { backgroundColor: darkMode ? "#7F1D1D" : "#FECACA" },
+                  ]}
+                >
+                  <Ionicons
+                    name="log-out-outline"
+                    size={20}
+                    color={darkMode ? "#F87171" : "#DC2626"}
+                  />
+                </View>
+                <Text style={[styles.itemLabel, dynamicStyles.logoutText]}>
                   Logout
                 </Text>
-              </TouchableOpacity>
-            )}
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={darkMode ? "#F87171" : "#DC2626"}
+              />
+            </TouchableOpacity>
           </ScrollView>
         </Animated.View>
       </View>
@@ -551,17 +562,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 12,
   },
-  logoutButton: {
+  logoutRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-    marginTop: 4,
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginTop: 10,
   },
   logoutText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
