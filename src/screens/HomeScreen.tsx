@@ -570,92 +570,93 @@ const HomeScreen = () => {
 
         {/* MEDICATION LIST */}
         {filteredMeds.map((med) => (
-          <Swipeable
-            key={med._id}
-            renderRightActions={() => (
-              <TouchableOpacity
-                onPress={() => deleteMedication(med._id)}
-                style={styles.deleteBox}
-              >
-                <Ionicons name="trash" size={24} color="#fff" />
-              </TouchableOpacity>
-            )}
-          >
-            <TouchableOpacity
-              style={styles.savedMedContainer}
-              onPress={() => goToDetail(med)}
-            >
-              {dashboardMode === "caregiver" && (
-                <Text style={styles.dependentName}>{med.dependentName}</Text>
+          <View key={med._id} style={styles.medItemWrapper}>
+            <Swipeable
+              renderRightActions={() => (
+                <TouchableOpacity
+                  onPress={() => deleteMedication(med._id)}
+                  style={styles.deleteBox}
+                >
+                  <Ionicons name="trash" size={24} color="#fff" />
+                </TouchableOpacity>
               )}
-              <Text style={styles.medName}>{med.name}</Text>
-              <Text>{med.dose}</Text>
-              <Text>{med.schedule.repeat}</Text>
+            >
+              <TouchableOpacity
+                style={styles.savedMedContainer}
+                onPress={() => goToDetail(med)}
+              >
+                {dashboardMode === "caregiver" && (
+                  <Text style={styles.dependentName}>{med.dependentName}</Text>
+                )}
+                <Text style={styles.medName}>{med.name}</Text>
+                <Text>{med.dose}</Text>
+                <Text>{med.schedule.repeat}</Text>
 
-              {(() => {
-                const currentDose = getCurrentScheduledDose(med);
-                return currentDose?.status === "missed" ? (
-                  <Text style={styles.missed}>MISSED</Text>
-                ) : null;
-              })()}
+                {(() => {
+                  const currentDose = getCurrentScheduledDose(med);
+                  return currentDose?.status === "missed" ? (
+                    <Text style={styles.missed}>MISSED</Text>
+                  ) : null;
+                })()}
 
-              {/* CURRENT PENDING DOSE BUTTON */}
-              {(() => {
-                const currentDose = getCurrentScheduledDose(med);
+                {/* CURRENT PENDING DOSE BUTTON */}
+                {(() => {
+                  const currentDose = getCurrentScheduledDose(med);
 
-                let disableButton = false;
-                let buttonLabel = t("home.take");
+                  let disableButton = false;
+                  let buttonLabel = t("home.take");
 
-                if (currentDose) {
-                  const sched = new Date(currentDose.scheduledAt).getTime();
-                  const diffMins = (new Date().getTime() - sched) / 60000;
+                  if (currentDose) {
+                    const sched = new Date(currentDose.scheduledAt).getTime();
+                    const diffMins = (new Date().getTime() - sched) / 60000;
 
-                  if (currentDose.takenAt) {
-                    disableButton = true;
-                    buttonLabel = t("home.taken");
+                    if (currentDose.takenAt) {
+                      disableButton = true;
+                      buttonLabel = t("home.taken");
+                    }
                   }
-                }
 
-                return (
-                  <TouchableOpacity
-                    style={[
-                      styles.takeButton,
-                      disableButton && { opacity: 0.5 },
-                    ]}
-                    disabled={disableButton}
-                    onPress={async () => {
-                      if (!currentDose) return;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.takeButton,
+                        disableButton && { opacity: 0.5 },
+                      ]}
+                      disabled={disableButton}
+                      onPress={async () => {
+                        if (!currentDose) return;
 
-                      try {
-                        const res = await fetch(
-                          `${API_BASE}/api/medications/dose-log/${med._id}/${currentDose._id}`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ status: "taken" }),
-                          },
-                        );
+                        try {
+                          const res = await fetch(
+                            `${API_BASE}/api/medications/dose-log/${med._id}/${currentDose._id}`,
+                            {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ status: "taken" }),
+                            },
+                          );
 
-                        const updatedMed = await res.json();
-                        setMedications((prev) =>
-                          prev.map((m) =>
-                            m._id === updatedMed._id ? updatedMed : m,
-                          ),
-                        );
-                      } catch (error) {
-                        Alert.alert(
-                          t("common.error") || "Error",
-                          t("medication.updateError"),
-                        );
-                      }
-                    }}
-                  >
-                    <Text style={{ color: "#fff" }}>{buttonLabel}</Text>
-                  </TouchableOpacity>
-                );
-              })()}
-            </TouchableOpacity>
-          </Swipeable>
+                          const updatedMed = await res.json();
+                          setMedications((prev) =>
+                            prev.map((m) =>
+                              m._id === updatedMed._id ? updatedMed : m,
+                            ),
+                          );
+                        } catch (error) {
+                          Alert.alert(
+                            t("common.error") || "Error",
+                            t("medication.updateError"),
+                          );
+                        }
+                      }}
+                    >
+                      <Text style={{ color: "#fff" }}>{buttonLabel}</Text>
+                    </TouchableOpacity>
+                  );
+                })()}
+              </TouchableOpacity>
+            </Swipeable>
+          </View>
         ))}
 
         {/* ADD BUTTON */}
@@ -721,6 +722,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 15,
     borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+  },
+
+  medItemWrapper: {
     marginBottom: 15,
   },
 
@@ -747,6 +753,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 80,
     height: "100%",
+    borderRadius: 15,
+    marginLeft: 10,
   },
 
   addButton: {
