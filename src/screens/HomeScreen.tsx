@@ -48,10 +48,11 @@ const HomeScreen = () => {
 
   const [medications, setMedications] = useState<any[]>([]);
   const [dependentsMeds, setDependentsMeds] = useState<any[]>([]);
-  const dependentList = useMemo(() => {
-    const names = dependentsMeds.map((m) => m.dependentName);
+  const [allDependents, setAllDependents] = useState<any[]>([]);
+ const dependentList = useMemo(() => {
+    const names = allDependents.map((d) => d.name);
     return ["all", ...new Set(names)];
-  }, [dependentsMeds]);
+  }, [allDependents]);
   const [dashboardMode, setDashboardMode] = useState<"personal" | "caregiver">(
     "personal",
   );
@@ -189,6 +190,9 @@ const HomeScreen = () => {
       }
 
       if (caregiverData.isCaregiver) {
+        const depListRes= await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/dependents`);
+        const fullDepList= await depListRes.json();
+        setAllDependents(Array.isArray(fullDepList)? fullDepList:[]);
         const medRes = await fetch(
           `${API_BASE}/api/medications/requests/${parsedUser._id}`,
         );
@@ -671,15 +675,15 @@ const HomeScreen = () => {
                 );
                 return;
               }
-              const depMed = dependentsMeds.find(
-                (m) => m.dependentName === selectedDependent,
-              );
-              if (!depMed) {
+              const target= allDependents.find((d)=> d.name===selectedDependent);
+              if(!target)
+              {
                 Alert.alert("Error", "Could not find dependent information.");
                 return;
               }
+              
               navigation.navigate("ScanPrescriptionScreen", {
-                forDependentId: depMed.user._id || depMed.user,
+                forDependentId: target._id,
                 forDependentName: selectedDependent,
               });
             } else {

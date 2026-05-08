@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "872839710699",
+    "project_id": "sahara-e5256",
+    "storage_bucket": "sahara-e5256.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:872839710699:android:b693ecaea81c23f6617bae",
+        "android_client_info": {
+          "package_name": "com.sahara.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCY0H20xsDadgxVbyR_pha9lDhKiVD--UE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
