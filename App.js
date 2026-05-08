@@ -19,6 +19,7 @@ import SplashScreen from "./src/screens/SplashScreen";
 import ProfileEditScreen from "./src/screens/ProfileEditScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import AddDependentsScreen from "./src/screens/AddDependentsScreen";
+import * as Notifications from "expo-notifications";
 import {
   registerForNotifications,
   sendLocalTestNotification,
@@ -41,6 +42,11 @@ export default function App() {
     setupNotificationActions();
     setupForegroundNotificationListener();
     setupNotificationResponseListener();
+    Notifications.getNotificationChannelsAsync().then(channels=>
+    {
+      console.log('CHANNELS:', JSON.stringify(channels, null, 2));
+    }
+    );
   }, []);
   
 
