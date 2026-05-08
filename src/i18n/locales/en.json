@@ -182,6 +182,8 @@
     "caregiverDesc": "You can now add dependents and manage their medications.",
     "voiceReminders": "Voice Reminders",
     "voiceRemindersDesc": "Enable spoken reminders for your medications.",
+    "voiceLanguage": "Voice Reminder Language",
+    "voiceLanguageDesc": "Choose the language for spoken medication reminders.",
     "logoutDesc": "Click here to log out of this device."
   }
 }

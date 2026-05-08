@@ -164,5 +164,27 @@
     "somethingWentWrong": "کچھ غلط ہو گیا",
     "enterAtLeastOne": "براہ کرم کم از کم ایک دوائی درج کریں",
     "userNotFoundError": "صارف نہیں ملا"
+  },
+  "settings": {
+    "reminders": "یاد دہانیاں اور الارم",
+    "notificationSettings": "اطلاعات کی ترتیبات",
+    "notificationDesc": "اطلاعات کی ترجیحات کا انتظام کریں",
+    "reminderPreferences": "یاد دہانی کی ترجیحات",
+    "reminderDesc": "اپنی یاد دہانیوں کو حسب ضرورت بنائیں",
+    "general": "عمومی",
+    "language": "زبان",
+    "languageDesc": "ایپ کی زبان تبدیل کریں",
+    "appearance": "ظاہری شکل",
+    "appearanceDesc": "لائٹ یا ڈارک موڈ",
+    "caregiverAccount": "کیئر گیور اکاؤنٹ",
+    "caregiverToggle": "کیئر گیور موڈ فعال کریں",
+    "addDependents": "ڈپینڈنٹس شامل کریں",
+    "caregiverEnabled": "اکاؤنٹ کیئر گیور میں تبدیل ہو گیا!",
+    "caregiverDesc": "اب آپ ڈپینڈنٹس شامل کر سکتے ہیں اور ان کی دوائیوں کا انتظام کر سکتے ہیں۔",
+    "voiceReminders": "صوتی یاد دہانیاں",
+    "voiceRemindersDesc": "اپنی دوائیوں کے لیے صوتی یاد دہانیاں فعال کریں۔",
+    "voiceLanguage": "صوتی یاد دہانی کی زبان",
+    "voiceLanguageDesc": "صوتی یاد دہانیوں کے لیے زبان منتخب کریں۔",
+    "logoutDesc": "اس ڈیوائس سے لاگ آؤٹ کرنے کے لیے یہاں کلک کریں۔"
   }
-}
+}

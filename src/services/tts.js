@@ -1,16 +1,19 @@
 import * as Speech from "expo-speech";
 import { Platform } from "react-native";
-import i18n from "../i18n";
+import { getVoiceReminderLanguage } from "../context/SettingsContext";
 
 export function speakMedication(name, dose) {
-  const language = i18n.language || "en";
+  const language = getVoiceReminderLanguage() || "en";
   let speechLang = "en-US";
   let text = "";
 
-  if (language.startsWith("ur")) {
+  if (language === "ur") {
     if (Platform.OS === "ios") {
       speechLang = "hi-IN";
-      text = i18n.t("medication.voiceReminderTextHindi", { name, dose: dose || "" });
+      text = i18n.t("medication.voiceReminderTextHindi", {
+        name,
+        dose: dose || "",
+      });
     } else {
       speechLang = "ur-PK";
       text = i18n.t("medication.voiceReminderText", { name, dose: dose || "" });
