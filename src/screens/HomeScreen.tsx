@@ -49,7 +49,7 @@ const HomeScreen = () => {
   const [medications, setMedications] = useState<any[]>([]);
   const [dependentsMeds, setDependentsMeds] = useState<any[]>([]);
   const [allDependents, setAllDependents] = useState<any[]>([]);
- const dependentList = useMemo(() => {
+  const dependentList = useMemo(() => {
     const names = allDependents.map((d) => d.name);
     return ["all", ...new Set(names)];
   }, [allDependents]);
@@ -190,9 +190,11 @@ const HomeScreen = () => {
       }
 
       if (caregiverData.isCaregiver) {
-        const depListRes= await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/dependents`);
-        const fullDepList= await depListRes.json();
-        setAllDependents(Array.isArray(fullDepList)? fullDepList:[]);
+        const depListRes = await fetch(
+          `${API_BASE}/api/caregiver/${parsedUser._id}/dependents`,
+        );
+        const fullDepList = await depListRes.json();
+        setAllDependents(Array.isArray(fullDepList) ? fullDepList : []);
         const medRes = await fetch(
           `${API_BASE}/api/medications/requests/${parsedUser._id}`,
         );
@@ -442,9 +444,10 @@ const HomeScreen = () => {
             <Image
               source={{
                 uri: user?.profileImage
-                  ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
-                      ? `${API_BASE}${user.profileImage}`
-                      : user.profileImage)
+                  ? user.profileImage.startsWith("/") ||
+                    user.profileImage.startsWith("uploads")
+                    ? `${API_BASE}${user.profileImage}`
+                    : user.profileImage
                   : Image.resolveAssetSource(DefaultPFP).uri,
               }}
               style={styles.avatar}
@@ -675,13 +678,14 @@ const HomeScreen = () => {
                 );
                 return;
               }
-              const target= allDependents.find((d)=> d.name===selectedDependent);
-              if(!target)
-              {
+              const target = allDependents.find(
+                (d) => d.name === selectedDependent,
+              );
+              if (!target) {
                 Alert.alert("Error", "Could not find dependent information.");
                 return;
               }
-              
+
               navigation.navigate("ScanPrescriptionScreen", {
                 forDependentId: target._id,
                 forDependentName: selectedDependent,
