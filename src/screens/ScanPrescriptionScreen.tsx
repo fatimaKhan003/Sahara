@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import ImageCropPicker from "react-native-image-crop-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -117,15 +118,22 @@ export default function ScanPrescriptionScreen() {
       scanLineAnim.setValue(0);
     }
   }, [isProcessing]);
-  const processImage = async (localUri: string) => {
+
+  /**
+   * fullUri  — original uncropped image (saved to AsyncStorage + sent to server)
+   * croppedUri — tightly cropped version sent to OCR for faster processing
+   */
+  const processImage = async (fullUri: string, croppedUri: string) => {
     setIsProcessing(true);
-    await savePrescription(localUri, forDependentId, forDependentName);
+    // Save the FULL image locally (AsyncStorage)
+    await savePrescription(fullUri, forDependentId, forDependentName);
 
     try {
-      const formData = new FormData();
-      formData.append("image", {
-        uri: localUri,
-        name: "prescription.jpg",
+      // Send only the CROPPED image to OCR for speed
+      const ocrFormData = new FormData();
+      ocrFormData.append("image", {
+        uri: croppedUri,
+        name: "prescription_crop.jpg",
         type: "image/jpeg",
       } as any);
 
@@ -133,7 +141,7 @@ export default function ScanPrescriptionScreen() {
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         headers: { "Content-Type": "multipart/form-data" },
-        body: formData,
+        body: ocrFormData,
       });
 
       if (!resp.ok) throw new Error(`OCR server error: ${resp.status}`);
@@ -143,31 +151,14 @@ export default function ScanPrescriptionScreen() {
 
       if (!data.medicines || data.medicines.length === 0) {
         Alert.alert(
-          'No medications found',
-          'Could not detect any medications. You can enter them manually.',
+          "No medications found",
+          "Could not detect any medications. You can enter them manually.",
         );
       }
 
-      // const resp = await fetch(`${OCR_BASE}/ocr`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "multipart/form-data" },
-      //   body: formData,
-      // });
-
-      // if (!resp.ok) throw new Error(`OCR server error: ${resp.status}`);
-
-      // const data = await resp.json();
-      // console.log("OCR Response:", JSON.stringify(data, null, 2));
-
-      // if (!data.medicines || data.medicines.length === 0) {
-      //   Alert.alert(
-      //     "No medications found",
-      //     "Could not detect any medications. You can enter them manually.",
-      //   );
-      // }
-
+      // Pass the FULL image to ConfirmMedicationScreen for display + server upload
       navigation.navigate("ConfirmMedicationScreen", {
-        imageUri: localUri,
+        imageUri: fullUri,
         backendImageUri: "",
         detectedName: data.medicines?.[0]?.name || "",
         ocrMedicines: data.medicines || [],
@@ -181,7 +172,7 @@ export default function ScanPrescriptionScreen() {
         "Failed to process image. Please try again or enter manually.",
       );
       navigation.navigate("ConfirmMedicationScreen", {
-        imageUri: localUri,
+        imageUri: fullUri,
         backendImageUri: "",
         detectedName: "",
         ocrMedicines: [],
@@ -199,12 +190,27 @@ export default function ScanPrescriptionScreen() {
       Alert.alert(t("scan.permissionRequired"), t("scan.cameraPermission"));
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled) await processImage(result.assets[0].uri);
+    // Step 1: capture full image without cropping
+    const result = await ImagePicker.launchCameraAsync({ quality: 1 });
+    if (result.canceled) return;
+
+    const fullUri = result.assets[0].uri;
+
+    // Step 2: open cropper on the full image — user crops for OCR optimisation
+    try {
+      const cropped = await ImageCropPicker.openCropper({
+        path: fullUri,
+        width: 1200,
+        height: 800,
+        cropping: true,
+        compressImageQuality: 0.7,
+        mediaType: "photo",
+      });
+      await processImage(fullUri, cropped.path);
+    } catch {
+      // User dismissed the cropper — use the full image for OCR too
+      await processImage(fullUri, fullUri);
+    }
   };
 
   const openGallery = async () => {
@@ -213,13 +219,30 @@ export default function ScanPrescriptionScreen() {
       Alert.alert(t("scan.permissionRequired"), t("scan.galleryPermission"));
       return;
     }
+    // Step 1: pick full image from gallery without cropping
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
       quality: 1,
     });
-    if (!result.canceled) await processImage(result.assets[0].uri);
+    if (result.canceled) return;
+
+    const fullUri = result.assets[0].uri;
+
+    // Step 2: open cropper on the full image — user crops for OCR optimisation
+    try {
+      const cropped = await ImageCropPicker.openCropper({
+        path: fullUri,
+        width: 1200,
+        height: 800,
+        cropping: true,
+        compressImageQuality: 0.7,
+        mediaType: "photo",
+      });
+      await processImage(fullUri, cropped.path);
+    } catch {
+      // User dismissed the cropper — use the full image for OCR too
+      await processImage(fullUri, fullUri);
+    }
   };
 
   return (
