@@ -8,6 +8,7 @@ import {
   ScrollView,
   SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemeContext } from "../context/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
@@ -27,6 +28,7 @@ const SettingsScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const darkMode = theme === "dark";
+  const insets = useSafeAreaInsets();
 
   const [user, setUser] = useState<any>(null);
   const [caregiverEnabled, setCaregiverEnabled] = useState(false);
@@ -217,54 +219,51 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={[
-        styles.container,
-        { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
-      ]}
-      contentContainerStyle={{ paddingBottom: 40 }}
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+      }}
     >
-      <SafeAreaView style={{ flex: 1, paddingTop: 20 }}>
-        <View
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+          borderBottomWidth: 1,
+          borderBottomColor: "#eee",
+          paddingTop: insets.top + 10,
+        }}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={darkMode ? "#fff" : "#000"}
+          />
+        </TouchableOpacity>
+        <Text
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            padding: 15,
-            backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
-            borderBottomWidth: 0.1,
-            borderBottomColor: "#ddd",
+            fontSize: 22,
+            fontWeight: "700",
+            color: darkMode ? "#fff" : "#000",
           }}
         >
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginRight: 10 }}
-          >
-            <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
-          </TouchableOpacity>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: "700",
-              color: "#1256DB",
-            }}
-          >
-            Settings
-          </Text>
-        </View>
-        {/* Caregiver Banner */}
-        {caregiverEnabled && (
-          <View style={styles.banner}>
-            <Text style={styles.bannerTitle}>
-              {t("settings.caregiverEnabled") ||
-                "Account changed to Caregiver!"}
-            </Text>
-            <Text style={styles.bannerText}>
-              {t("settings.caregiverDesc") ||
-                "You can now add dependents and manage their medications."}
-            </Text>
-          </View>
-        )}
+          Settings
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
 
+      <ScrollView
+        style={[
+          styles.container,
+          { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
+        ]}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Profile Section */}
         <View style={styles.section}>
           <Text
@@ -284,6 +283,41 @@ const SettingsScreen = () => {
           >
             <Text style={styles.link}>{t("common.editProfile")}</Text>
           </TouchableOpacity>
+
+          {/* Logout Moved to Top */}
+          <TouchableOpacity
+            style={[
+              styles.logoutButton,
+              {
+                backgroundColor: darkMode ? "#450A0A" : "#FEE2E2",
+                marginTop: 15,
+              },
+            ]}
+            onPress={async () => {
+              try {
+                await AsyncStorage.removeItem("user");
+                navigation.navigate("OnboardingScreen");
+              } catch (err) {
+                console.error("Logout failed:", err);
+              }
+            }}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color={darkMode ? "#F87171" : "#DC2626"}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{
+                color: darkMode ? "#F87171" : "#DC2626",
+                fontWeight: "700",
+                fontSize: 15,
+              }}
+            >
+              {t("common.logout")}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* General */}
@@ -292,24 +326,60 @@ const SettingsScreen = () => {
             {t("settings.general")}
           </Text>
 
-          <TouchableOpacity style={styles.card}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
-              {t("settings.language")}
+          <TouchableOpacity
+            style={[
+              styles.card,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+            onPress={async () => {
+              const current = i18n.language || "en";
+              const next = current === "en" ? "ur" : "en";
+              await i18n.changeLanguage(next);
+              setCurrentLanguage(next);
+            }}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
+              {t("settings.language")} (
+              {(currentLanguage || "en").toUpperCase()})
             </Text>
             <Text style={styles.subText}>{t("settings.languageDesc")}</Text>
           </TouchableOpacity>
 
-          <View style={styles.cardRow}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>Dark Mode</Text>
+          <View
+            style={[
+              styles.cardRow,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
+              Dark Mode
+            </Text>
 
             <Switch
               value={darkMode}
-              onValueChange={toggleThemeWithApproval} // already checks dependent inside
+              onValueChange={toggleThemeWithApproval}
+              trackColor={{
+                false: darkMode ? "#3A3A3C" : "#D1D1D6",
+                true: "#3B5BFF",
+              }}
+              thumbColor="#fff"
+              ios_backgroundColor={darkMode ? "#3A3A3C" : "#D1D1D6"}
             />
           </View>
 
-          <TouchableOpacity style={styles.card}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
+          <TouchableOpacity
+            style={[
+              styles.card,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
               {t("settings.appearance")}
             </Text>
             <Text style={styles.subText}>{t("settings.appearanceDesc")}</Text>
@@ -323,13 +393,26 @@ const SettingsScreen = () => {
           </Text>
 
           {/* Voice Reminder Switch */}
-          <View style={styles.cardRow}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
+          <View
+            style={[
+              styles.cardRow,
+              { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+            ]}
+          >
+            <Text
+              style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+            >
               {t("settings.voiceReminders") || "Voice Reminders"}
             </Text>
             <Switch
               value={voiceReminderEnabled}
               onValueChange={toggleVoiceReminder}
+              trackColor={{
+                false: darkMode ? "#3A3A3C" : "#D1D1D6",
+                true: "#3B5BFF",
+              }}
+              thumbColor="#fff"
+              ios_backgroundColor={darkMode ? "#3A3A3C" : "#D1D1D6"}
             />
           </View>
           <Text style={[styles.subText, { marginBottom: 10 }]}>
@@ -344,16 +427,54 @@ const SettingsScreen = () => {
             {t("settings.caregiverAccount")}
           </Text>
 
-          <View style={styles.cardRow}>
-            <Text style={{ color: darkMode ? "#fff" : "#000" }}>
-              {t("settings.caregiverAccount")}
-            </Text>
-            <Switch
-              value={caregiverEnabled}
-              onValueChange={toggleCaregiver}
-              disabled={(caregiverEnabled && hasDependents) || isDependent}
-            />
-          </View>
+          {caregiverEnabled && (
+            <View style={[styles.banner, { marginBottom: 10 }]}>
+              <Text style={styles.bannerTitle}>
+                {t("settings.caregiverEnabled") ||
+                  "Account changed to Caregiver!"}
+              </Text>
+              <Text style={styles.bannerText}>
+                {t("settings.caregiverDesc") ||
+                  "You can now add dependents and manage their medications."}
+              </Text>
+            </View>
+          )}
+
+          {(() => {
+            const isCaregiverDisabled =
+              (caregiverEnabled && hasDependents) || isDependent;
+            return (
+              <View
+                style={[
+                  styles.cardRow,
+                  {
+                    backgroundColor: darkMode ? "#1E1E1E" : "#fff",
+                    opacity: isCaregiverDisabled ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: darkMode ? "#fff" : "#000",
+                    fontWeight: "600",
+                  }}
+                >
+                  {t("settings.caregiverAccount")}
+                </Text>
+                <Switch
+                  value={caregiverEnabled}
+                  onValueChange={toggleCaregiver}
+                  disabled={isCaregiverDisabled}
+                  trackColor={{
+                    false: darkMode ? "#3A3A3C" : "#D1D1D6",
+                    true: "#3B5BFF",
+                  }}
+                  thumbColor={isCaregiverDisabled ? "#aaa" : "#fff"}
+                  ios_backgroundColor={darkMode ? "#3A3A3C" : "#D1D1D6"}
+                />
+              </View>
+            );
+          })()}
 
           {caregiverEnabled && (
             <TouchableOpacity
@@ -366,40 +487,8 @@ const SettingsScreen = () => {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Logout */}
-        <TouchableOpacity
-          style={[
-            styles.logoutButton,
-            { backgroundColor: darkMode ? "#7F1D1D" : "#FEE2E2" },
-          ]}
-          onPress={async () => {
-            try {
-              await AsyncStorage.removeItem("user");
-              navigation.navigate("OnboardingScreen");
-            } catch (err) {
-              console.error("Logout failed:", err);
-            }
-          }}
-        >
-          <Ionicons
-            name="log-out-outline"
-            size={22}
-            color={darkMode ? "#FCA5A5" : "#EF4444"}
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            style={{
-              color: darkMode ? "#FCA5A5" : "#EF4444",
-              fontWeight: "600",
-              fontSize: 16,
-            }}
-          >
-            {t("common.logout")}
-          </Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -422,6 +511,8 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
   },
 
   subText: {
@@ -434,9 +525,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
     marginBottom: 10,
   },
 

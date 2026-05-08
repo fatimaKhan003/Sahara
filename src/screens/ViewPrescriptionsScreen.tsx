@@ -13,6 +13,7 @@ import {
   SectionList,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../context/ThemeContext";
@@ -43,6 +44,7 @@ export default function ViewPrescriptionsScreen() {
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const [sections, setSections] = useState<SectionData[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -472,7 +474,7 @@ export default function ViewPrescriptionsScreen() {
           { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
         ]}
       >
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons
               name="arrow-back"
@@ -483,7 +485,7 @@ export default function ViewPrescriptionsScreen() {
           <Text
             style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
           >
-            My Prescriptions
+            Prescriptions
           </Text>
           <View style={{ width: 24 }} />
         </View>
@@ -504,7 +506,7 @@ export default function ViewPrescriptionsScreen() {
       ]}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons
             name="arrow-back"
@@ -515,7 +517,7 @@ export default function ViewPrescriptionsScreen() {
         <Text
           style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
         >
-          {isCaregiver ? "All Prescriptions" : "My Prescriptions"}
+          Prescriptions
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -596,11 +598,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
-  headerTitle: { fontSize: 18, fontWeight: "700" },
+  headerTitle: { fontSize: 22, fontWeight: "700" },
 
   summaryStrip: {
     flexDirection: "row",

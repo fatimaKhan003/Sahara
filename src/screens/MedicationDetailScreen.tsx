@@ -21,6 +21,7 @@ import {
   ActivityIndicator,
   Switch,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { API_BASE } from "../../api";
 import { ThemeContext } from "../context/ThemeContext";
@@ -39,6 +40,7 @@ const MedicationDetailScreen = () => {
 
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
+  const insets = useSafeAreaInsets();
 
   const medParam = route.params?.med;
   const onUpdate = route.params?.onUpdate ?? (() => {});
@@ -76,6 +78,7 @@ const MedicationDetailScreen = () => {
     [medParam, t],
   );
 
+  const [showDoseLogs, setShowDoseLogs] = useState(false);
   const [name, setName] = useState(med.name);
   const [dose, setDose] = useState(med.dose);
   const [schedule, setSchedule] = useState({
@@ -286,14 +289,13 @@ const MedicationDetailScreen = () => {
 
     updateButton: {
       backgroundColor: "#007AFF",
-      padding: 18,
+      padding: 14,
       borderRadius: 12,
       alignItems: "center",
-      marginTop: 20,
-      marginBottom: 10,
       flexDirection: "row",
       justifyContent: "center",
-      gap: 10,
+      gap: 8,
+      flex: 1,
     },
     updateButtonText: {
       color: "#fff",
@@ -302,29 +304,31 @@ const MedicationDetailScreen = () => {
     },
 
     deleteButton: {
-      backgroundColor: darkMode ? "#3A3A3A" : "#EAEAEA",
-      padding: 18,
+      backgroundColor: "#C62828",
+      padding: 14,
       borderRadius: 12,
       alignItems: "center",
       flexDirection: "row",
       justifyContent: "center",
-      borderWidth: 1,
-      borderColor: "#FF3B30",
+      gap: 8,
+      flex: 1,
     },
     deleteButtonText: {
-      color: "#FF3B30",
+      color: "#fff",
       fontWeight: "bold",
-      marginLeft: 5,
       fontSize: 16,
     },
     secondaryButton: {
-      backgroundColor: darkMode ? "#3A3A3A" : "#E5E5E5",
+      backgroundColor: "transparent",
       borderColor: "#007AFF",
       borderWidth: 1,
-      padding: 15,
+      borderStyle: "dashed",
+      padding: 12,
       borderRadius: 12,
       alignItems: "center",
-      flex: 1,
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: 8,
     },
     secondaryButtonText: {
       color: "#007AFF",
@@ -385,27 +389,30 @@ const MedicationDetailScreen = () => {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          padding: 15,
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingBottom: 16,
           backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
-          borderBottomWidth: 0.1,
-          borderBottomColor: "#ddd",
+          borderBottomWidth: 1,
+          borderBottomColor: "#eee",
+          paddingTop: insets.top + 10,
         }}
       >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ marginRight: 10 }}
         >
-          <Ionicons name="arrow-back" size={26} color="#3c6fa5" />
+          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
         </TouchableOpacity>
         <Text
           style={{
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: "700",
-            color: "#1256DB",
+            color: darkMode ? "#fff" : "#000",
           }}
         >
           Medication Details
         </Text>
+        <View style={{ width: 24 }} />
       </View>
       <ScrollView
         style={dynamicStyles.container}
@@ -527,49 +534,73 @@ const MedicationDetailScreen = () => {
             }
             style={[dynamicStyles.secondaryButton, { marginBottom: 20 }]}
           >
+            <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
             <Text style={dynamicStyles.secondaryButtonText}>Add Time</Text>
           </TouchableOpacity>
 
-          <View style={{ marginBottom: 5 }}>
-            <Text style={dynamicStyles.statusLabel}>Dose Logs</Text>
-            {med.doseLogs?.map((log, idx) => {
-              const logColor =
-                log.status === "missed"
-                  ? "#FF3B30"
-                  : log.status === "taken"
-                    ? "#34C759"
-                    : darkMode
-                      ? "#E5E5E5"
-                      : "#000";
+          <View style={{ marginBottom: 20 }}>
+            <TouchableOpacity
+              onPress={() => setShowDoseLogs(!showDoseLogs)}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: darkMode ? "#333" : "#eee",
+                marginBottom: 10,
+              }}
+            >
+              <Text style={[dynamicStyles.statusLabel, { marginBottom: 0 }]}>
+                Dose Logs ({med.doseLogs?.length || 0})
+              </Text>
+              <Ionicons
+                name={showDoseLogs ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={darkMode ? "#fff" : "#000"}
+              />
+            </TouchableOpacity>
 
-              return (
-                <View
-                  key={idx}
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginBottom: 3,
-                  }}
-                >
-                  <Text style={{ color: darkMode ? "#aaa" : "#555" }}>
-                    {new Date(log.scheduledAt).toLocaleTimeString([], {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                  <Text style={{ color: logColor, fontWeight: "bold" }}>
-                    {log.status.toUpperCase()}
-                  </Text>
-                </View>
-              );
-            })}
+            {showDoseLogs &&
+              med.doseLogs?.map((log, idx) => {
+                const logColor =
+                  log.status === "missed"
+                    ? "#FF3B30"
+                    : log.status === "taken"
+                      ? "#34C759"
+                      : darkMode
+                        ? "#E5E5E5"
+                        : "#000";
+
+                return (
+                  <View
+                    key={idx}
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <Text style={{ color: darkMode ? "#aaa" : "#555", fontSize: 14 }}>
+                      {new Date(log.scheduledAt).toLocaleTimeString([], {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Text>
+                    <Text style={{ color: logColor, fontWeight: "bold", fontSize: 14 }}>
+                      {log.status.toUpperCase()}
+                    </Text>
+                  </View>
+                );
+              })}
           </View>
         </View>
 
-        <View style={{ marginVertical: 10 }}>
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 20, marginBottom: 20 }}>
           <TouchableOpacity
             style={dynamicStyles.updateButton}
             onPress={updateMedication}
@@ -578,23 +609,23 @@ const MedicationDetailScreen = () => {
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+              <Ionicons name="save-outline" size={20} color="#fff" />
             )}
             <Text style={dynamicStyles.updateButtonText}>
-              {loading ? "Saving..." : "Update Medication"}
+              {loading ? "Saving..." : "Update"}
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={dynamicStyles.deleteButton}
-            onPress={deleteMedication}
-          >
-            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-            <Text style={dynamicStyles.deleteButtonText}>
-              {"Delete Medication"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+ 
+           <TouchableOpacity
+             style={dynamicStyles.deleteButton}
+             onPress={deleteMedication}
+           >
+             <Ionicons name="trash-outline" size={20} color="#fff" />
+             <Text style={dynamicStyles.deleteButtonText}>
+               {"Delete"}
+             </Text>
+           </TouchableOpacity>
+         </View>
       </ScrollView>
     </SafeAreaView>
   );

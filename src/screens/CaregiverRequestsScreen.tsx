@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,16 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons,MaterialCommunityIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemeContext } from "../context/ThemeContext";
 const CaregiverRequestsScreen = () => {
+  const { theme } = useContext(ThemeContext);
+  const darkMode = theme === "dark";
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
+
   const { theme } = useContext(ThemeContext);
 const isDark = theme === "dark";
   const [requests, setRequests] = useState<any[]>([]);
