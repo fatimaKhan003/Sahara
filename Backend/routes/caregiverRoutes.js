@@ -31,6 +31,49 @@ const createCaregiverIfNotExists = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+//to add a dependent if not registered before
+const registerAndAddDependent = async (req, res) => {
+  try {
+    const { caregiverUserId, email, name, password } = req.body;
+
+    // 1. Double check if user exists (to be safe)
+    let dependentUser = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!dependentUser) {
+      // 2. Create the new user account
+      // Note: If you have password hashing in your User model, this will trigger it
+      dependentUser = await User.create({
+        name,
+        email: email.toLowerCase(),
+        password, 
+        role: "dependent", // Ensure your User schema supports roles
+      });
+      console.log("NEW USER CREATED:", dependentUser._id);
+    }
+
+    // 3. Find the caregiver record
+    const caregiver = await Caregiver.findOne({ user: caregiverUserId });
+    if (!caregiver) {
+      return res.status(404).json({ error: "Caregiver profile not found" });
+    }
+
+    // 4. Link the new user to the caregiver's dependents array
+    if (!caregiver.dependents.includes(dependentUser._id)) {
+      caregiver.dependents.push(dependentUser._id);
+      await caregiver.save();
+    }
+
+    res.status(201).json({ 
+      message: "Dependent created and linked successfully", 
+      dependent: dependentUser 
+    });
+  } catch (err) {
+    console.error("REGISTER & ADD ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 
 const addDependent = async (req, res) => {
   try {
@@ -119,6 +162,7 @@ router.post("/create", createCaregiverIfNotExists);
 router.get("/:userId/dependents", getDependents);
 router.get("/:userId/dependents-meds", getDependentsMeds);
 router.post("/add-dependent", addDependent);
+router.post("/register-and-add-dependent", registerAndAddDependent);
 
 // DEPENDENT REQUEST THEME CHANGE
 router.post("/request-theme", async (req, res) => {
@@ -231,5 +275,6 @@ router.patch("/mark-theme-applied", async (req, res) => {
     res.status(500).json({ message: "Error updating request" });
   }
 });
+
 
 export default router;
