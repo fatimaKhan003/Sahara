@@ -26,7 +26,7 @@ const ForgotPassScreen = () => {
   const validatePassword = (p: string) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(p);
 
-  // Step 1 — send OTP
+
   const handleSendOtp = async () => {
     if (!email) {
       Alert.alert(t("common.error"), t("errors.fillAllFields")); return;
@@ -54,7 +54,7 @@ const ForgotPassScreen = () => {
     }
   };
 
-  // Step 2 — verify OTP
+
 const handleVerifyOtp = () => {
   if (!otp || otp.length !== 6) {
     Alert.alert(t("common.error"), "Please enter the 6-digit code."); return;
