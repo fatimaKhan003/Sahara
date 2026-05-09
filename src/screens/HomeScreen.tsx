@@ -190,7 +190,9 @@ const HomeScreen = () => {
       }
 
       if (caregiverData.isCaregiver) {
-        const depListRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/dependents`);
+        const depListRes = await fetch(
+          `${API_BASE}/api/caregiver/${parsedUser._id}/dependents`,
+        );
         const fullDepList = await depListRes.json();
         setAllDependents(Array.isArray(fullDepList) ? fullDepList : []);
         const medRes = await fetch(
@@ -265,10 +267,10 @@ const HomeScreen = () => {
     dashboardMode === "personal"
       ? medications
       : dependentsMeds.filter((med) =>
-        selectedDependent === "all"
-          ? true
-          : med.dependentName === selectedDependent,
-      );
+          selectedDependent === "all"
+            ? true
+            : med.dependentName === selectedDependent,
+        );
 
   const totalCount = medsToShow.length;
   const takenCount = medsToShow.filter((med) => {
@@ -442,9 +444,10 @@ const HomeScreen = () => {
             <Image
               source={{
                 uri: user?.profileImage
-                  ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
+                  ? user.profileImage.startsWith("/") ||
+                    user.profileImage.startsWith("uploads")
                     ? `${API_BASE}${user.profileImage}`
-                    : user.profileImage)
+                    : user.profileImage
                   : Image.resolveAssetSource(DefaultPFP).uri,
               }}
               style={styles.avatar}
@@ -675,7 +678,9 @@ const HomeScreen = () => {
                 );
                 return;
               }
-              const target = allDependents.find((d) => d.name === selectedDependent);
+              const target = allDependents.find(
+                (d) => d.name === selectedDependent,
+              );
               if (!target) {
                 Alert.alert("Error", "Could not find dependent information.");
                 return;
