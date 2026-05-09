@@ -190,7 +190,9 @@ const HomeScreen = () => {
       }
 
       if (caregiverData.isCaregiver) {
-        const depListRes = await fetch(`${API_BASE}/api/caregiver/${parsedUser._id}/dependents`);
+        const depListRes = await fetch(
+          `${API_BASE}/api/caregiver/${parsedUser._id}/dependents`,
+        );
         const fullDepList = await depListRes.json();
         setAllDependents(Array.isArray(fullDepList) ? fullDepList : []);
         const medRes = await fetch(
@@ -265,10 +267,10 @@ const HomeScreen = () => {
     dashboardMode === "personal"
       ? medications
       : dependentsMeds.filter((med) =>
-        selectedDependent === "all"
-          ? true
-          : med.dependentName === selectedDependent,
-      );
+          selectedDependent === "all"
+            ? true
+            : med.dependentName === selectedDependent,
+        );
 
   const totalCount = medsToShow.length;
   const takenCount = medsToShow.filter((med) => {
@@ -442,9 +444,10 @@ const HomeScreen = () => {
             <Image
               source={{
                 uri: user?.profileImage
-                  ? (user.profileImage.startsWith("/") || user.profileImage.startsWith("uploads")
+                  ? user.profileImage.startsWith("/") ||
+                    user.profileImage.startsWith("uploads")
                     ? `${API_BASE}${user.profileImage}`
-                    : user.profileImage)
+                    : user.profileImage
                   : Image.resolveAssetSource(DefaultPFP).uri,
               }}
               style={styles.avatar}
@@ -452,10 +455,19 @@ const HomeScreen = () => {
           </TouchableOpacity>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.helloText}>
+            <Text
+              style={[styles.helloText, { color: darkMode ? "#fff" : "#000" }]}
+            >
               {t("common.hello")}, {user?.name}
             </Text>
-            <Text style={styles.welcomeText}>{t("common.welcomeBack")}</Text>
+            <Text
+              style={[
+                styles.welcomeText,
+                { color: darkMode ? "#aaa" : "gray" },
+              ]}
+            >
+              {t("common.welcomeBack")}
+            </Text>
 
             {/* DASHBOARD SWITCH */}
             {isCaregiver && (
@@ -513,8 +525,19 @@ const HomeScreen = () => {
 
         {/* CAREGIVER LABEL */}
         {dashboardMode === "caregiver" && (
-          <View style={styles.caregiverBadge}>
-            <Text style={{ fontWeight: "700", marginBottom: 8, color: "#fff" }}>
+          <View
+            style={[
+              styles.caregiverBadge,
+              { backgroundColor: darkMode ? "#4A1C1C" : "#FADDDD" },
+            ]}
+          >
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 8,
+                color: darkMode ? "#FFB3B3" : "#C62828",
+              }}
+            >
               {t("home.dependentsMedication")}
             </Text>
 
@@ -528,14 +551,23 @@ const HomeScreen = () => {
                     paddingHorizontal: 12,
                     paddingVertical: 6,
                     backgroundColor:
-                      selectedDependent === dep ? "#007AFF" : "#eee",
+                      selectedDependent === dep
+                        ? "#007AFF"
+                        : darkMode
+                          ? "#333"
+                          : "#eee",
                     borderRadius: 10,
                     marginRight: 8,
                   }}
                 >
                   <Text
                     style={{
-                      color: selectedDependent === dep ? "#fff" : "#000",
+                      color:
+                        selectedDependent === dep
+                          ? "#fff"
+                          : darkMode
+                            ? "#ddd"
+                            : "#000",
                     }}
                   >
                     {dep === "all" ? t("home.allDependents") : dep}
@@ -559,12 +591,24 @@ const HomeScreen = () => {
               style={[
                 styles.tabButton,
                 {
-                  backgroundColor: selectedTab === tab.key ? "#007AFF" : "#eee",
+                  backgroundColor:
+                    selectedTab === tab.key
+                      ? "#007AFF"
+                      : darkMode
+                        ? "#2C2C2C"
+                        : "#eee",
                 },
               ]}
             >
               <Text
-                style={{ color: selectedTab === tab.key ? "#fff" : "#000" }}
+                style={{
+                  color:
+                    selectedTab === tab.key
+                      ? "#fff"
+                      : darkMode
+                        ? "#E5E5E5"
+                        : "#000",
+                }}
               >
                 {tab.label} ({tab.count})
               </Text>
@@ -586,15 +630,32 @@ const HomeScreen = () => {
               )}
             >
               <TouchableOpacity
-                style={styles.savedMedContainer}
+                style={[
+                  styles.savedMedContainer,
+                  {
+                    backgroundColor: darkMode ? "#2C2C2C" : "#fff",
+                    borderColor: darkMode ? "#444" : "#E8E8E8",
+                  },
+                ]}
                 onPress={() => goToDetail(med)}
               >
                 {dashboardMode === "caregiver" && (
                   <Text style={styles.dependentName}>{med.dependentName}</Text>
                 )}
-                <Text style={styles.medName}>{med.name}</Text>
-                <Text>{med.dose}</Text>
-                <Text>{med.schedule.repeat}</Text>
+                <Text
+                  style={[
+                    styles.medName,
+                    { color: darkMode ? "#fff" : "#000" },
+                  ]}
+                >
+                  {med.name}
+                </Text>
+                <Text style={{ color: darkMode ? "#ccc" : "#333" }}>
+                  {med.dose}
+                </Text>
+                <Text style={{ color: darkMode ? "#aaa" : "gray" }}>
+                  {med.schedule.repeat}
+                </Text>
 
                 {(() => {
                   const currentDose = getCurrentScheduledDose(med);
@@ -675,7 +736,9 @@ const HomeScreen = () => {
                 );
                 return;
               }
-              const target = allDependents.find((d) => d.name === selectedDependent);
+              const target = allDependents.find(
+                (d) => d.name === selectedDependent,
+              );
               if (!target) {
                 Alert.alert(t("common.error"), t("home.dependentInfoMissing"));
                 return;

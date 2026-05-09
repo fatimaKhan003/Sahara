@@ -1,42 +1,22 @@
 import * as Notifications from "expo-notifications";
-
 import { Platform } from "react-native";
-
 import { API_BASE } from "../../api";
-
 import { speakMedication } from "./tts";
-
 import { getVoiceReminderEnabled } from "../context/SettingsContext";
 
-
-
 /*--Notification characteristics---*/
-
 Notifications.setNotificationHandler({
-
   handleNotification: async () => ({
-
     shouldShowBanner: true,
-
     shouldShowList: true,
-
-    shouldPlaySound: false,
-
+    shouldPlaySound: true,
     shouldSetBadge: false,
-
   }),
-
 });
 
-
-
 /*--Notification permissions---*/
-
 export async function registerForNotifications() {
-  console.log("🔔 registerForNotifications called");
-
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  console.log("🔔 existing status:", existingStatus);
 
   let finalStatus = existingStatus;
 
@@ -46,175 +26,93 @@ export async function registerForNotifications() {
   }
 
   if (finalStatus !== "granted") {
-    console.log("🔔 Notification permission denied");
+    console.log("Notification permission denied");
     return null;
   }
 
-  console.log("🔔 Permission granted, getting token...");
-
-  let token = null;
-  try {
-    token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log("🔔 Expo push token:", token);
-  } catch (e) {
-    console.log("🔔 Token error:", e.message);
-  }
+  const token = (await Notifications.getExpoPushTokenAsync()).data;
+  console.log("Expo push token:", token);
 
   if (Platform.OS === "android") {
-    console.log("🔔 Creating channel...");
-    await Notifications.setNotificationChannelAsync("med_reminder_sound_1", {
-      name: "Medication Reminder Sound",
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
       importance: Notifications.AndroidImportance.MAX,
-      sound: "reminder",
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#3B5BFF",
     });
-    console.log("🔔 Channel created!");
   }
 
   return token;
 }
 
-
-
 /*--Notification actions*/
-
 export async function setupNotificationActions() {
-
   await Notifications.setNotificationCategoryAsync("MEDICATION_REMINDER", [
-
     {
-
       identifier: "TAKEN",
-
       buttonTitle: "Mark as Taken",
-
       options: { opensAppToForeground: true },
-
     },
-
     {
-
       identifier: "SNOOZE",
-
       buttonTitle: "Snooze 10 min",
-
       options: { opensAppToForeground: false },
-
     },
-
   ]);
-
 }
 
-
-
 export function setupNotificationResponseListener() {
-
   Notifications.addNotificationResponseReceivedListener(async (response) => {
-
     const action = response.actionIdentifier;
-
-
 
     const data = response.notification.request.content.data;
 
-
-
     const { medId, logId, name, dose } = data;
 
-
-
-    // if (getVoiceReminderEnabled()) {
-
-    //   speakMedication(name, dose);
-
-    // }
-
-
+    if (getVoiceReminderEnabled()) {
+      speakMedication(name, dose);
+    }
 
     try {
-
       await Notifications.dismissNotificationAsync(
-
         response.notification.request.identifier,
-
       );
-
     } catch (err) {
-
       console.warn("Failed to dismiss notification", err);
-
     }
-
-
 
     if (action === "TAKEN") {
-
       try {
-
         await fetch(`${API_BASE}/api/medications/dose-log/${medId}/${logId}`, {
-
           method: "PATCH",
-
           headers: {
-
             "Content-Type": "application/json",
-
           },
-
           body: JSON.stringify({ status: "taken" }),
-
         });
-
       } catch (err) {
-
         console.error("Failed to mark dose taken", err);
-
       }
-
     }
-
-
 
     if (action === "SNOOZE") {
-
       const snoozeTime = new Date(Date.now() + 10 * 60 * 1000); // minutes * seconds * milliseconds
-
       await Notifications.scheduleNotificationAsync({
-
         content: {
-
-          title: "Medication Reminder",
-
-          body: `Time to take ${med.name}`,
-
+          title: "Medication Reminder (Snoozed)",
+          body: `Time to take ${name}`,
           data: { medId, logId, name },
-
           categoryIdentifier: "MEDICATION_REMINDER",
-
         },
-
         trigger: {
-  type: Notifications.SchedulableTriggerInputTypes.DATE,
-  date: snoozeTime,
-  channelId: "med_reminder_sound_1",
-},
-
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: snoozeTime,
+        },
       });
-
       console.log("Snoozed notification for", name, "until", snoozeTime);
-
     }
-
   });
-
 }
 
-
-
 /*--Schedule notifications--*/
-
 export async function scheduleMedicationNotifications(medications) {
   // clear all existing scheduled notifications to avoid duplicates or stale reminders
   await Notifications.cancelAllScheduledNotificationsAsync();
@@ -226,111 +124,58 @@ export async function scheduleMedicationNotifications(medications) {
       if (log.status !== "pending") continue;
       const scheduledDate = new Date(log.scheduledAt);
 
-
-
       if (scheduledDate < new Date()) continue;
 
-
-
       await Notifications.scheduleNotificationAsync({
-
         content: {
-
           title: "Medication Reminder",
-
           body: `Time to take ${med.name}, dose ${med.dose}`,
-
           data: {
-
             medId: med._id,
-
             logId: log._id,
-
             name: med.name,
-
           },
-
           categoryIdentifier: "MEDICATION_REMINDER",
-
         },
-
         trigger: {
-  type: Notifications.SchedulableTriggerInputTypes.DATE,
-  date: scheduledDate,
-  channelId: "med_reminder_sound_1",
-},
-
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: scheduledDate,
+        },
       });
     }
-
   }
-
 }
-
-
 
 export async function cancelMedicationNotifications(medId) {
-
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
 
-
-
   for (const notif of scheduled) {
-
     const data = notif.content?.data;
-
-
 
     if (data?.medId === medId) {
-
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-
     }
-
   }
-
 }
-
-
 
 export async function cancelLogNotification(logId) {
-
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
 
-
-
   for (const notif of scheduled) {
-
     const data = notif.content?.data;
 
-
-
     if (data?.logId === logId) {
-
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-
     }
-
   }
-
 }
 
-
-
 export function setupForegroundNotificationListener() {
-
   Notifications.addNotificationReceivedListener((notification) => {
-
     const data = notification.request.content.data;
 
-
-
     if (data?.name && getVoiceReminderEnabled()) {
-
       speakMedication(data.name, data?.dose ? data.dose : "");
-
     }
-
   });
-
 }

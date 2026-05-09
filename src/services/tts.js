@@ -1,6 +1,7 @@
 import * as Speech from "expo-speech";
 import { Platform } from "react-native";
 import { getVoiceReminderLanguage } from "../context/SettingsContext";
+import i18n from "../i18n";
 
 export function speakMedication(name, dose) {
   const language = getVoiceReminderLanguage() || "en";
