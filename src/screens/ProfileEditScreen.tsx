@@ -64,7 +64,9 @@ const ProfileEditScreen = () => {
       } catch (err) {
         console.error("Error loading user data:", err);
 
-        setProfileImage(Image.resolveAssetSource(DefaultPFP).uri);
+        setProfileImage(
+          Image.resolveAssetSource(DefaultPFP).uri,
+        );
       } finally {
         setLoading(false);
       }
@@ -285,12 +287,10 @@ const ProfileEditScreen = () => {
           paddingTop: insets.top + 10,
         }}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={darkMode ? "#fff" : "#000"}
-          />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
         </TouchableOpacity>
         <Text
           style={{
