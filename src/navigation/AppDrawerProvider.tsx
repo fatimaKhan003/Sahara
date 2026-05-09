@@ -421,33 +421,35 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 </View>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[styles.logoutRow, dynamicStyles.logoutButton]}
-              onPress={handleLogout}
-            >
-              <View style={styles.prefLeft}>
-                <View
-                  style={[
-                    styles.iconWrapper,
-                    { backgroundColor: darkMode ? "#7F1D1D" : "#FECACA" },
-                  ]}
-                >
-                  <Ionicons
-                    name="log-out-outline"
-                    size={20}
-                    color={darkMode ? "#F87171" : "#DC2626"}
-                  />
+            {!isAuthScreen && user && (
+              <TouchableOpacity
+                style={[styles.logoutRow, dynamicStyles.logoutButton]}
+                onPress={handleLogout}
+              >
+                <View style={styles.prefLeft}>
+                  <View
+                    style={[
+                      styles.iconWrapper,
+                      { backgroundColor: darkMode ? "#7F1D1D" : "#FECACA" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="log-out-outline"
+                      size={20}
+                      color={darkMode ? "#F87171" : "#DC2626"}
+                    />
+                  </View>
+                  <Text style={[styles.itemLabel, dynamicStyles.logoutText]}>
+                    Logout
+                  </Text>
                 </View>
-                <Text style={[styles.itemLabel, dynamicStyles.logoutText]}>
-                  Logout
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={darkMode ? "#F87171" : "#DC2626"}
-              />
-            </TouchableOpacity>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={darkMode ? "#F87171" : "#DC2626"}
+                />
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </Animated.View>
       </View>
