@@ -12,6 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 
 import {
   PieChart,
@@ -22,6 +23,7 @@ import {
 const screenWidth = Dimensions.get("window").width;
 
 const AdherenceScreen = () => {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,7 @@ const AdherenceScreen = () => {
           fontWeight: "600",
         }}
       >
-        {label.toUpperCase()}
+        {t(`adherence.${label}`).toUpperCase()}
       </Text>
     </TouchableOpacity>
   );
@@ -139,14 +141,14 @@ const AdherenceScreen = () => {
   
   const pieData = [
     {
-      name: "Taken",
+      name: t("adherence.taken"),
       population: taken,
       color: "#22C55E",
       legendFontColor: "#111",
       legendFontSize: 13,
     },
     {
-      name: "Missed",
+      name: t("adherence.missed"),
       population: missed,
       color: "#EF4444",
       legendFontColor: "#111",
@@ -156,7 +158,7 @@ const AdherenceScreen = () => {
 
   
   const barData = {
-    labels: ["Taken", "Missed"],
+    labels: [t("adherence.taken"), t("adherence.missed")],
     datasets: [
       {
         data: [taken, missed],
@@ -225,8 +227,8 @@ const AdherenceScreen = () => {
 
         <Text style={styles.headerTitle}>
           {dashboardMode === "caregiver"
-            ? "Dependents Adherence"
-            : "Adherence Report"}
+            ? t("adherence.dependentsTitle")
+            : t("adherence.title")}
         </Text>
 
         <View style={{ width: 40 }} />
@@ -283,19 +285,19 @@ const AdherenceScreen = () => {
         <Text style={styles.mainPercent}>{percentage}%</Text>
 
         <Text style={styles.subText}>
-          Adherence Rate
+          {t("adherence.adherenceRate")}
         </Text>
 
         <View style={styles.divider} />
 
         <View style={styles.statsRow}>
           <View>
-            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statLabel}>{t("adherence.total")}</Text>
             <Text style={styles.statValue}>{total}</Text>
           </View>
 
           <View>
-            <Text style={styles.statLabel}>Taken</Text>
+            <Text style={styles.statLabel}>{t("adherence.taken")}</Text>
 
             <Text
               style={[
@@ -308,7 +310,7 @@ const AdherenceScreen = () => {
           </View>
 
           <View>
-            <Text style={styles.statLabel}>Missed</Text>
+            <Text style={styles.statLabel}>{t("adherence.missed")}</Text>
 
             <Text
               style={[
@@ -325,13 +327,13 @@ const AdherenceScreen = () => {
      
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
-          Overview
+          {t("adherence.overview")}
         </Text>
 
         <View style={styles.barBlock}>
           <View style={styles.barHeader}>
             <Text style={styles.barLabel}>
-              Taken
+              {t("adherence.taken")}
             </Text>
 
             <Text style={styles.barValue}>
@@ -363,7 +365,7 @@ const AdherenceScreen = () => {
         <View style={styles.barBlock}>
           <View style={styles.barHeader}>
             <Text style={styles.barLabel}>
-              Missed
+              {t("adherence.missed")}
             </Text>
 
             <Text style={styles.barValue}>
@@ -396,7 +398,7 @@ const AdherenceScreen = () => {
      
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
-          Medication Distribution
+          {t("adherence.distribution")}
         </Text>
 
         <PieChart
@@ -414,7 +416,7 @@ const AdherenceScreen = () => {
       
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
-          Taken vs Missed
+          {t("adherence.takenVsMissed")}
         </Text>
 
         <BarChart
@@ -435,7 +437,7 @@ const AdherenceScreen = () => {
       
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
-          Adherence Trend
+          {t("adherence.trend")}
         </Text>
 
         <LineChart
@@ -454,10 +456,10 @@ const AdherenceScreen = () => {
       <View style={styles.insightBox}>
         <Text style={styles.insightText}>
           {percentage >= 80
-            ? "Great job! You're following your medication plan very well 👍"
+            ? t("adherence.great")
             : percentage >= 50
-            ? "You're doing okay, but there’s room for improvement ⚠️"
-            : "Adherence is low. Try setting reminders or consulting caregiver ❗"}
+            ? t("adherence.okay")
+            : t("adherence.low")}
         </Text>
       </View>
     </ScrollView>

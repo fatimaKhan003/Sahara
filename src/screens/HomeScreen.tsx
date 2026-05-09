@@ -166,8 +166,8 @@ const HomeScreen = () => {
               });
 
               Alert.alert(
-                "Theme Updated",
-                `Your caregiver approved your theme change request`,
+                t("home.themeUpdatedTitle"),
+                t("home.themeUpdatedMessage"),
               );
             }
           }
@@ -328,12 +328,12 @@ const HomeScreen = () => {
 
   const deleteMedication = async (id: string) => {
     Alert.alert(
-      "Delete Medication",
-      "Are you sure you want to delete this medication?",
+      t("home.deleteMedicationTitle"),
+      t("home.deleteMedicationMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -348,8 +348,8 @@ const HomeScreen = () => {
                   body: JSON.stringify({ medicationId: id, userId: user._id }),
                 });
                 Alert.alert(
-                  "Request Sent",
-                  "Your caregiver will be notified to approve this deletion.",
+                  t("home.requestSentTitle"),
+                  t("home.requestSentMessage"),
                 );
               } else {
                 await fetch(`${API_BASE}/api/medications/${id}`, {
@@ -363,7 +363,7 @@ const HomeScreen = () => {
                 }
               }
             } catch (err) {
-              Alert.alert("Error", "Delete failed. Please try again.");
+              Alert.alert(t("common.error"), t("home.deleteFailed"));
             }
           },
         },
@@ -465,8 +465,8 @@ const HomeScreen = () => {
                     style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}
                   >
                     {dashboardMode === "personal"
-                      ? "Open Caregiver Dashboard"
-                      : "Open Personal Dashboard"}
+                      ? t("home.openCaregiverDashboard")
+                      : t("home.openPersonalDashboard")}
                   </Text>
                 </TouchableOpacity>
 
@@ -515,7 +515,7 @@ const HomeScreen = () => {
         {dashboardMode === "caregiver" && (
           <View style={styles.caregiverBadge}>
             <Text style={{ fontWeight: "700", marginBottom: 8, color: "#fff" }}>
-              Dependents’ Medication
+              {t("home.dependentsMedication")}
             </Text>
 
             {/* DEPENDENTS DROPDOWN */}
@@ -538,7 +538,7 @@ const HomeScreen = () => {
                       color: selectedDependent === dep ? "#fff" : "#000",
                     }}
                   >
-                    {dep === "all" ? "All" : dep}
+                    {dep === "all" ? t("home.allDependents") : dep}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -670,14 +670,14 @@ const HomeScreen = () => {
             if (dashboardMode === "caregiver") {
               if (selectedDependent === "all") {
                 Alert.alert(
-                  "Select a Dependent",
-                  "Please select a specific dependent from the filter above before adding a medication",
+                  t("home.selectDependentTitle"),
+                  t("home.selectDependentMessage"),
                 );
                 return;
               }
               const target = allDependents.find((d) => d.name === selectedDependent);
               if (!target) {
-                Alert.alert("Error", "Could not find dependent information.");
+                Alert.alert(t("common.error"), t("home.dependentInfoMissing"));
                 return;
               }
 
