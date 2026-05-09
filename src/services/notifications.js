@@ -20,7 +20,7 @@ Notifications.setNotificationHandler({
 
     shouldShowList: true,
 
-    shouldPlaySound: true,
+    shouldPlaySound: false,
 
     shouldSetBadge: false,
 
@@ -33,57 +33,46 @@ Notifications.setNotificationHandler({
 /*--Notification permissions---*/
 
 export async function registerForNotifications() {
+  console.log("🔔 registerForNotifications called");
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-
-
+  console.log("🔔 existing status:", existingStatus);
 
   let finalStatus = existingStatus;
 
-
-
   if (existingStatus !== "granted") {
-
     const { status } = await Notifications.requestPermissionsAsync();
-
     finalStatus = status;
-
   }
-
-
 
   if (finalStatus !== "granted") {
-
-    console.log("Notification permission denied");
-
+    console.log("🔔 Notification permission denied");
     return null;
-
   }
 
+  console.log("🔔 Permission granted, getting token...");
 
-
-  const token = (await Notifications.getExpoPushTokenAsync()).data;
-
-  console.log("Expo push token:", token);
-
-
+  let token = null;
+  try {
+    token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log("🔔 Expo push token:", token);
+  } catch (e) {
+    console.log("🔔 Token error:", e.message);
+  }
 
   if (Platform.OS === "android") {
-
-    await Notifications.setNotificationChannelAsync("default", {
-
-      name: "default",
-
+    console.log("🔔 Creating channel...");
+    await Notifications.setNotificationChannelAsync("med_reminder_sound_1", {
+      name: "Medication Reminder Sound",
       importance: Notifications.AndroidImportance.MAX,
-
+      sound: "reminder",
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#3B5BFF",
     });
-
+    console.log("🔔 Channel created!");
   }
 
-
-
   return token;
-
 }
 
 
@@ -136,11 +125,11 @@ export function setupNotificationResponseListener() {
 
 
 
-    if (getVoiceReminderEnabled()) {
+    // if (getVoiceReminderEnabled()) {
 
-      speakMedication(name, dose);
+    //   speakMedication(name, dose);
 
-    }
+    // }
 
 
 
@@ -207,12 +196,10 @@ export function setupNotificationResponseListener() {
         },
 
         trigger: {
-
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-
-          date: snoozeTime,
-
-        },
+  type: Notifications.SchedulableTriggerInputTypes.DATE,
+  date: snoozeTime,
+  channelId: "med_reminder_sound_1",
+},
 
       });
 
@@ -268,12 +255,10 @@ export async function scheduleMedicationNotifications(medications) {
         },
 
         trigger: {
-
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-
-          date: scheduledDate,
-
-        },
+  type: Notifications.SchedulableTriggerInputTypes.DATE,
+  date: scheduledDate,
+  channelId: "med_reminder_sound_1",
+},
 
       });
     }

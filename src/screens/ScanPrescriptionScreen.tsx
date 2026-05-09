@@ -9,7 +9,6 @@ import {
   Animated,
   StatusBar,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import ImageCropPicker from "react-native-image-crop-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -187,65 +186,41 @@ export default function ScanPrescriptionScreen() {
   };
 
   const openCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(t("scan.permissionRequired"), t("scan.cameraPermission"));
-      return;
-    }
-    // Step 1: capture full image without cropping
-    const result = await ImagePicker.launchCameraAsync({ quality: 1 });
-    if (result.canceled) return;
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== "granted") {
+    Alert.alert(t("scan.permissionRequired"), t("scan.cameraPermission"));
+    return;
+  }
 
-    const fullUri = result.assets[0].uri;
+  const result = await ImagePicker.launchCameraAsync({
+    quality: 1,
+    allowsEditing: true,   // ✅ built-in cropper — no native module needed
+    aspect: [3, 2],
+  });
+  if (result.canceled) return;
 
-    // Step 2: open cropper on the full image — user crops for OCR optimisation
-    try {
-      const cropped = await ImageCropPicker.openCropper({
-        path: fullUri,
-        width: 1200,
-        height: 800,
-        cropping: true,
-        compressImageQuality: 0.7,
-        mediaType: "photo",
-      });
-      await processImage(fullUri, cropped.path);
-    } catch {
-      // User dismissed the cropper — use the full image for OCR too
-      await processImage(fullUri, fullUri);
-    }
-  };
+  const uri = result.assets[0].uri;
+  await processImage(uri, uri);
+};
 
-  const openGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(t("scan.permissionRequired"), t("scan.galleryPermission"));
-      return;
-    }
-    // Step 1: pick full image from gallery without cropping
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
-    if (result.canceled) return;
+const openGallery = async () => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") {
+    Alert.alert(t("scan.permissionRequired"), t("scan.galleryPermission"));
+    return;
+  }
 
-    const fullUri = result.assets[0].uri;
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 1,
+    allowsEditing: true,   // ✅ built-in cropper — no native module needed
+    aspect: [3, 2],
+  });
+  if (result.canceled) return;
 
-    // Step 2: open cropper on the full image — user crops for OCR optimisation
-    try {
-      const cropped = await ImageCropPicker.openCropper({
-        path: fullUri,
-        width: 1200,
-        height: 800,
-        cropping: true,
-        compressImageQuality: 0.7,
-        mediaType: "photo",
-      });
-      await processImage(fullUri, cropped.path);
-    } catch {
-      // User dismissed the cropper — use the full image for OCR too
-      await processImage(fullUri, fullUri);
-    }
-  };
+  const uri = result.assets[0].uri;
+  await processImage(uri, uri);
+};
 
   return (
     <SafeAreaView style={styles.container}>
