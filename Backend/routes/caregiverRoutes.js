@@ -5,6 +5,7 @@ import express from "express";
 import Medication from "../models/Medication.js";
 import ThemeRequest from "../models/ThemeRequest.js";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 const router = express.Router();
 const createCaregiverIfNotExists = async (req, res) => {
   try {
@@ -38,17 +39,19 @@ const registerAndAddDependent = async (req, res) => {
 
     // 1. Double check if user exists (to be safe)
     let dependentUser = await User.findOne({ email: email.toLowerCase() });
-    
+
     if (!dependentUser) {
       // 2. Create the new user account
-      // Note: If you have password hashing in your User model, this will trigger it
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
       dependentUser = await User.create({
         name,
         email: email.toLowerCase(),
-        password, 
-        role: "dependent", // Ensure your User schema supports roles
+        password: hashedPassword,
+        role: "dependent",
       });
-      console.log("NEW USER CREATED:", dependentUser._id);
+      console.log("NEW USER CREATED (HASHED):", dependentUser._id);
     }
 
     // 3. Find the caregiver record
@@ -63,17 +66,15 @@ const registerAndAddDependent = async (req, res) => {
       await caregiver.save();
     }
 
-    res.status(201).json({ 
-      message: "Dependent created and linked successfully", 
-      dependent: dependentUser 
+    res.status(201).json({
+      message: "Dependent created and linked successfully",
+      dependent: dependentUser,
     });
   } catch (err) {
     console.error("REGISTER & ADD ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 };
-
-
 
 const addDependent = async (req, res) => {
   try {
@@ -275,6 +276,5 @@ router.patch("/mark-theme-applied", async (req, res) => {
     res.status(500).json({ message: "Error updating request" });
   }
 });
-
 
 export default router;

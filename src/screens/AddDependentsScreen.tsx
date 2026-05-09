@@ -86,10 +86,13 @@ const AddDependentsScreen = () => {
                   setCreationModalVisible(true);
                 },
               },
-            ]
+            ],
           );
         } else {
-          Alert.alert(t("common.error"), data.error || t("errors.userNotFound"));
+          Alert.alert(
+            t("common.error"),
+            data.error || t("errors.userNotFound"),
+          );
         }
         return;
       }
@@ -99,7 +102,10 @@ const AddDependentsScreen = () => {
       setModalVisible(false);
       fetchDependents(user._id);
     } catch (err: any) {
-      Alert.alert(t("common.error"), err.message || t("errors.somethingWentWrong"));
+      Alert.alert(
+        t("common.error"),
+        err.message || t("errors.somethingWentWrong"),
+      );
     } finally {
       setLoading(false);
     }
@@ -114,16 +120,19 @@ const AddDependentsScreen = () => {
     try {
       setLoading(true);
       // Calls new endpoint that handles Registration + Linking in one go
-      const res = await fetch(`${API_BASE}/api/caregiver/register-and-add-dependent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caregiverUserId: user._id,
-          email: email.trim().toLowerCase(),
-          name: newName.trim(),
-          password: newPassword,
-        }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/caregiver/register-and-add-dependent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            caregiverUserId: user._id,
+            email: email.trim().toLowerCase(),
+            name: newName.trim(),
+            password: newPassword,
+          }),
+        },
+      );
 
       const data = await res.json();
 
@@ -174,7 +183,9 @@ const AddDependentsScreen = () => {
                 <View style={styles.plusCircle}>
                   <Text style={styles.plus}>+</Text>
                 </View>
-                <Text style={styles.addText}>{t("addDependents.addAnotherAccount")}</Text>
+                <Text style={styles.addText}>
+                  {t("addDependents.addAnotherAccount")}
+                </Text>
               </TouchableOpacity>
             }
           />
@@ -184,10 +195,13 @@ const AddDependentsScreen = () => {
         <Modal visible={modalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>{t("addDependents.modalTitle")}</Text>
+              <Text style={styles.modalTitle}>
+                {t("addDependents.modalTitle")}
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder={t("addDependents.enterEmail")}
+                placeholderTextColor="#888"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -220,7 +234,9 @@ const AddDependentsScreen = () => {
         <Modal visible={creationModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>{t("addDependents.registerTitle")}</Text>
+              <Text style={styles.modalTitle}>
+                {t("addDependents.registerTitle")}
+              </Text>
               <Text style={styles.subtitle}>
                 {t("common.email")}: {email}
               </Text>
@@ -228,12 +244,14 @@ const AddDependentsScreen = () => {
               <TextInput
                 style={styles.input}
                 placeholder={t("addDependents.fullName")}
+                placeholderTextColor="#888"
                 value={newName}
                 onChangeText={setNewName}
               />
               <TextInput
                 style={styles.input}
                 placeholder={t("addDependents.initialPassword")}
+                placeholderTextColor="#888"
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -254,7 +272,9 @@ const AddDependentsScreen = () => {
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={{ color: "#fff" }}>{t("addDependents.createAndLink")}</Text>
+                    <Text style={{ color: "#fff" }}>
+                      {t("addDependents.createAndLink")}
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -357,6 +377,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     fontSize: 16,
+    color: "#333",
   },
   modalButtons: {
     flexDirection: "row",
