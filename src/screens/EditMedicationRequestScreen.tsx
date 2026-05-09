@@ -10,8 +10,11 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { API_BASE } from "../../api";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 const EditMedicationRequestScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
@@ -62,12 +65,12 @@ const EditMedicationRequestScreen = () => {
         },
       );
 
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error(t("editMedicationRequest.approveFailed"));
 
-      Alert.alert("Success", "Request approved with changes");
+      Alert.alert(t("common.success"), t("editMedicationRequest.approveSuccess"));
       navigation.goBack();
     } catch (err) {
-      Alert.alert("Error", "Failed to approve request");
+      Alert.alert(t("common.error"), t("editMedicationRequest.approveFailed"));
     }
   };
 
@@ -77,10 +80,10 @@ const EditMedicationRequestScreen = () => {
         method: "POST",
       });
 
-      Alert.alert("Rejected");
+      Alert.alert(t("caregiverRequests.rejected"));
       navigation.goBack();
     } catch (err) {
-      Alert.alert("Error", "Failed to reject");
+      Alert.alert(t("common.error"), t("editMedicationRequest.rejectFailed"));
     }
   };
 
@@ -95,28 +98,32 @@ const EditMedicationRequestScreen = () => {
       >
         <Ionicons name="arrow-back" size={20} color="#fff" />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Edit Medication Request</Text>
-      <Text style={styles.subTitle}>Dependent: {request.dependent.name}</Text>
+      <Text style={styles.headerTitle}>{t("editMedicationRequest.title")}</Text>
+      <Text style={styles.subTitle}>
+        {t("editMedicationRequest.dependentLabel", { name: request.dependent.name })}
+      </Text>
 
       {medicines.map((med, index) => (
         <View key={index} style={styles.card}>
-          <Text style={styles.medLabel}>Medicine {index + 1}</Text>
+          <Text style={styles.medLabel}>
+            {t("editMedicationRequest.medicineLabel", { number: index + 1 })}
+          </Text>
           <TextInput
-            placeholder="Medicine Name"
+            placeholder={t("editMedicationRequest.medicineNamePlaceholder")}
             value={med.name}
             onChangeText={(text) => updateField(index, "name", text)}
             style={styles.input}
           />
 
           <TextInput
-            placeholder="Dose (e.g. 1 tablet)"
+            placeholder={t("editMedicationRequest.dosePlaceholder")}
             value={med.dose}
             onChangeText={(text) => updateField(index, "dose", text)}
             style={styles.input}
           />
 
           <TextInput
-            placeholder="Frequency (e.g. 2 times/day)"
+            placeholder={t("editMedicationRequest.frequencyPlaceholder")}
             value={med.frequency}
             onChangeText={(text) => updateField(index, "frequency", text)}
             style={styles.input}
@@ -126,21 +133,21 @@ const EditMedicationRequestScreen = () => {
             onPress={() => removeMedicine(index)}
             style={styles.removeBtn}
           >
-            <Text style={styles.removeBtnText}>Remove Medicine</Text>
+            <Text style={styles.removeBtnText}>{t("editMedicationRequest.removeMedicine")}</Text>
           </TouchableOpacity>
         </View>
       ))}
 
       <TouchableOpacity onPress={addMedicine} style={styles.addBtn}>
-        <Text style={styles.addBtnText}>+ Add Medicine</Text>
+        <Text style={styles.addBtnText}>{t("editMedicationRequest.addMedicine")}</Text>
       </TouchableOpacity>
 
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <TouchableOpacity onPress={approveRequest} style={styles.approveBtn}>
-          <Text style={styles.approveBtnText}>Approve</Text>
+          <Text style={styles.approveBtnText}>{t("editMedicationRequest.approve")}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={rejectRequest} style={styles.rejectBtn}>
-          <Text style={styles.rejectBtnText}>Reject</Text>
+          <Text style={styles.rejectBtnText}>{t("editMedicationRequest.reject")}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

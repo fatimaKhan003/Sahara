@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../context/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
 import { API_BASE } from "../../api";
+import { useTranslation } from "react-i18next";
 
 const getPersonalKey = (userId: string) => `prescriptions_${userId}`;
 const getCaregiverKey = (userId: string) => `prescriptions_caregiver_${userId}`;
@@ -41,6 +42,7 @@ type SectionData = {
 };
 
 export default function ViewPrescriptionsScreen() {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
   const navigation = useNavigation<any>();
@@ -162,7 +164,7 @@ export default function ViewPrescriptionsScreen() {
 
         if (personalList.length > 0) {
           builtSections.push({
-            title: "My Prescriptions",
+            title: t("viewPrescriptions.myPrescriptions"),
             sectionKey: "personal",
             data: personalList,
           });
@@ -170,7 +172,7 @@ export default function ViewPrescriptionsScreen() {
 
         for (const [depId, { name, items }] of Object.entries(depMap)) {
           builtSections.push({
-            title: `${name}'s Prescriptions`,
+            title: t("viewPrescriptions.dependentPrescriptionsTitle", { name }),
             sectionKey: depId,
             data: items,
           });
@@ -235,7 +237,7 @@ export default function ViewPrescriptionsScreen() {
 
       if (personalList.length > 0) {
         builtSections.push({
-          title: "My Prescriptions",
+          title: t("viewPrescriptions.myPrescriptions"),
           sectionKey: "personal",
           data: personalList,
         });
@@ -243,7 +245,7 @@ export default function ViewPrescriptionsScreen() {
 
       if (caregiverAddedList.length > 0) {
         builtSections.push({
-          title: "Added by My Caregiver",
+          title: t("viewPrescriptions.caregiverAdded"),
           sectionKey: "caregiver_added",
           data: caregiverAddedList,
         });
@@ -263,8 +265,8 @@ export default function ViewPrescriptionsScreen() {
 
   const deletePrescription = async (item: Prescription, sectionKey: string) => {
     Alert.alert(
-      "Delete Prescription",
-      "Are you sure you want to delete this prescription?",
+      t("viewPrescriptions.deleteTitle"),
+      t("viewPrescriptions.deleteMessage"),
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -313,7 +315,7 @@ export default function ViewPrescriptionsScreen() {
               await loadAll();
             } catch (err) {
               console.error("Delete failed:", err);
-              Alert.alert("Error", "Failed to delete prescription.");
+              Alert.alert(t("common.error"), t("viewPrescriptions.deleteFailed"));
             }
           },
         },
@@ -322,9 +324,9 @@ export default function ViewPrescriptionsScreen() {
   };
 
   const formatDate = (iso: string) => {
-    if (!iso) return "No date";
+    if (!iso) return t("viewPrescriptions.noDate");
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return "Invalid Date";
+    if (isNaN(d.getTime())) return t("viewPrescriptions.invalidDate");
     return d.toLocaleDateString("en-PK", {
       day: "2-digit",
       month: "short",
@@ -373,7 +375,7 @@ export default function ViewPrescriptionsScreen() {
                 size={12}
                 color="#7C3AED"
               />
-              <Text style={styles.addedByText}>Added by caregiver</Text>
+              <Text style={styles.addedByText}>{t("viewPrescriptions.addedByCaregiver")}</Text>
             </View>
           )}
         </View>
@@ -485,7 +487,7 @@ export default function ViewPrescriptionsScreen() {
           <Text
             style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
           >
-            Prescriptions
+            {t("viewPrescriptions.title")}
           </Text>
           <View style={{ width: 24 }} />
         </View>
@@ -517,7 +519,7 @@ export default function ViewPrescriptionsScreen() {
         <Text
           style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
         >
-          Prescriptions
+            {t("viewPrescriptions.title")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -533,8 +535,12 @@ export default function ViewPrescriptionsScreen() {
           <Text
             style={[styles.summaryText, { color: darkMode ? "#ccc" : "#555" }]}
           >
-            {totalCount} prescription{totalCount !== 1 ? "s" : ""} across{" "}
-            {sections.length} section{sections.length !== 1 ? "s" : ""}
+            {t("viewPrescriptions.summary", {
+              count: totalCount,
+              plural: totalCount !== 1 ? "s" : "",
+              sections: sections.length,
+              sectionPlural: sections.length !== 1 ? "s" : "",
+            })}
           </Text>
         </View>
       )}
@@ -545,12 +551,12 @@ export default function ViewPrescriptionsScreen() {
           <Text
             style={[styles.emptyText, { color: darkMode ? "#aaa" : "#888" }]}
           >
-            No prescriptions saved yet.
+            {t("viewPrescriptions.noneTitle")}
           </Text>
           <Text
             style={[styles.emptySubText, { color: darkMode ? "#666" : "#aaa" }]}
           >
-            Scan a prescription to save it here.
+            {t("viewPrescriptions.noneSubtitle")}
           </Text>
         </View>
       ) : (

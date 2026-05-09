@@ -151,8 +151,8 @@ export default function ScanPrescriptionScreen() {
 
       if (!data.medicines || data.medicines.length === 0) {
         Alert.alert(
-          "No medications found",
-          "Could not detect any medications. You can enter them manually.",
+          t("scanPrescription.noMedicationsTitle"),
+          t("scanPrescription.noMedicationsMessage"),
         );
       }
 
@@ -168,8 +168,8 @@ export default function ScanPrescriptionScreen() {
     } catch (err) {
       console.error("OCR failed:", err);
       Alert.alert(
-        "Error",
-        "Failed to process image. Please try again or enter manually.",
+        t("common.error"),
+        t("scanPrescription.processError"),
       );
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: fullUri,
@@ -257,13 +257,13 @@ export default function ScanPrescriptionScreen() {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Scan Prescription</Text>
+        <Text style={styles.headerTitle}>{t("scanPrescription.title")}</Text>
       </View>
 
       {forDependentName && (
         <View style={styles.dependentBanner}>
           <Ionicons name="person-outline" size={16} color="#1256DB" />
-          <Text style={styles.dependentText}>{forDependentName}</Text>
+          <Text style={styles.dependentText}>{t("scanPrescription.dependentFor", { name: forDependentName })}</Text>
         </View>
       )}
 
@@ -284,7 +284,7 @@ export default function ScanPrescriptionScreen() {
           />
 
           <ActivityIndicator size="large" color="#1256DB" />
-          <Text style={styles.processingText}>Scanning...</Text>
+          <Text style={styles.processingText}>{t("scanPrescription.scanning")}</Text>
         </Animated.View>
       ) : (
         <View style={styles.scanner}>
@@ -301,12 +301,12 @@ export default function ScanPrescriptionScreen() {
         <View style={styles.buttons}>
           <TouchableOpacity style={styles.primaryBtn} onPress={openCamera}>
             <Ionicons name="camera" size={20} color="#fff" />
-            <Text style={styles.primaryText}>Take Photo</Text>
+            <Text style={styles.primaryText}>{t("scanPrescription.takePhoto")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondaryBtn} onPress={openGallery}>
             <Ionicons name="images" size={20} color="#1256DB" />
-            <Text style={styles.secondaryText}>Gallery</Text>
+            <Text style={styles.secondaryText}>{t("scanPrescription.gallery")}</Text>
           </TouchableOpacity>
         </View>
       )}

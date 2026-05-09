@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { ThemeContext } from "../context/ThemeContext";
 
 import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
@@ -143,6 +144,7 @@ const styles = StyleSheet.create({
 });
 
 const AdherenceScreen = () => {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
   const insets = useSafeAreaInsets();
@@ -233,7 +235,7 @@ const AdherenceScreen = () => {
           fontWeight: "600",
         }}
       >
-        {label.toUpperCase()}
+        {t(`adherence.${label}`).toUpperCase()}
       </Text>
     </TouchableOpacity>
   );
@@ -258,14 +260,14 @@ const AdherenceScreen = () => {
 
   const pieData = [
     {
-      name: "Taken",
+      name: t("adherence.taken"),
       population: taken,
       color: "#4ADE80",
       legendFontColor: darkMode ? "#E5E5E5" : "#111",
       legendFontSize: 13,
     },
     {
-      name: "Missed",
+      name: t("adherence.missed"),
       population: missed,
       color: "#F87171",
       legendFontColor: darkMode ? "#E5E5E5" : "#111",
@@ -274,7 +276,7 @@ const AdherenceScreen = () => {
   ];
 
   const barData = {
-    labels: ["Taken", "Missed"],
+    labels: [t("adherence.taken"), t("adherence.missed")],
     datasets: [
       {
         data: [taken, missed],
@@ -345,8 +347,8 @@ const AdherenceScreen = () => {
           style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
         >
           {dashboardMode === "caregiver"
-            ? "Dependents Adherence"
-            : "Adherence Report"}
+            ? t("adherence.dependentsTitle")
+            : t("adherence.title")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -394,37 +396,44 @@ const AdherenceScreen = () => {
                   {dep === "all" ? "All" : dep}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
+))}
+      </ScrollView>
+    )}
 
-        <View style={styles.periodContainer}>
-          {renderButton("daily")}
-          {renderButton("weekly")}
-          {renderButton("monthly")}
+    <View style={styles.periodContainer}>
+      {renderButton("daily")}
+      {renderButton("weekly")}
+      {renderButton("monthly")}
+    </View>
+
+    <View style={styles.mainCard}>
+      <Text style={styles.mainPercent}>{percentage}%</Text>
+
+      <Text style={styles.subText}>
+        {t("adherence.adherenceRate")}
+      </Text>
+
+      <View style={styles.divider} />
+
+      <View style={styles.statsRow}>
+        <View>
+          <Text style={styles.statLabel}>{t("adherence.total")}</Text>
+          <Text style={styles.statValue}>{total}</Text>
         </View>
-
-        <View style={styles.mainCard}>
-          <Text style={styles.mainPercent}>{percentage}%</Text>
-          <Text style={styles.subText}>Adherence Rate</Text>
-          <View style={styles.divider} />
-          <View style={styles.statsRow}>
-            <View>
-              <Text style={styles.statLabel}>Total</Text>
-              <Text style={styles.statValue}>{total}</Text>
-            </View>
-            <View>
-              <Text style={styles.statLabel}>Taken</Text>
-              <Text style={[styles.statValue, { color: "#4ADE80" }]}>
-                {taken}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.statLabel}>Missed</Text>
-              <Text style={[styles.statValue, { color: "#F87171" }]}>
-                {missed}
-              </Text>
-            </View>
+        <View>
+          <Text style={styles.statLabel}>{t("adherence.taken")}</Text>
+          <Text style={[styles.statValue, { color: "#4ADE80" }]}>
+            {taken}
+          </Text>
+        </View>
+        <View>
+          <Text style={styles.statLabel}>{t("adherence.missed")}</Text>
+          <Text style={[styles.statValue, { color: "#F87171" }]}>
+            {missed}
+          </Text>
+        </View>
+      </View>
+    </View>
           </View>
         </View>
 
@@ -447,7 +456,7 @@ const AdherenceScreen = () => {
               <Text
                 style={[styles.barLabel, { color: darkMode ? "#ddd" : "#111" }]}
               >
-                Taken
+                {t("adherence.taken")}
               </Text>
               <Text
                 style={[
@@ -481,7 +490,7 @@ const AdherenceScreen = () => {
               <Text
                 style={[styles.barLabel, { color: darkMode ? "#ddd" : "#111" }]}
               >
-                Missed
+                {t("adherence.missed")}
               </Text>
               <Text
                 style={[
@@ -511,104 +520,130 @@ const AdherenceScreen = () => {
           </View>
         </View>
 
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: darkMode ? "#2C2C2C" : "#fff" },
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: darkMode ? "#E5E5E5" : "#111" },
-            ]}
-          >
-            Medication Distribution
-          </Text>
-          <PieChart
-            data={pieData}
-            width={screenWidth - 70}
-            height={220}
-            chartConfig={chartConfig}
-            accessor={"population"}
-            backgroundColor={"transparent"}
-            paddingLeft={"15"}
-            absolute
-          />
+{/* Overview Card (Bar Charts) */}
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
+          {t("adherence.overview")}
+        </Text>
+
+        {/* Taken Bar */}
+        <View style={styles.barBlock}>
+          <View style={styles.barHeader}>
+            <Text style={[styles.barLabel, { color: darkMode ? "#ddd" : "#444" }]}>
+              {t("adherence.taken")}
+            </Text>
+            <Text style={[styles.barValue, { color: darkMode ? "#ddd" : "#444" }]}>
+              {taken} ({total ? Math.round((taken / total) * 100) : 0}%)
+            </Text>
+          </View>
+          <View style={styles.barBackground}>
+            <View
+              style={[
+                styles.barFill,
+                {
+                  width: `${total ? (taken / total) * 100 : 0}%`,
+                  backgroundColor: "#22C55E",
+                },
+              ]}
+            />
+          </View>
         </View>
 
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: darkMode ? "#2C2C2C" : "#fff" },
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: darkMode ? "#E5E5E5" : "#111" },
-            ]}
-          >
-            Taken vs Missed
-          </Text>
-          <BarChart
-            data={barData}
-            width={screenWidth - 70}
-            height={230}
-            fromZero
-            showValuesOnTopOfBars
-            yAxisLabel=""
-            chartConfig={chartConfig}
-            verticalLabelRotation={0}
-            style={{ borderRadius: 16 }}
-          />
+        {/* Missed Bar */}
+        <View style={styles.barBlock}>
+          <View style={styles.barHeader}>
+            <Text style={[styles.barLabel, { color: darkMode ? "#ddd" : "#444" }]}>
+              {t("adherence.missed")}
+            </Text>
+            <Text style={[styles.barValue, { color: darkMode ? "#ddd" : "#444" }]}>
+              {missed} ({total ? Math.round((missed / total) * 100) : 0}%)
+            </Text>
+          </View>
+          <View style={styles.barBackground}>
+            <View
+              style={[
+                styles.barFill,
+                {
+                  width: `${total ? (missed / total) * 100 : 0}%`,
+                  backgroundColor: "#EF4444",
+                },
+              ]}
+            />
+          </View>
         </View>
+      </View>
 
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: darkMode ? "#2C2C2C" : "#fff" },
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: darkMode ? "#E5E5E5" : "#111" },
-            ]}
-          >
-            Adherence Trend
-          </Text>
-          <LineChart
-            data={lineData}
-            width={screenWidth - 70}
-            height={230}
-            chartConfig={chartConfig}
-            bezier
-            style={{ borderRadius: 16 }}
-          />
-        </View>
+      {/* Distribution Card */}
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
+          {t("adherence.distribution")}
+        </Text>
+        <PieChart
+          data={pieData}
+          width={screenWidth - 70}
+          height={220}
+          chartConfig={chartConfig}
+          accessor={"population"}
+          backgroundColor={"transparent"}
+          paddingLeft={"15"}
+          absolute
+        />
+      </View>
 
-        <View
+      {/* Taken vs Missed Card */}
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
+          {t("adherence.takenVsMissed")}
+        </Text>
+        <BarChart
+          data={barData}
+          width={screenWidth - 70}
+          height={230}
+          fromZero
+          showValuesOnTopOfBars
+          yAxisLabel=""
+          chartConfig={chartConfig}
+          verticalLabelRotation={0}
+          style={{ borderRadius: 16 }}
+        />
+      </View>
+
+      {/* Trend Card */}
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
+          {t("adherence.trend")}
+        </Text>
+        <LineChart
+          data={lineData}
+          width={screenWidth - 70}
+          height={230}
+          chartConfig={chartConfig}
+          bezier
+          style={{ borderRadius: 16 }}
+        />
+      </View>
+
+      {/* Insight Box */}
+      <View
+        style={[
+          styles.insightBox,
+          { backgroundColor: darkMode ? "#123040" : "#ECFEFF" },
+        ]}
+      >
+        <Text
           style={[
-            styles.insightBox,
-            { backgroundColor: darkMode ? "#123040" : "#ECFEFF" },
+            styles.insightText,
+            { color: darkMode ? "#7DD3FC" : "#0369A1" },
           ]}
         >
-          <Text
-            style={[
-              styles.insightText,
-              { color: darkMode ? "#7DD3FC" : "#0369A1" },
-            ]}
-          >
-            {percentage >= 80
-              ? "Great job! You're following your medication plan very well 👍"
-              : percentage >= 50
-                ? "You're doing okay, but there’s room for improvement ⚠️"
-                : "Adherence is low. Try setting reminders or consulting caregiver ❗"}
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {percentage >= 80
+            ? t("adherence.great")
+            : percentage >= 50
+            ? t("adherence.okay")
+            : t("adherence.low")}
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
