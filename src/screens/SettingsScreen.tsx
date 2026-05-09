@@ -300,6 +300,7 @@ const SettingsScreen = () => {
             onPress={async () => {
               try {
                 await AsyncStorage.removeItem("user");
+              EventBus.emit("userUpdated", null);
                 navigation.navigate("OnboardingScreen");
               } catch (err) {
                 console.error("Logout failed:", err);
