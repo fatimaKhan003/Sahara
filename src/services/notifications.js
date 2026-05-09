@@ -97,8 +97,8 @@ export function setupNotificationResponseListener() {
       const snoozeTime = new Date(Date.now() + 10 * 60 * 1000); // minutes * seconds * milliseconds
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Medication Reminder",
-          body: `Time to take ${med.name}`,
+          title: "Medication Reminder (Snoozed)",
+          body: `Time to take ${name}`,
           data: { medId, logId, name },
           categoryIdentifier: "MEDICATION_REMINDER",
         },

@@ -54,7 +54,10 @@ const ProfileEditScreen = () => {
             initialImage &&
             (initialImage.startsWith("/") || initialImage.startsWith("uploads"))
           ) {
-            setProfileImage(`${API_BASE}${initialImage}`);
+            const filename = initialImage.split("/").pop();
+            setProfileImage(
+              `${API_BASE}/api/profile-image/${filename}?userId=${parsedUser._id}`,
+            );
           } else {
             setProfileImage(
               initialImage || Image.resolveAssetSource(DefaultPFP).uri,
