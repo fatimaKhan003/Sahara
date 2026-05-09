@@ -2,9 +2,19 @@
 import torch, io, re, json
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
+import os
+import asyncio
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from contextlib import asynccontextmanager
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor, BitsAndBytesConfig
+from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, BitsAndBytesConfig
+from peft import PeftModel
 from OCR.qwen_vl_utils.qwen_vl_utils import process_vision_info
 
 # ── FASTAPI LIFECYCLE ─────────────────────────────────────────
@@ -27,7 +37,8 @@ def preprocess(img: Image.Image) -> Image.Image:
     return img
 
 # ── LOAD QWEN 7B MODEL ─────────────────────────────────────────
-MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
+MODEL_ID = "Qwen/Qwen2-VL-7B-Instruct"
+ADAPTER_PATH = "./final_prescription_adapter" # UPDATE THIS TO YOUR ACTUAL ADAPTER FOLDER IF DIFFERENT
 
 def load_qwen_model():
     bnb_config = BitsAndBytesConfig(
@@ -36,12 +47,21 @@ def load_qwen_model():
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
     )
-    print("Loading Qwen 7B model...")
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    print("Loading base Qwen2 7B model...")
+    base_model = Qwen2VLForConditionalGeneration.from_pretrained(
         MODEL_ID,
         quantization_config=bnb_config,
         device_map={"": 0},
     )
+    
+    import os
+    if os.path.exists(ADAPTER_PATH):
+        print(f"Applying LoRA adapter from {ADAPTER_PATH}...")
+        model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
+    else:
+        print(f"WARNING: Adapter path '{ADAPTER_PATH}' not found! Loading base model only.")
+        model = base_model
+        
     model.eval()
     processor = AutoProcessor.from_pretrained(
         MODEL_ID,
@@ -159,6 +179,44 @@ def extract_medicines_structured(img: Image.Image) -> tuple[str, list]:
 
     print(f"\n=== RAW MODEL OUTPUT ===\n{raw}\n========================\n")
 
+    medicines = parse_json_output(raw)
+    return raw, medicines
+
+
+# ── GEMINI FALLBACK ──────────────────────────────────────────────
+async def extract_medicines_gemini(img: Image.Image) -> tuple[str, list]:
+    print("=== Using Gemini Fallback ===")
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set in .env")
+        
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    system_prompt = (
+        "You are a medical prescription parser.\n"
+        "Look at the prescription image and extract ALL medications.\n"
+        "Return ONLY a JSON array with this exact structure:\n"
+        "[\n"
+        "  {\n"
+        '    "name": "medication name only — no prefix like Tab/Cap/Take/Use",\n'
+        '    "dose": "dose with unit e.g. 50mg, 500mg, 5ml — empty string if not visible",\n'
+        '    "frequency": "as written e.g. 1+0+1 or once or twice — empty string if not visible",\n'
+        '    "times_per_day": "must be exactly: Once a day | Twice a day | Three times a day | As directed"\n'
+        "  }\n"
+        "]\n"
+        "Rules:\n"
+        "- Output ONLY the JSON array. No explanation, no markdown, no code fences.\n"
+        "- Strip ALL prefixes from name: Take, Use, Tab, Cap, Syp, Syrup, Inj, Tablet, Capsule, Dr, Rx, numbers.\n"
+        "- Recognize word frequencies: once=Once a day, twice=Twice a day, three times=Three times a day.\n"
+        "- Recognize shorthand: OD=Once a day, BD=Twice a day, TDS=Three times a day.\n"
+        "- Recognize numeric: 1+0+0=Once a day, 1+0+1=Twice a day, 1+1+1=Three times a day.\n"
+        "- If frequency is not visible, use empty string and As directed for times_per_day.\n"
+    )
+
+    response = await model.generate_content_async([system_prompt, img])
+    
+    raw = response.text.strip()
+    print(f"\n=== GEMINI RAW OUTPUT ===\n{raw}\n========================\n")
+    
     medicines = parse_json_output(raw)
     return raw, medicines
 
@@ -308,7 +366,21 @@ async def ocr_api(file: UploadFile = File(...)):
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         img = preprocess(img)
 
-        raw_output, medicines = extract_medicines_structured(img)
+        used_model = "Qwen2-VL-7B"
+        try:
+            # Run Qwen with a 60-second timeout
+            raw_output, medicines = await asyncio.wait_for(
+                asyncio.to_thread(extract_medicines_structured, img),
+                timeout=60.0
+            )
+        except Exception as qwen_error:
+            if isinstance(qwen_error, asyncio.TimeoutError):
+                print("\n[WARNING] Qwen model timed out after 60 seconds! Triggering Gemini fallback...")
+            else:
+                print(f"\n[WARNING] Qwen model failed: {str(qwen_error)}. Triggering Gemini fallback...")
+                
+            raw_output, medicines = await extract_medicines_gemini(img)
+            used_model = "gemini-1.5-flash"
 
         print(f"Extracted {len(medicines)} medicine(s): {medicines}")
 
@@ -316,7 +388,7 @@ async def ocr_api(file: UploadFile = File(...)):
             "text": raw_output,
             "medicines": medicines,
             "status": "success",
-            "model": "Qwen2.5-VL-7B",
+            "model": used_model,
         })
 
     except Exception as e:
