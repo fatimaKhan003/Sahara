@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation } from "@react-navigation/native";
+import { ThemeContext } from "../context/ThemeContext";
 
 import {
   PieChart,
@@ -22,6 +23,8 @@ import {
 const screenWidth = Dimensions.get("window").width;
 
 const AdherenceScreen = () => {
+  const { theme } = useContext(ThemeContext);
+  const darkMode = theme === "dark";
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -108,13 +111,14 @@ const AdherenceScreen = () => {
     <TouchableOpacity
       style={[
         styles.periodBtn,
+        { backgroundColor: darkMode ? "#3A3A3A" : "#E5E7EB" },
         period === label && styles.activeBtn,
       ]}
       onPress={() => setPeriod(label)}
     >
       <Text
         style={{
-          color: period === label ? "#fff" : "#000",
+          color: period === label ? "#fff" : darkMode ? "#ddd" : "#000",
           fontWeight: "600",
         }}
       >
@@ -125,7 +129,12 @@ const AdherenceScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
+      <View
+        style={[
+          styles.loader,
+          { backgroundColor: darkMode ? "#1E1E1E" : "#F8FAFC" },
+        ]}
+      >
         <ActivityIndicator size="large" color="#2563EB" />
       </View>
     );
@@ -142,14 +151,14 @@ const AdherenceScreen = () => {
       name: "Taken",
       population: taken,
       color: "#22C55E",
-      legendFontColor: "#111",
+      legendFontColor: darkMode ? "#E5E5E5" : "#111",
       legendFontSize: 13,
     },
     {
       name: "Missed",
       population: missed,
       color: "#EF4444",
-      legendFontColor: "#111",
+      legendFontColor: darkMode ? "#E5E5E5" : "#111",
       legendFontSize: 13,
     },
   ];
@@ -186,14 +195,14 @@ const AdherenceScreen = () => {
   };
 
   const chartConfig = {
-    backgroundGradientFrom: "#fff",
-    backgroundGradientTo: "#fff",
+    backgroundGradientFrom: darkMode ? "#2C2C2C" : "#fff",
+    backgroundGradientTo: darkMode ? "#2C2C2C" : "#fff",
     decimalPlaces: 0,
 
     color: (opacity = 1) =>
       `rgba(37, 99, 235, ${opacity})`,
 
-    labelColor: () => "#111",
+    labelColor: () => (darkMode ? "#E5E5E5" : "#111"),
 
     propsForDots: {
       r: "5",
@@ -208,22 +217,30 @@ const AdherenceScreen = () => {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[
+        styles.container,
+        { backgroundColor: darkMode ? "#1E1E1E" : "#F8FAFC" },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backBtn}
+          style={[
+            styles.backBtn,
+            { backgroundColor: darkMode ? "#2C2C2C" : "#E5E7EB" },
+          ]}
           onPress={() => {
             navigation.navigate("HomeScreen");
             console.log("canGoBack:", navigation.canGoBack());
           }}
         >
-          <Text style={styles.backText}>←</Text>
+          <Text style={[styles.backText, { color: darkMode ? "#E5E5E5" : "#111" }]}>
+            ←
+          </Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
           {dashboardMode === "caregiver"
             ? "Dependents Adherence"
             : "Adherence Report"}
@@ -250,7 +267,9 @@ const AdherenceScreen = () => {
                   backgroundColor:
                     selectedDependent === dep
                       ? "#2563EB"
-                      : "#E5E7EB",
+                      : darkMode
+                        ? "#3A3A3A"
+                        : "#E5E7EB",
                   borderRadius: 10,
                   marginRight: 8,
                 }}
@@ -260,7 +279,9 @@ const AdherenceScreen = () => {
                     color:
                       selectedDependent === dep
                         ? "#fff"
-                        : "#000",
+                        : darkMode
+                          ? "#ddd"
+                          : "#000",
                   }}
                 >
                   {dep === "all" ? "All" : dep}
@@ -323,18 +344,18 @@ const AdherenceScreen = () => {
       </View>
 
      
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
           Overview
         </Text>
 
         <View style={styles.barBlock}>
           <View style={styles.barHeader}>
-            <Text style={styles.barLabel}>
+            <Text style={[styles.barLabel, { color: darkMode ? "#ddd" : "#111" }]}>
               Taken
             </Text>
 
-            <Text style={styles.barValue}>
+            <Text style={[styles.barValue, { color: darkMode ? "#E5E5E5" : "#111" }]}>
               {taken} (
               {total
                 ? Math.round((taken / total) * 100)
@@ -343,7 +364,12 @@ const AdherenceScreen = () => {
             </Text>
           </View>
 
-          <View style={styles.barBackground}>
+          <View
+            style={[
+              styles.barBackground,
+              { backgroundColor: darkMode ? "#444" : "#E5E7EB" },
+            ]}
+          >
             <View
               style={[
                 styles.barFill,
@@ -362,11 +388,11 @@ const AdherenceScreen = () => {
 
         <View style={styles.barBlock}>
           <View style={styles.barHeader}>
-            <Text style={styles.barLabel}>
+            <Text style={[styles.barLabel, { color: darkMode ? "#ddd" : "#111" }]}>
               Missed
             </Text>
 
-            <Text style={styles.barValue}>
+            <Text style={[styles.barValue, { color: darkMode ? "#E5E5E5" : "#111" }]}>
               {missed} (
               {total
                 ? Math.round((missed / total) * 100)
@@ -375,7 +401,12 @@ const AdherenceScreen = () => {
             </Text>
           </View>
 
-          <View style={styles.barBackground}>
+          <View
+            style={[
+              styles.barBackground,
+              { backgroundColor: darkMode ? "#444" : "#E5E7EB" },
+            ]}
+          >
             <View
               style={[
                 styles.barFill,
@@ -394,8 +425,8 @@ const AdherenceScreen = () => {
       </View>
 
      
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
           Medication Distribution
         </Text>
 
@@ -412,8 +443,8 @@ const AdherenceScreen = () => {
       </View>
 
       
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
           Taken vs Missed
         </Text>
 
@@ -433,8 +464,8 @@ const AdherenceScreen = () => {
       </View>
 
       
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>
+      <View style={[styles.card, { backgroundColor: darkMode ? "#2C2C2C" : "#fff" }]}>
+        <Text style={[styles.sectionTitle, { color: darkMode ? "#E5E5E5" : "#111" }]}>
           Adherence Trend
         </Text>
 
@@ -451,8 +482,13 @@ const AdherenceScreen = () => {
       </View>
 
       
-      <View style={styles.insightBox}>
-        <Text style={styles.insightText}>
+      <View
+        style={[
+          styles.insightBox,
+          { backgroundColor: darkMode ? "#123040" : "#ECFEFF" },
+        ]}
+      >
+        <Text style={[styles.insightText, { color: darkMode ? "#7DD3FC" : "#0369A1" }]}>
           {percentage >= 80
             ? "Great job! You're following your medication plan very well 👍"
             : percentage >= 50
@@ -559,7 +595,6 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "#fff",
     padding: 18,
     borderRadius: 16,
     marginBottom: 15,
