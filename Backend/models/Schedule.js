@@ -9,7 +9,7 @@ const scheduleSchema = new mongoose.Schema(
 
     repeat: {
       type: String,
-      enum: ["daily", "weekly", "twiceDaily"],
+      enum: ["daily", "weekly", "twiceDaily","threeTimesDaily"],
       default: "daily",
     },
 
