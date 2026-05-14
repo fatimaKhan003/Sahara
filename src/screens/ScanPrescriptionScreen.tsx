@@ -126,7 +126,7 @@ export default function ScanPrescriptionScreen() {
   const processImage = async (fullUri: string, croppedUri: string) => {
     setIsProcessing(true);
     // Save the FULL image locally (AsyncStorage)
-    await savePrescription(fullUri, forDependentId, forDependentName);
+    
 
     try {
       // Send only the CROPPED image to OCR for speed
@@ -137,7 +137,7 @@ export default function ScanPrescriptionScreen() {
         type: "image/jpeg",
       } as any);
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      
       const resp = await fetch(`${API_BASE}/api/ocr/extract`, {
         method: "POST",
         headers: { "Content-Type": "multipart/form-data" },
@@ -147,8 +147,18 @@ export default function ScanPrescriptionScreen() {
       if (!resp.ok) throw new Error(`OCR server error: ${resp.status}`);
 
       const data = await resp.json();
+      if(data.status==="invalid_prescription" || !data.medicines || data.medicines.length===0)
+      {
+        setIsProcessing(false);
+        Alert.alert(
+          "Invalid Scan",
+          "You did not scan a correct prescription. Please try again.",
+          [{text:"OK"}]
+        );
+        return;
+      }
       console.log("OCR Response:", JSON.stringify(data, null, 2));
-
+await savePrescription(fullUri, forDependentId, forDependentName);
       if (!data.medicines || data.medicines.length === 0) {
         Alert.alert(
           t("scanPrescription.noMedicationsTitle"),
