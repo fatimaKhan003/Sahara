@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { API_BASE } from "../../api";
 import { ThemeContext } from "../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 
 type Medication = {
   _id: string;
@@ -32,6 +33,7 @@ type SectionData = {
 };
 
 export default function ViewAllMedicinesScreen() {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
   const navigation = useNavigation<any>();
@@ -44,10 +46,10 @@ export default function ViewAllMedicinesScreen() {
   const [isDependent, setIsDependent] = useState(false);
 
   const getStatus = (doseLogs: any[]) => {
-    if (!doseLogs || doseLogs.length === 0) return "Not Taken";
-    if (doseLogs.some((d) => d.status === "taken")) return "Taken";
-    if (doseLogs.some((d) => d.status === "missed")) return "Missed";
-    return "Not Taken";
+    if (!doseLogs || doseLogs.length === 0) return t("viewAllMedicines.notTaken");
+    if (doseLogs.some((d) => d.status === "taken")) return t("viewAllMedicines.taken");
+    if (doseLogs.some((d) => d.status === "missed")) return t("viewAllMedicines.missed");
+    return t("viewAllMedicines.notTaken");
   };
 
   const loadAllMeds = useCallback(async () => {
@@ -75,7 +77,7 @@ export default function ViewAllMedicinesScreen() {
       const personalMeds: Medication[] = await personalRes.json();
       if (personalMeds.length > 0) {
         sectionsArr.push({
-          title: "My Medications",
+          title: t("viewAllMedicines.myMedications"),
           sectionKey: "personal",
           data: personalMeds.map((m) => ({ ...m, addedBy: "self" })),
         });
@@ -94,7 +96,7 @@ export default function ViewAllMedicinesScreen() {
           const depMeds: Medication[] = await depMedRes.json();
           if (depMeds.length > 0) {
             sectionsArr.push({
-              title: `${dep.name}'s Medications`,
+              title: t("viewAllMedicines.dependentMedsTitle", { name: dep.name }),
               sectionKey: dep._id,
               data: depMeds.map((m) => ({ ...m, dependentName: dep.name })),
             });
@@ -124,15 +126,15 @@ export default function ViewAllMedicinesScreen() {
         {item.name}
       </Text>
       <Text style={{ color: darkMode ? "#ccc" : "#333" }}>
-        Dose: {item.dose}
+        {t("viewAllMedicines.dose")}: {item.dose}
       </Text>
       <Text style={{ color: darkMode ? "#ccc" : "#333" }}>
-        Status: {getStatus(item.doseLogs)}
+        {t("viewAllMedicines.status")}: {getStatus(item.doseLogs)}
       </Text>
       {item.addedBy === "caregiver" && (
         <View style={styles.addedByBadge}>
           <Ionicons name="person-circle-outline" size={12} color="#7C3AED" />
-          <Text style={styles.addedByText}>Added by caregiver</Text>
+          <Text style={styles.addedByText}>{t("viewAllMedicines.addedByCaregiver")}</Text>
         </View>
       )}
     </View>
@@ -213,7 +215,7 @@ export default function ViewAllMedicinesScreen() {
           <Text
             style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
           >
-            Medications
+            {t("viewAllMedicines.title")}
           </Text>
           <View style={{ width: 24 }} />
         </View>
@@ -244,7 +246,7 @@ export default function ViewAllMedicinesScreen() {
         <Text
           style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
         >
-          Medications
+          {t("viewAllMedicines.title")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -260,8 +262,12 @@ export default function ViewAllMedicinesScreen() {
           <Text
             style={[styles.summaryText, { color: darkMode ? "#ccc" : "#555" }]}
           >
-            {totalCount} medication{totalCount !== 1 ? "s" : ""} across{" "}
-            {sections.length} section{sections.length !== 1 ? "s" : ""}
+            {t("viewAllMedicines.summary", {
+              count: totalCount,
+              plural: totalCount !== 1 ? "s" : "",
+              sections: sections.length,
+              sectionPlural: sections.length !== 1 ? "s" : "",
+            })}
           </Text>
         </View>
       )}
@@ -272,12 +278,12 @@ export default function ViewAllMedicinesScreen() {
           <Text
             style={[styles.emptyText, { color: darkMode ? "#aaa" : "#888" }]}
           >
-            No medications saved yet.
+            {t("viewAllMedicines.noneTitle")}
           </Text>
           <Text
             style={[styles.emptySubText, { color: darkMode ? "#666" : "#aaa" }]}
           >
-            Add a medication to get started.
+            {t("viewAllMedicines.noneSubtitle")}
           </Text>
         </View>
       ) : (

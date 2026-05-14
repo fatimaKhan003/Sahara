@@ -23,8 +23,12 @@ const CAREGIVER_KEY = "isCaregiver";
 
 const SettingsScreen = () => {
   const { theme, toggleTheme, applyTheme } = useContext(ThemeContext);
-  const { voiceReminderEnabled, toggleVoiceReminder } =
-    useContext(SettingsContext);
+  const {
+    voiceReminderEnabled,
+    toggleVoiceReminder,
+    voiceReminderLanguage,
+    setVoiceReminderLanguage,
+  } = useContext(SettingsContext);
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const darkMode = theme === "dark";
@@ -296,6 +300,7 @@ const SettingsScreen = () => {
             onPress={async () => {
               try {
                 await AsyncStorage.removeItem("user");
+              EventBus.emit("userUpdated", null);
                 navigation.navigate("OnboardingScreen");
               } catch (err) {
                 console.error("Logout failed:", err);
@@ -419,6 +424,55 @@ const SettingsScreen = () => {
             {t("settings.voiceRemindersDesc") ||
               "Enable spoken reminders for your medications."}
           </Text>
+
+          {voiceReminderEnabled && (
+            <View
+              style={[
+                styles.cardRow,
+                { backgroundColor: darkMode ? "#1E1E1E" : "#fff" },
+              ]}
+            >
+              <Text
+                style={{ color: darkMode ? "#fff" : "#000", fontWeight: "600" }}
+              >
+                {t("settings.voiceLanguage") || "Voice Language"}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => setVoiceReminderLanguage("en")}
+                  style={[
+                    styles.langToggle,
+                    voiceReminderLanguage === "en" && styles.activeLangToggle,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.langToggleText,
+                      voiceReminderLanguage === "en" && styles.activeLangText,
+                    ]}
+                  >
+                    EN
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setVoiceReminderLanguage("ur")}
+                  style={[
+                    styles.langToggle,
+                    voiceReminderLanguage === "ur" && styles.activeLangToggle,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.langToggleText,
+                      voiceReminderLanguage === "ur" && styles.activeLangText,
+                    ]}
+                  >
+                    اردو
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Caregiver Account */}
@@ -556,5 +610,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     marginBottom: 10,
+  },
+  langToggle: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+    backgroundColor: "#F9F9F9",
+  },
+  activeLangToggle: {
+    backgroundColor: "#3B5BFF",
+    borderColor: "#3B5BFF",
+  },
+  langToggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#000",
+  },
+  activeLangText: {
+    color: "#fff",
   },
 });

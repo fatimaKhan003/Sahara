@@ -112,7 +112,7 @@ const MedicationDetailScreen = () => {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please grant gallery permission.");
+      Alert.alert(t("medicationDetail.permissionTitle"), t("medicationDetail.permissionMessage"));
       return;
     }
 
@@ -135,7 +135,7 @@ const MedicationDetailScreen = () => {
 
   const updateMedication = async () => {
     if (!med?._id) {
-      Alert.alert("Info", "Update not available for this entry.");
+      Alert.alert(t("common.info"), t("medicationDetail.infoUpdateUnavailable"));
       return;
     }
     setLoading(true);
@@ -170,11 +170,11 @@ const MedicationDetailScreen = () => {
         await cancelMedicationNotifications(med._id);
       }
 
-      Alert.alert("Success", "Medication updated successfully!", [
+      Alert.alert(t("common.success"), t("medicationDetail.updateSuccess"), [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } catch (err) {
-      Alert.alert("Error", "Failed to update medication.");
+      Alert.alert(t("common.error"), t("medicationDetail.updateFailed"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -184,14 +184,16 @@ const MedicationDetailScreen = () => {
   const deleteMedication = async () => {
     if (!med?._id) return;
 
-    const confirmTitle = isDependent ? "Request Deletion" : "Confirm Deletion";
+    const confirmTitle = isDependent
+      ? t("medicationDetail.requestDeletionTitle")
+      : t("medicationDetail.deleteConfirmTitle");
     const confirmMsg = isDependent
-      ? "A request will be sent to your caregiver to delete this medication."
-      : "Are you sure you want to delete this medication?";
-    const confirmBtn = isDependent ? "Send Request" : "Delete";
+      ? t("medicationDetail.requestDeletionMessage")
+      : t("medicationDetail.deleteConfirmMessage");
+    const confirmBtn = isDependent ? t("medicationDetail.sendRequest") : t("common.delete");
 
     Alert.alert(confirmTitle, confirmMsg, [
-      { text: "Cancel", style: "cancel" },
+      { text: t("common.cancel"), style: "cancel" },
       {
         text: confirmBtn,
         style: "destructive",
@@ -209,8 +211,8 @@ const MedicationDetailScreen = () => {
                 }),
               });
               Alert.alert(
-                "Request Sent",
-                "Your caregiver will review and approve the deletion.",
+                t("medicationDetail.requestSentTitle"),
+                t("medicationDetail.requestSentMessage"),
                 [{ text: "OK", onPress: () => navigation.goBack() }],
               );
             } else {
@@ -219,12 +221,12 @@ const MedicationDetailScreen = () => {
               });
               await cancelMedicationNotifications(med._id);
               if (onUpdate) onUpdate(null);
-              Alert.alert("Deleted", "Medication deleted successfully.", [
+              Alert.alert(t("medicationDetail.deletedTitle"), t("medicationDetail.deletedMessage"), [
                 { text: "OK", onPress: () => navigation.goBack() },
               ]);
             }
           } catch (err) {
-            Alert.alert("Error", "Failed to process request.");
+            Alert.alert(t("common.error"), t("medicationDetail.deleteFailed"));
             console.error(err);
           }
         },
@@ -344,7 +346,7 @@ const MedicationDetailScreen = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: "Medication Details",
+      headerTitle: t("medicationDetail.title"),
       headerStyle: {
         backgroundColor: dynamicStyles.container.backgroundColor,
         shadowOpacity: 0,
@@ -410,7 +412,7 @@ const MedicationDetailScreen = () => {
             color: darkMode ? "#fff" : "#000",
           }}
         >
-          Medication Details
+          {t("medicationDetail.title")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -431,11 +433,11 @@ const MedicationDetailScreen = () => {
             }}
             style={dynamicStyles.medImage}
           />
-          <Text style={dynamicStyles.changeImageText}>{"Change Image"}</Text>
+          <Text style={dynamicStyles.changeImageText}>{t("medicationDetail.changeImage")}</Text>
         </TouchableOpacity>
 
         <View style={dynamicStyles.card}>
-          <Text style={dynamicStyles.label}>{"Name"}</Text>
+          <Text style={dynamicStyles.label}>{t("medicationDetail.name")}</Text>
           <TextInput
             style={dynamicStyles.input}
             value={name}
@@ -443,7 +445,7 @@ const MedicationDetailScreen = () => {
             placeholderTextColor={darkMode ? "#aaa" : "#888"}
           />
 
-          <Text style={dynamicStyles.label}>{"Dose"}</Text>
+          <Text style={dynamicStyles.label}>{t("medicationDetail.dose")}</Text>
           <TextInput
             style={dynamicStyles.input}
             value={dose}
@@ -451,7 +453,7 @@ const MedicationDetailScreen = () => {
             placeholderTextColor={darkMode ? "#aaa" : "#888"}
           />
 
-          <Text style={dynamicStyles.label}>{"Frequency"}</Text>
+          <Text style={dynamicStyles.label}>{t("medicationDetail.frequency")}</Text>
           <Picker
             selectedValue={schedule.repeat}
             onValueChange={(value) =>
@@ -459,9 +461,9 @@ const MedicationDetailScreen = () => {
             }
             style={{ color: darkMode ? "#fff" : "#000", marginBottom: 20 }}
           >
-            <Picker.Item label="Once a day" value="daily" />
-            <Picker.Item label="Twice a day" value="twiceDaily" />
-            <Picker.Item label="Weekly" value="weekly" />
+            <Picker.Item label={t("medicationDetail.onceADay")} value="daily" />
+            <Picker.Item label={t("medicationDetail.twiceADay")} value="twiceDaily" />
+            <Picker.Item label={t("medicationDetail.weekly")} value="weekly" />
           </Picker>
 
           <View
@@ -472,7 +474,7 @@ const MedicationDetailScreen = () => {
               marginBottom: 20,
             }}
           >
-            <Text style={dynamicStyles.label}>{"Active"}</Text>
+            <Text style={dynamicStyles.label}>{t("medicationDetail.active")}</Text>
             <Switch
               value={isActive}
               onValueChange={setIsActive}
@@ -481,7 +483,7 @@ const MedicationDetailScreen = () => {
             />
           </View>
 
-          <Text style={dynamicStyles.label}>{"Times"}</Text>
+          <Text style={dynamicStyles.label}>{t("medicationDetail.times")}</Text>
 
           {schedule.times.map((time, tIdx) => (
             <View key={tIdx} style={{ marginBottom: 10 }}>
@@ -499,7 +501,7 @@ const MedicationDetailScreen = () => {
                         hour: "2-digit",
                         minute: "2-digit",
                       })
-                    : "Select Time"}
+                    : t("medicationDetail.selectTime")}
                 </Text>
               </TouchableOpacity>
 
@@ -535,7 +537,7 @@ const MedicationDetailScreen = () => {
             style={[dynamicStyles.secondaryButton, { marginBottom: 20 }]}
           >
             <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
-            <Text style={dynamicStyles.secondaryButtonText}>Add Time</Text>
+            <Text style={dynamicStyles.secondaryButtonText}>{t("medicationDetail.addTime")}</Text>
           </TouchableOpacity>
 
           <View style={{ marginBottom: 20 }}>
@@ -552,7 +554,7 @@ const MedicationDetailScreen = () => {
               }}
             >
               <Text style={[dynamicStyles.statusLabel, { marginBottom: 0 }]}>
-                Dose Logs ({med.doseLogs?.length || 0})
+                {t("medicationDetail.doseLogs")} ({med.doseLogs?.length || 0})
               </Text>
               <Ionicons
                 name={showDoseLogs ? "chevron-up" : "chevron-down"}
@@ -612,7 +614,7 @@ const MedicationDetailScreen = () => {
               <Ionicons name="save-outline" size={20} color="#fff" />
             )}
             <Text style={dynamicStyles.updateButtonText}>
-              {loading ? "Saving..." : "Update"}
+              {loading ? t("medicationDetail.saving") : t("common.update")}
             </Text>
           </TouchableOpacity>
  

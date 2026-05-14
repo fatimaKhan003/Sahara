@@ -14,7 +14,9 @@ import { useNavigation, useIsFocused } from "@react-navigation/native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons,MaterialCommunityIcons } from "@expo/vector-icons";
 import { ThemeContext } from "../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 const CaregiverRequestsScreen = () => {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const isDark = theme === "dark";
   const navigation = useNavigation<any>();
@@ -94,19 +96,19 @@ const CaregiverRequestsScreen = () => {
           }),
         },
       );
-      if (!res.ok) throw new Error("Failed to approve");
+      if (!res.ok) throw new Error(t("caregiverRequests.requestApproveFailed"));
 
-      Alert.alert("Success", "Request approved");
+      Alert.alert(t("common.success"), t("caregiverRequests.requestApproved"));
       onRefresh();
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "Failed to approve request");
+      Alert.alert(t("common.error"), t("caregiverRequests.requestApproveFailed"));
     }
   };
 
   const handleRejectRequest = async (id: string) => {
     await fetch(`${API_BASE}/api/medications/reject/${id}`, { method: "POST" });
-    Alert.alert("Rejected");
+    Alert.alert(t("caregiverRequests.rejected"));
     onRefresh();
   };
 
@@ -116,7 +118,7 @@ const CaregiverRequestsScreen = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId }),
     });
-    Alert.alert("Approved", "Medication deleted successfully");
+    Alert.alert(t("caregiverRequests.approve"), t("caregiverRequests.deletionApproved"));
     onRefresh();
   };
 
@@ -126,7 +128,7 @@ const CaregiverRequestsScreen = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId }),
     });
-    Alert.alert("Rejected", "Deletion request rejected");
+    Alert.alert(t("caregiverRequests.rejected"), t("caregiverRequests.deletionRejected"));
     onRefresh();
   };
 
@@ -134,7 +136,7 @@ const CaregiverRequestsScreen = () => {
     await fetch(`${API_BASE}/api/caregiver/approve-theme/${id}`, {
       method: "POST",
     });
-    Alert.alert("Approved");
+    Alert.alert(t("caregiverRequests.approve"));
     onRefresh();
   };
 
@@ -142,7 +144,7 @@ const CaregiverRequestsScreen = () => {
     await fetch(`${API_BASE}/api/caregiver/reject-theme/${id}`, {
       method: "POST",
     });
-    Alert.alert("Rejected");
+    Alert.alert(t("caregiverRequests.rejected"));
     onRefresh();
   };
 const renderSectionHeader = (title: string, icon: any) => (
@@ -154,7 +156,7 @@ const renderSectionHeader = (title: string, icon: any) => (
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="checkmark-circle-outline" size={48} color="#CBD5E1" />
-      <Text style={styles.emptyText}>All caught up! No pending requests.</Text>
+      <Text style={styles.emptyText}>{t("caregiverRequests.allCaughtUp")}</Text>
     </View>
   );
   return (
@@ -187,7 +189,7 @@ const renderSectionHeader = (title: string, icon: any) => (
             color: isDark ? "#fff" : "#000",
           }}
         >
-          Request Center
+          {t("caregiverRequests.title")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -197,12 +199,14 @@ const renderSectionHeader = (title: string, icon: any) => (
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" />}
       >
         {/* Medication Additions */}
-        {renderSectionHeader("New Medications", "pill")}
+        {renderSectionHeader(t("caregiverRequests.medAcceptance"), "pill")}
         {requests.length === 0 && renderEmpty()}
         {requests.map((req) => (
           <View key={req._id} style={[styles.card, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
             <View style={styles.cardInfo}>
-              <Text style={[styles.dependentLabel, { color: isDark ? "#94A3B8" : "#64748B" }]}>DEPENDENT</Text>
+              <Text style={[styles.dependentLabel, { color: isDark ? "#94A3B8" : "#64748B" }]}>
+                {t("caregiverRequests.dependent").toUpperCase()}
+              </Text>
               <Text style={[styles.dependentName, { color: isDark ? "#F8FAFC" : "#1E293B" }]}>{req.dependent.name}</Text>
               <View style={styles.divider} />
               {req.medicines.map((med, i) => (
@@ -214,56 +218,60 @@ const renderSectionHeader = (title: string, icon: any) => (
             </View>
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={() => handleRejectRequest(req._id)} style={[styles.actionBtn, styles.rejectBtn]}>
-                <Text style={styles.rejectBtnText}>Reject</Text>
+                <Text style={styles.rejectBtnText}>{t("caregiverRequests.reject")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleApproveRequest(req)} style={[styles.actionBtn, styles.approveBtn]}>
-                <Text style={styles.approveBtnText}>Approve</Text>
+                <Text style={styles.approveBtnText}>{t("caregiverRequests.approve")}</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
 
         {/* Medication Deletions */}
-        {renderSectionHeader("Deletion Requests", "trash-can-outline")}
+        {renderSectionHeader(t("caregiverRequests.medDeletion"), "trash-can-outline")}
         {medDeleteRequests.length === 0 && renderEmpty()}
         {medDeleteRequests.map((req) => (
           <View key={req._id} style={[styles.card, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
             <View style={styles.cardInfo}>
-              <Text style={[styles.dependentLabel, { color: isDark ? "#94A3B8" : "#64748B" }]}>DEPENDENT</Text>
+              <Text style={[styles.dependentLabel, { color: isDark ? "#94A3B8" : "#64748B" }]}>
+                {t("caregiverRequests.dependent").toUpperCase()}
+              </Text>
               <Text style={[styles.dependentName, { color: isDark ? "#F8FAFC" : "#1E293B" }]}>{req.dependent?.name}</Text>
               <Text style={[styles.deleteText, { color: isDark ? "#FCA5A5" : "#EF4444" }]}>
-                Requested to remove: <Text style={{ fontWeight: "700" }}>{req.medicationId?.name}</Text>
+                {t("caregiverRequests.wantsToDelete")}: <Text style={{ fontWeight: "700" }}>{req.medicationId?.name}</Text>
               </Text>
             </View>
             <View style={styles.actionRow}>
-              {/* Reuse your handlers handleRejectMedDelete / handleApproveMedDelete */}
-              <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => Alert.alert("Rejected")}>
-                <Text style={styles.rejectBtnText}>Reject</Text>
+              <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => handleRejectMedDelete(req._id)}>
+                <Text style={styles.rejectBtnText}>{t("caregiverRequests.reject")}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => Alert.alert("Deleted")}>
-                <Text style={styles.approveBtnText}>Confirm Delete</Text>
+              <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApproveMedDelete(req._id)}>
+                <Text style={styles.approveBtnText}>{t("caregiverRequests.confirmDelete")}</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
 
         {/* Theme Requests */}
-        {renderSectionHeader("Appearance Requests", "palette-outline")}
+        {renderSectionHeader(t("caregiverRequests.themeChange"), "palette-outline")}
         {themeRequests.length === 0 && renderEmpty()}
         {themeRequests.map((req) => (
           <View key={req._id} style={[styles.card, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
              <View style={styles.themeContent}>
                 <Ionicons name="color-palette" size={24} color="#8B5CF6" />
                 <Text style={[styles.themeText, { color: isDark ? "#F8FAFC" : "#1E293B" }]}>
-                   <Text style={{ fontWeight: '700' }}>{req.dependent.name}</Text> wants to switch to <Text style={{ color: '#8B5CF6' }}>{req.requestedTheme}</Text> mode.
+                  {t("caregiverRequests.wantsMode", {
+                    name: req.dependent.name,
+                    theme: req.requestedTheme,
+                  })}
                 </Text>
              </View>
              <View style={styles.actionRow}>
                 <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => handleRejectTheme(req._id)}>
-                  <Text style={styles.rejectBtnText}>Reject</Text>
+                  <Text style={styles.rejectBtnText}>{t("caregiverRequests.reject")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApproveTheme(req._id)}>
-                  <Text style={styles.approveBtnText}>Approve</Text>
+                  <Text style={styles.approveBtnText}>{t("caregiverRequests.approve")}</Text>
                 </TouchableOpacity>
              </View>
           </View>

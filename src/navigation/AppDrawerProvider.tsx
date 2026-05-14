@@ -60,6 +60,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [user, setUser] = useState<any>(null);
   const [medications, setMedications] = useState<any[]>([]);
+  const [isDependent, setIsDependent] = useState(false);
   useEffect(() => {
     Animated.parallel([
       Animated.timing(translateX, {
@@ -112,6 +113,44 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
 
     fetchMedications();
   }, [user]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    const checkDependentStatus = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/caregiver/is-dependent/${user._id}`,
+        );
+        const data = await res.json();
+        setIsDependent(data.isDependent);
+      } catch (err) {
+        console.error("Failed to check dependent status", err);
+      }
+    };
+    checkDependentStatus();
+  }, [user]);
+
+  const toggleThemeWithApproval = async () => {
+    if (!user?._id) {
+      toggleTheme();
+      return;
+    }
+    const newTheme = theme === "light" ? "dark" : "light";
+    try {
+      if (isDependent) {
+        await fetch(`${API_BASE}/api/caregiver/request-theme`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user._id, theme: newTheme }),
+        });
+        alert("Theme change request sent to caregiver");
+      } else {
+        toggleTheme();
+      }
+    } catch (err) {
+      console.error("Theme toggle failed:", err);
+    }
+  };
 
   const closeDrawer = () => setIsOpen(false);
   const openDrawer = () => setIsOpen(true);
@@ -382,7 +421,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 </View>
                 <Switch
                   value={darkMode}
-                  onValueChange={toggleTheme}
+                  onValueChange={toggleThemeWithApproval}
                   trackColor={{ false: "#d1d5db", true: "#3B5BFF" }}
                   thumbColor="#fff"
                   ios_backgroundColor="#d1d5db"
@@ -421,33 +460,35 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
                 </View>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[styles.logoutRow, dynamicStyles.logoutButton]}
-              onPress={handleLogout}
-            >
-              <View style={styles.prefLeft}>
-                <View
-                  style={[
-                    styles.iconWrapper,
-                    { backgroundColor: darkMode ? "#7F1D1D" : "#FECACA" },
-                  ]}
-                >
-                  <Ionicons
-                    name="log-out-outline"
-                    size={20}
-                    color={darkMode ? "#F87171" : "#DC2626"}
-                  />
+            {!isAuthScreen && user && (
+              <TouchableOpacity
+                style={[styles.logoutRow, dynamicStyles.logoutButton]}
+                onPress={handleLogout}
+              >
+                <View style={styles.prefLeft}>
+                  <View
+                    style={[
+                      styles.iconWrapper,
+                      { backgroundColor: darkMode ? "#7F1D1D" : "#FECACA" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="log-out-outline"
+                      size={20}
+                      color={darkMode ? "#F87171" : "#DC2626"}
+                    />
+                  </View>
+                  <Text style={[styles.itemLabel, dynamicStyles.logoutText]}>
+                    Logout
+                  </Text>
                 </View>
-                <Text style={[styles.itemLabel, dynamicStyles.logoutText]}>
-                  Logout
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={darkMode ? "#F87171" : "#DC2626"}
-              />
-            </TouchableOpacity>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={darkMode ? "#F87171" : "#DC2626"}
+                />
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </Animated.View>
       </View>

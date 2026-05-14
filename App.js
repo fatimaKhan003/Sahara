@@ -19,6 +19,7 @@ import SplashScreen from "./src/screens/SplashScreen";
 import ProfileEditScreen from "./src/screens/ProfileEditScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import AddDependentsScreen from "./src/screens/AddDependentsScreen";
+import * as Notifications from "expo-notifications";
 import {
   registerForNotifications,
   sendLocalTestNotification,
@@ -41,8 +42,12 @@ export default function App() {
     setupNotificationActions();
     setupForegroundNotificationListener();
     setupNotificationResponseListener();
+    // Notifications.getNotificationChannelsAsync().then(channels=>
+    // {
+    //   console.log('CHANNELS:', JSON.stringify(channels, null, 2));
+    // }
+    // );
   }, []);
-  
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -108,16 +113,12 @@ export default function App() {
                   name="ViewAllMedicines"
                   component={ViewAllMedicines}
                 />
-                <Stack.Screen
-                name="Adherence"
-                component={AdherenceScreen}
-                />
+                <Stack.Screen name="Adherence" component={AdherenceScreen} />
               </Stack.Navigator>
             </NavigationContainer>
           </AppDrawerProvider>
         </ThemeProvider>
       </SettingsProvider>
     </GestureHandlerRootView>
-    
   );
 }

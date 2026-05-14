@@ -14,8 +14,10 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { SafeAreaView } from "react-native";
+import { useTranslation } from "react-i18next";
 
 const AddDependentsScreen = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
   const [dependents, setDependents] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,7 +53,7 @@ const AddDependentsScreen = () => {
 
   const handleAddDependent = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter email");
+      Alert.alert(t("common.error"), t("addDependents.emptyEmail"));
       return;
     }
 
@@ -73,31 +75,37 @@ const AddDependentsScreen = () => {
         // If user doesn't exist, offer to create one
         if (data.error === "User not found" || res.status === 404) {
           Alert.alert(
-            "Account Not Found",
-            "This dependent does not have an account. Would you like to create one for them?",
+            t("addDependents.accountNotFoundTitle"),
+            t("addDependents.accountNotFoundMessage"),
             [
-              { text: "Cancel", style: "cancel" },
+              { text: t("common.cancel"), style: "cancel" },
               {
-                text: "Create Account",
+                text: t("addDependents.createAccount"),
                 onPress: () => {
                   setModalVisible(false);
                   setCreationModalVisible(true);
                 },
               },
-            ]
+            ],
           );
         } else {
-          Alert.alert("Error", data.error || "User not found");
+          Alert.alert(
+            t("common.error"),
+            data.error || t("errors.userNotFound"),
+          );
         }
         return;
       }
 
-      Alert.alert("Success", "Dependent linked successfully!");
+      Alert.alert(t("common.success"), t("addDependents.linkedSuccess"));
       setEmail("");
       setModalVisible(false);
       fetchDependents(user._id);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Something went wrong");
+      Alert.alert(
+        t("common.error"),
+        err.message || t("errors.somethingWentWrong"),
+      );
     } finally {
       setLoading(false);
     }
@@ -105,31 +113,34 @@ const AddDependentsScreen = () => {
 
   const handleCreateNewDependent = async () => {
     if (!newName.trim() || !newPassword.trim()) {
-      Alert.alert("Error", "Please provide a name and password for the new account.");
+      Alert.alert(t("common.error"), t("addDependents.namePasswordRequired"));
       return;
     }
 
     try {
       setLoading(true);
       // Calls new endpoint that handles Registration + Linking in one go
-      const res = await fetch(`${API_BASE}/api/caregiver/register-and-add-dependent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caregiverUserId: user._id,
-          email: email.trim().toLowerCase(),
-          name: newName.trim(),
-          password: newPassword,
-        }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/caregiver/register-and-add-dependent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            caregiverUserId: user._id,
+            email: email.trim().toLowerCase(),
+            name: newName.trim(),
+            password: newPassword,
+          }),
+        },
+      );
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create account");
+        throw new Error(data.error || t("addDependents.createFailed"));
       }
 
-      Alert.alert("Success", "Account created and linked!");
+      Alert.alert(t("common.success"), t("addDependents.createdAndLinked"));
       setCreationModalVisible(false);
       setNewName("");
       setNewPassword("");
@@ -145,7 +156,7 @@ const AddDependentsScreen = () => {
   return (
     <View style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
-        <Text style={styles.title}>Add dependents</Text>
+        <Text style={styles.title}>{t("addDependents.title")}</Text>
 
         <View style={styles.card}>
           <FlatList
@@ -172,7 +183,9 @@ const AddDependentsScreen = () => {
                 <View style={styles.plusCircle}>
                   <Text style={styles.plus}>+</Text>
                 </View>
-                <Text style={styles.addText}>Add another account</Text>
+                <Text style={styles.addText}>
+                  {t("addDependents.addAnotherAccount")}
+                </Text>
               </TouchableOpacity>
             }
           />
@@ -182,10 +195,13 @@ const AddDependentsScreen = () => {
         <Modal visible={modalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Add dependent by email</Text>
+              <Text style={styles.modalTitle}>
+                {t("addDependents.modalTitle")}
+              </Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter email"
+                placeholder={t("addDependents.enterEmail")}
+                placeholderTextColor="#888"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -196,7 +212,7 @@ const AddDependentsScreen = () => {
                   style={styles.cancelBtn}
                   onPress={() => setModalVisible(false)}
                 >
-                  <Text>Cancel</Text>
+                  <Text>{t("common.cancel")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.addBtn}
@@ -206,7 +222,7 @@ const AddDependentsScreen = () => {
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={{ color: "#fff" }}>Add</Text>
+                    <Text style={{ color: "#fff" }}>{t("common.confirm")}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -218,18 +234,24 @@ const AddDependentsScreen = () => {
         <Modal visible={creationModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Register New Dependent</Text>
-              <Text style={styles.subtitle}>Email: {email}</Text>
+              <Text style={styles.modalTitle}>
+                {t("addDependents.registerTitle")}
+              </Text>
+              <Text style={styles.subtitle}>
+                {t("common.email")}: {email}
+              </Text>
 
               <TextInput
                 style={styles.input}
-                placeholder="Full Name"
+                placeholder={t("addDependents.fullName")}
+                placeholderTextColor="#888"
                 value={newName}
                 onChangeText={setNewName}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Initial Password"
+                placeholder={t("addDependents.initialPassword")}
+                placeholderTextColor="#888"
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -240,7 +262,7 @@ const AddDependentsScreen = () => {
                   style={styles.cancelBtn}
                   onPress={() => setCreationModalVisible(false)}
                 >
-                  <Text>Cancel</Text>
+                  <Text>{t("common.cancel")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.addBtn}
@@ -250,7 +272,9 @@ const AddDependentsScreen = () => {
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={{ color: "#fff" }}>Create & Link</Text>
+                    <Text style={{ color: "#fff" }}>
+                      {t("addDependents.createAndLink")}
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -353,6 +377,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     fontSize: 16,
+    color: "#333",
   },
   modalButtons: {
     flexDirection: "row",

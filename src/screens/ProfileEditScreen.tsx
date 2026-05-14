@@ -54,7 +54,10 @@ const ProfileEditScreen = () => {
             initialImage &&
             (initialImage.startsWith("/") || initialImage.startsWith("uploads"))
           ) {
-            setProfileImage(`${API_BASE}${initialImage}`);
+            const filename = initialImage.split("/").pop();
+            setProfileImage(
+              `${API_BASE}/api/profile-image/${filename}?userId=${parsedUser._id}`,
+            );
           } else {
             setProfileImage(
               initialImage || Image.resolveAssetSource(DefaultPFP).uri,
@@ -151,7 +154,7 @@ const ProfileEditScreen = () => {
       EventBus.emit("userUpdated", updatedUser);
       console.log("Emitted userUpdated event:", updatedUser);
 
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert(t("common.success"), t("profileEdit.successMessage"));
       navigation.goBack();
     } catch (error: any) {
       console.error("Save Profile Error:", error);
@@ -164,7 +167,7 @@ const ProfileEditScreen = () => {
   const handleChangeProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission required", "Allow access to your gallery");
+      Alert.alert(t("profileEdit.permissionRequired"), t("profileEdit.allowGallery"));
       return;
     }
 
@@ -239,7 +242,7 @@ const ProfileEditScreen = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: "Edit Profile",
+      headerTitle: t("profileEdit.title"),
       headerStyle: { backgroundColor: dynamicStyles.container.backgroundColor },
       headerTintColor: dynamicStyles.text.color,
       headerLeft: () => (
@@ -285,12 +288,10 @@ const ProfileEditScreen = () => {
           paddingTop: insets.top + 10,
         }}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={darkMode ? "#fff" : "#000"}
-          />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
         </TouchableOpacity>
         <Text
           style={{
@@ -299,7 +300,7 @@ const ProfileEditScreen = () => {
             color: darkMode ? "#fff" : "#000",
           }}
         >
-          Edit Profile
+          {t("profileEdit.title")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -317,10 +318,10 @@ const ProfileEditScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={dynamicStyles.label}>Name</Text>
+        <Text style={dynamicStyles.label}>{t("profileEdit.name")}</Text>
         <View style={dynamicStyles.inputWrapper}>
           <TextInput
-            placeholder="Enter your name"
+            placeholder={t("profileEdit.enterName")}
             placeholderTextColor={darkMode ? "#888" : "#999"}
             style={[
               dynamicStyles.input,
@@ -332,7 +333,7 @@ const ProfileEditScreen = () => {
           />
         </View>
 
-        <Text style={dynamicStyles.label}>Email</Text>
+        <Text style={dynamicStyles.label}>{t("profileEdit.email")}</Text>
         <View
           style={[
             dynamicStyles.inputWrapper,
@@ -361,10 +362,10 @@ const ProfileEditScreen = () => {
           />
         </View>
 
-        <Text style={dynamicStyles.label}>Phone</Text>
+        <Text style={dynamicStyles.label}>{t("profileEdit.phone")}</Text>
         <View style={dynamicStyles.inputWrapper}>
           <TextInput
-            placeholder="Enter phone number"
+            placeholder={t("profileEdit.enterPhone")}
             placeholderTextColor={darkMode ? "#888" : "#999"}
             style={dynamicStyles.input}
             keyboardType="phone-pad"
@@ -384,7 +385,7 @@ const ProfileEditScreen = () => {
             <Ionicons name="save-outline" size={20} color="#fff" />
           )}
           <Text style={dynamicStyles.saveButtonText}>
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? t("profileEdit.saving") : t("profileEdit.saveChanges")}
           </Text>
         </TouchableOpacity>
       </ScrollView>
