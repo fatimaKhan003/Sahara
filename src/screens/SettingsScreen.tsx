@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -208,17 +209,27 @@ const SettingsScreen = () => {
 
     try {
       if (isDependent) {
-        await fetch(`${API_BASE}/api/caregiver/request-theme`, {
+        const res = await fetch(`${API_BASE}/api/caregiver/request-theme`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: user._id, theme: newTheme }),
         });
-        alert("Theme change request sent to caregiver");
+        const data = await res.json();
+
+        if (res.ok) {
+          Alert.alert(
+            t("common.success"),
+            t("settings.themeRequestSent", "Theme change request sent to caregiver")
+          );
+        } else {
+          Alert.alert(t("common.notice"), data.message || t("common.error"));
+        }
       } else {
         toggleTheme();
       }
     } catch (err) {
       console.error("Theme toggle failed:", err);
+      Alert.alert(t("common.error"), t("common.somethingWentWrong"));
     }
   };
 
@@ -300,7 +311,8 @@ const SettingsScreen = () => {
             onPress={async () => {
               try {
                 await AsyncStorage.removeItem("user");
-              EventBus.emit("userUpdated", null);
+                applyTheme("light");
+                EventBus.emit("userUpdated", null);
                 navigation.navigate("OnboardingScreen");
               } catch (err) {
                 console.error("Logout failed:", err);

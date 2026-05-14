@@ -272,33 +272,41 @@ const HomeScreen = () => {
             : med.dependentName === selectedDependent,
         );
 
+  function getLatestLog(doseLogs: any[]) {
+    if (!doseLogs || doseLogs.length === 0) return null;
+    return doseLogs.reduce((latest: any, current: any) => {
+      return new Date(current.scheduledAt) > new Date(latest.scheduledAt) ? current : latest;
+    });
+  }
+
   const totalCount = medsToShow.length;
   const takenCount = medsToShow.filter((med) => {
-    const closest = getClosestLog(med.doseLogs);
-    return closest?.status === "taken";
+    const lastLog = getLatestLog(med.doseLogs);
+    return lastLog?.status === "taken";
   }).length;
 
   const missedCount = medsToShow.filter((med) => {
-    const closest = getClosestLog(med.doseLogs);
-    return closest?.status === "missed";
+    const lastLog = getLatestLog(med.doseLogs);
+    return lastLog?.status === "missed";
   }).length;
 
   const filteredMeds = medsToShow.filter((med) => {
     if (!med.doseLogs?.length) return false;
 
-    const closest = getClosestLog(med.doseLogs);
+    if (selectedTab === "all") return true;
 
-    if (!closest) return false;
+    const lastLog = getLatestLog(med.doseLogs);
+    if (!lastLog) return false;
 
     if (selectedTab === "taken") {
-      return closest.status === "taken";
+      return lastLog.status === "taken";
     }
 
     if (selectedTab === "missed") {
-      return closest.status === "missed";
+      return lastLog.status === "missed";
     }
 
-    return true; // "all" tab
+    return true; // fallback
   });
 
   // const updateStatus = async (id: string, status: string) => {
@@ -415,17 +423,31 @@ const HomeScreen = () => {
     );
   }
 
-  const getCurrentScheduledDose = (med) => {
+  const getCurrentScheduledDose = (med: any) => {
     const now = new Date();
 
     // Find a dose within +/- 30 minutes of current time
-    const currentDose = med.doseLogs.find((log) => {
+    const currentDose = med.doseLogs.find((log: any) => {
       const sched = new Date(log.scheduledAt).getTime();
       const diff = now.getTime() - sched;
-      return diff >= 0 && diff <= 30 * 60 * 1000;
+      return Math.abs(diff) <= 30 * 60 * 1000;
     });
 
     return currentDose || null;
+  };
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(":");
+    let hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour.toString().padStart(2, "0")}:${m} ${ampm}`;
+  };
+
+  const toSentenceCase = (str: string) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
   return (
@@ -650,11 +672,11 @@ const HomeScreen = () => {
                 >
                   {med.name}
                 </Text>
-                <Text style={{ color: darkMode ? "#ccc" : "#333" }}>
+                <Text style={{ color: darkMode ? "#ccc" : "#333", marginBottom: 2 }}>
                   {med.dose}
                 </Text>
-                <Text style={{ color: darkMode ? "#aaa" : "gray" }}>
-                  {med.schedule.repeat}
+                <Text style={{ color: darkMode ? "#aaa" : "gray", marginBottom: 8 }}>
+                  {(med.schedule?.times || []).map(formatTime).join(", ")} | {toSentenceCase(med.schedule?.repeat)}
                 </Text>
 
                 {(() => {
@@ -679,6 +701,8 @@ const HomeScreen = () => {
                       disableButton = true;
                       buttonLabel = t("home.taken");
                     }
+                  } else {
+                    disableButton = true;
                   }
 
                   return (

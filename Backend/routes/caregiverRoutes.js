@@ -183,6 +183,17 @@ router.post("/request-theme", async (req, res) => {
       return res.status(400).json({ message: "No caregiver found" });
     }
 
+    const existingRequest = await ThemeRequest.findOne({
+      dependent: userId,
+      status: "pending",
+    });
+
+    if (existingRequest) {
+      return res
+        .status(400)
+        .json({ message: "A theme change request is already pending." });
+    }
+
     const request = await ThemeRequest.create({
       dependent: userId,
       caregiver: caregiver.user,
