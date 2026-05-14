@@ -17,11 +17,13 @@ import {
   Switch,
   ScrollView,
   Image,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { navigateSafe } from "./navigationRef";
 import i18n, { changeLanguage } from "../i18n";
+import { useTranslation } from "react-i18next";
 import { ThemeContext } from "../context/ThemeContext";
 import { navigationRef } from "./navigationRef";
 import EventBus from "../utils/EventBus";
@@ -46,9 +48,10 @@ export const useDrawer = () => {
 export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
-  const { theme, toggleTheme } = useContext(ThemeContext);
+  const { theme, toggleTheme, applyTheme } = useContext(ThemeContext);
   const darkMode = theme === "dark";
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
   const screenWidth = Dimensions.get("window").width;
@@ -138,17 +141,26 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
     const newTheme = theme === "light" ? "dark" : "light";
     try {
       if (isDependent) {
-        await fetch(`${API_BASE}/api/caregiver/request-theme`, {
+        const res = await fetch(`${API_BASE}/api/caregiver/request-theme`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: user._id, theme: newTheme }),
         });
-        alert("Theme change request sent to caregiver");
+        const data = await res.json();
+        if (res.ok) {
+          Alert.alert(
+            t("common.success"),
+            t("settings.themeRequestSent", "Theme change request sent to caregiver")
+          );
+        } else {
+          Alert.alert(t("common.notice"), data.message || t("common.error"));
+        }
       } else {
         toggleTheme();
       }
     } catch (err) {
       console.error("Theme toggle failed:", err);
+      Alert.alert(t("common.error"), t("common.somethingWentWrong"));
     }
   };
 
@@ -185,6 +197,7 @@ export const AppDrawerProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("user");
+      applyTheme("light");
       setUser(null);
       setUserName("");
       navigateSafe("LoginScreen");

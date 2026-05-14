@@ -1,7 +1,7 @@
 {
   "common": {
     "welcome": "خوش آمدید",
-    "hello": "سلام" ,
+    "hello": "سلام",
     "welcomeBack": " خوش آمدید!",
     "today": "آج",
     "save": "محفوظ کریں",
@@ -32,6 +32,7 @@
     "and": "اور",
     "error": "خرابی",
     "success": "کامیابی",
+    "notice": "نوٹس",
     "phone": "فون",
     "info": "معلومات"
   },
@@ -121,7 +122,7 @@
     "selectDependentMessage": "دوائی شامل کرنے سے پہلے اوپر والے فلٹر سے ایک مخصوص زیرِ کفالت منتخب کریں",
     "dependentInfoMissing": "زیرِ کفالت کی معلومات نہیں مل سکیں۔",
     "days": {
-      "monday":"پیر",
+      "monday": "پیر",
       "tuesday": "منگل",
       "wednesday": "بدھ",
       "thursday": "جمعرات",
@@ -199,6 +200,7 @@
     "voiceRemindersDesc": "اپنی دوائیوں کے لیے صوتی یاد دہانیاں فعال کریں۔",
     "voiceLanguage": "صوتی یاد دہانی کی زبان",
     "voiceLanguageDesc": "صوتی یاد دہانیوں کے لیے زبان منتخب کریں۔",
+    "themeRequestSent": "تھیم تبدیلی کی درخواست کیئرگیور کو بھیج دی گئی ہے",
     "logoutDesc": "اس ڈیوائس سے لاگ آؤٹ کرنے کے لیے یہاں کلک کریں۔"
   },
   "addDependents": {
@@ -239,6 +241,8 @@
     "rejected": "مسترد",
     "deletionApproved": "دوائی کامیابی سے حذف ہو گئی",
     "deletionRejected": "حذف کرنے کی درخواست مسترد کر دی گئی",
+    "themeApprovedDesc": "تھیم تبدیلی کی درخواست منظور کر لی گئی ہے",
+    "themeRejectedDesc": "تھیم تبدیلی کی درخواست مسترد کر دی گئی ہے",
     "wantsMode": "{{name}} {{theme}} موڈ چاہتا ہے",
     "confirmDelete": "حذف کی تصدیق",
     "allCaughtUp": "سب مکمل! کوئی زیرِ التوا درخواست نہیں۔"

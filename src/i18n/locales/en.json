@@ -31,6 +31,8 @@
     "and": "and",
     "error": "Error",
     "success": "Success",
+    "notice": "Notice",
+    "somethingWentWrong": "Something went wrong",
     "phone": "Phone",
     "editProfile": "Edit Profile",
     "logout": "Logout",
@@ -198,6 +200,7 @@
     "voiceRemindersDesc": "Enable spoken reminders for your medications.",
     "voiceLanguage": "Voice Reminder Language",
     "voiceLanguageDesc": "Choose the language for spoken medication reminders.",
+    "themeRequestSent": "Theme change request sent to caregiver",
     "logoutDesc": "Click here to log out of this device."
   },
   "addDependents": {
@@ -238,6 +241,8 @@
     "rejected": "Rejected",
     "deletionApproved": "Medication deleted successfully",
     "deletionRejected": "Deletion request rejected",
+    "themeApprovedDesc": "Theme change request has been approved.",
+    "themeRejectedDesc": "Theme change request has been rejected.",
     "wantsMode": "{{name}} wants {{theme}} mode",
     "confirmDelete": "Confirm Delete",
     "allCaughtUp": "All caught up! No pending requests."

@@ -11,8 +11,11 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons,MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ThemeContext } from "../context/ThemeContext";
 import { useTranslation } from "react-i18next";
 const CaregiverRequestsScreen = () => {
@@ -36,16 +39,14 @@ const CaregiverRequestsScreen = () => {
   const fetchAllData = async () => {
     const data = await AsyncStorage.getItem("user");
     const parsed = JSON.parse(data || "{}");
-    const id=parsed._id;
+    const id = parsed._id;
     setLoading(true);
-    await Promise.all([ fetchRequests(id),
-    fetchMedDeleteRequests(id),
-    fetchThemeRequests(id).then(setThemeRequests),
-
+    await Promise.all([
+      fetchRequests(id),
+      fetchMedDeleteRequests(id),
+      fetchThemeRequests(id).then(setThemeRequests),
     ]);
     setLoading(false);
-
-   
   };
 
   const fetchRequests = async (id: string) => {
@@ -102,7 +103,10 @@ const CaregiverRequestsScreen = () => {
       onRefresh();
     } catch (err) {
       console.error(err);
-      Alert.alert(t("common.error"), t("caregiverRequests.requestApproveFailed"));
+      Alert.alert(
+        t("common.error"),
+        t("caregiverRequests.requestApproveFailed"),
+      );
     }
   };
 
@@ -118,7 +122,10 @@ const CaregiverRequestsScreen = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId }),
     });
-    Alert.alert(t("caregiverRequests.approve"), t("caregiverRequests.deletionApproved"));
+    Alert.alert(
+      t("caregiverRequests.approve"),
+      t("caregiverRequests.deletionApproved"),
+    );
     onRefresh();
   };
 
@@ -128,7 +135,10 @@ const CaregiverRequestsScreen = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId }),
     });
-    Alert.alert(t("caregiverRequests.rejected"), t("caregiverRequests.deletionRejected"));
+    Alert.alert(
+      t("caregiverRequests.rejected"),
+      t("caregiverRequests.deletionRejected"),
+    );
     onRefresh();
   };
 
@@ -136,7 +146,13 @@ const CaregiverRequestsScreen = () => {
     await fetch(`${API_BASE}/api/caregiver/approve-theme/${id}`, {
       method: "POST",
     });
-    Alert.alert(t("caregiverRequests.approve"));
+    Alert.alert(
+      t("common.success"),
+      t(
+        "caregiverRequests.themeApprovedDesc",
+        "Theme change request has been approved.",
+      ),
+    );
     onRefresh();
   };
 
@@ -144,13 +160,27 @@ const CaregiverRequestsScreen = () => {
     await fetch(`${API_BASE}/api/caregiver/reject-theme/${id}`, {
       method: "POST",
     });
-    Alert.alert(t("caregiverRequests.rejected"));
+    Alert.alert(
+      t("caregiverRequests.rejected"),
+      t(
+        "caregiverRequests.themeRejectedDesc",
+        "Theme change request has been rejected.",
+      ),
+    );
     onRefresh();
   };
-const renderSectionHeader = (title: string, icon: any) => (
+  const renderSectionHeader = (title: string, icon: any) => (
     <View style={styles.sectionHeader}>
-      <MaterialCommunityIcons name={icon} size={22} color={isDark ? "#94A3B8" : "#64748B"} />
-      <Text style={[styles.sectionTitle, { color: isDark ? "#E2E8F0" : "#475569" }]}>{title}</Text>
+      <MaterialCommunityIcons
+        name={icon}
+        size={22}
+        color={isDark ? "#94A3B8" : "#64748B"}
+      />
+      <Text
+        style={[styles.sectionTitle, { color: isDark ? "#E2E8F0" : "#475569" }]}
+      >
+        {title}
+      </Text>
     </View>
   );
   const renderEmpty = () => (
@@ -160,7 +190,12 @@ const renderSectionHeader = (title: string, icon: any) => (
     </View>
   );
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? "#121212" : "#F8FAFC" }]}>
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        { backgroundColor: isDark ? "#121212" : "#F8FAFC" },
+      ]}
+    >
       {/* Header */}
       <View
         style={{
@@ -196,84 +231,188 @@ const renderSectionHeader = (title: string, icon: any) => (
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#3B82F6"
+          />
+        }
       >
         {/* Medication Additions */}
         {renderSectionHeader(t("caregiverRequests.medAcceptance"), "pill")}
         {requests.length === 0 && renderEmpty()}
         {requests.map((req) => (
-          <View key={req._id} style={[styles.card, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
+          <View
+            key={req._id}
+            style={[
+              styles.card,
+              { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" },
+            ]}
+          >
             <View style={styles.cardInfo}>
-              <Text style={[styles.dependentLabel, { color: isDark ? "#94A3B8" : "#64748B" }]}>
+              <Text
+                style={[
+                  styles.dependentLabel,
+                  { color: isDark ? "#94A3B8" : "#64748B" },
+                ]}
+              >
                 {t("caregiverRequests.dependent").toUpperCase()}
               </Text>
-              <Text style={[styles.dependentName, { color: isDark ? "#F8FAFC" : "#1E293B" }]}>{req.dependent.name}</Text>
+              <Text
+                style={[
+                  styles.dependentName,
+                  { color: isDark ? "#F8FAFC" : "#1E293B" },
+                ]}
+              >
+                {req.dependent.name}
+              </Text>
               <View style={styles.divider} />
               {req.medicines.map((med, i) => (
                 <View key={i} style={styles.medRow}>
                   <Ionicons name="medical" size={14} color="#3B82F6" />
-                  <Text style={[styles.medText, { color: isDark ? "#CBD5E1" : "#334155" }]}>{med.name} ({med.dose})</Text>
+                  <Text
+                    style={[
+                      styles.medText,
+                      { color: isDark ? "#CBD5E1" : "#334155" },
+                    ]}
+                  >
+                    {med.name} ({med.dose})
+                  </Text>
                 </View>
               ))}
             </View>
             <View style={styles.actionRow}>
-              <TouchableOpacity onPress={() => handleRejectRequest(req._id)} style={[styles.actionBtn, styles.rejectBtn]}>
-                <Text style={styles.rejectBtnText}>{t("caregiverRequests.reject")}</Text>
+              <TouchableOpacity
+                onPress={() => handleRejectRequest(req._id)}
+                style={[styles.actionBtn, styles.rejectBtn]}
+              >
+                <Text style={styles.rejectBtnText}>
+                  {t("caregiverRequests.reject")}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleApproveRequest(req)} style={[styles.actionBtn, styles.approveBtn]}>
-                <Text style={styles.approveBtnText}>{t("caregiverRequests.approve")}</Text>
+              <TouchableOpacity
+                onPress={() => handleApproveRequest(req)}
+                style={[styles.actionBtn, styles.approveBtn]}
+              >
+                <Text style={styles.approveBtnText}>
+                  {t("caregiverRequests.approve")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
 
         {/* Medication Deletions */}
-        {renderSectionHeader(t("caregiverRequests.medDeletion"), "trash-can-outline")}
+        {renderSectionHeader(
+          t("caregiverRequests.medDeletion"),
+          "trash-can-outline",
+        )}
         {medDeleteRequests.length === 0 && renderEmpty()}
         {medDeleteRequests.map((req) => (
-          <View key={req._id} style={[styles.card, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
+          <View
+            key={req._id}
+            style={[
+              styles.card,
+              { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" },
+            ]}
+          >
             <View style={styles.cardInfo}>
-              <Text style={[styles.dependentLabel, { color: isDark ? "#94A3B8" : "#64748B" }]}>
+              <Text
+                style={[
+                  styles.dependentLabel,
+                  { color: isDark ? "#94A3B8" : "#64748B" },
+                ]}
+              >
                 {t("caregiverRequests.dependent").toUpperCase()}
               </Text>
-              <Text style={[styles.dependentName, { color: isDark ? "#F8FAFC" : "#1E293B" }]}>{req.dependent?.name}</Text>
-              <Text style={[styles.deleteText, { color: isDark ? "#FCA5A5" : "#EF4444" }]}>
-                {t("caregiverRequests.wantsToDelete")}: <Text style={{ fontWeight: "700" }}>{req.medicationId?.name}</Text>
+              <Text
+                style={[
+                  styles.dependentName,
+                  { color: isDark ? "#F8FAFC" : "#1E293B" },
+                ]}
+              >
+                {req.dependent?.name}
+              </Text>
+              <Text
+                style={[
+                  styles.deleteText,
+                  { color: isDark ? "#FCA5A5" : "#EF4444" },
+                ]}
+              >
+                {t("caregiverRequests.wantsToDelete")}:{" "}
+                <Text style={{ fontWeight: "700" }}>
+                  {req.medicationId?.name}
+                </Text>
               </Text>
             </View>
             <View style={styles.actionRow}>
-              <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => handleRejectMedDelete(req._id)}>
-                <Text style={styles.rejectBtnText}>{t("caregiverRequests.reject")}</Text>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.rejectBtn]}
+                onPress={() => handleRejectMedDelete(req._id)}
+              >
+                <Text style={styles.rejectBtnText}>
+                  {t("caregiverRequests.reject")}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApproveMedDelete(req._id)}>
-                <Text style={styles.approveBtnText}>{t("caregiverRequests.confirmDelete")}</Text>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.approveBtn]}
+                onPress={() => handleApproveMedDelete(req._id)}
+              >
+                <Text style={styles.approveBtnText}>
+                  {t("caregiverRequests.confirmDelete")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
 
         {/* Theme Requests */}
-        {renderSectionHeader(t("caregiverRequests.themeChange"), "palette-outline")}
+        {renderSectionHeader(
+          t("caregiverRequests.themeChange"),
+          "palette-outline",
+        )}
         {themeRequests.length === 0 && renderEmpty()}
         {themeRequests.map((req) => (
-          <View key={req._id} style={[styles.card, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
-             <View style={styles.themeContent}>
-                <Ionicons name="color-palette" size={24} color="#8B5CF6" />
-                <Text style={[styles.themeText, { color: isDark ? "#F8FAFC" : "#1E293B" }]}>
-                  {t("caregiverRequests.wantsMode", {
-                    name: req.dependent.name,
-                    theme: req.requestedTheme,
-                  })}
+          <View
+            key={req._id}
+            style={[
+              styles.card,
+              { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" },
+            ]}
+          >
+            <View style={styles.themeContent}>
+              <Ionicons name="color-palette" size={24} color="#8B5CF6" />
+              <Text
+                style={[
+                  styles.themeText,
+                  { color: isDark ? "#F8FAFC" : "#1E293B" },
+                ]}
+              >
+                {t("caregiverRequests.wantsMode", {
+                  name: req.dependent.name,
+                  theme: req.requestedTheme,
+                })}
+              </Text>
+            </View>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.rejectBtn]}
+                onPress={() => handleRejectTheme(req._id)}
+              >
+                <Text style={styles.rejectBtnText}>
+                  {t("caregiverRequests.reject")}
                 </Text>
-             </View>
-             <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => handleRejectTheme(req._id)}>
-                  <Text style={styles.rejectBtnText}>{t("caregiverRequests.reject")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApproveTheme(req._id)}>
-                  <Text style={styles.approveBtnText}>{t("caregiverRequests.approve")}</Text>
-                </TouchableOpacity>
-             </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.approveBtn]}
+                onPress={() => handleApproveTheme(req._id)}
+              >
+                <Text style={styles.approveBtnText}>
+                  {t("caregiverRequests.approve")}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -300,8 +439,19 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: "700" },
   backButton: { padding: 4 },
   scrollContent: { padding: 20 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12, marginTop: 10 },
-  sectionTitle: { fontSize: 14, fontWeight: "700", marginLeft: 8, textTransform: "uppercase", letterSpacing: 1 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginLeft: 8,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
   card: {
     borderRadius: 16,
     padding: 16,
@@ -319,13 +469,27 @@ const styles = StyleSheet.create({
   medRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
   medText: { marginLeft: 6, fontSize: 15 },
   deleteText: { marginTop: 4, fontSize: 14 },
-  themeContent: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  themeContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
   themeText: { flex: 1, fontSize: 15 },
   actionRow: { flexDirection: "row", gap: 12 },
-  actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
   approveBtn: { backgroundColor: "#3B82F6" },
   approveBtnText: { color: "#FFFFFF", fontWeight: "700" },
-  rejectBtn: { backgroundColor: "transparent", borderWidth: 1, borderColor: "#CBD5E1" },
+  rejectBtn: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
   rejectBtnText: { color: "#64748B", fontWeight: "600" },
   emptyContainer: { alignItems: "center", paddingVertical: 20, opacity: 0.6 },
   emptyText: { marginTop: 8, fontSize: 13, color: "#94A3B8" },
