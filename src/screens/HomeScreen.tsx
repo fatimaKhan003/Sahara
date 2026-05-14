@@ -740,7 +740,7 @@ const HomeScreen = () => {
                 (d) => d.name === selectedDependent,
               );
               if (!target) {
-                Alert.alert(t("common.error"), t("home.dependentInfoMissing"));
+                Alert.alert("Error", "Could not find dependent information.");
                 return;
               }
 

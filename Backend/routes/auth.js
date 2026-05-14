@@ -42,7 +42,7 @@ router.post("/signup", async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: `"Your App" <${process.env.EMAIL_USER}>`,
+      from: `"Sahara" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Your verification code",
       html: `
@@ -219,7 +219,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: `"Your App" <${process.env.EMAIL_USER}>`,
+      from: `"Sahara" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Password Reset Code",
       html: `

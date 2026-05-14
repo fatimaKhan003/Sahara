@@ -260,7 +260,13 @@ def sanitize_medicines(data: list) -> list:
         if not name:
             continue
         tpd = str(item.get("times_per_day", "As directed")).strip()
-        if tpd not in valid_tpd:
+        frequency=str(item.get("frequency","")).strip()
+        num_match = re.match(r'^(\d+)[+\-xX](\d+)(?:[+\-xX](\d+))?$', frequency.strip())
+        if num_match:
+            parts = [int(g) for g in num_match.groups() if g is not None]
+            active_count = sum(1 for p in parts if p > 0)
+            tpd = {1: "Once a day", 2: "Twice a day", 3: "Three times a day"}.get(active_count, "As directed")
+        elif tpd not in valid_tpd:
             tpd = "As directed"
         result.append({
             "name": name,
@@ -282,8 +288,12 @@ def extract_frequency(working: str) -> tuple[str, str, str]:
     if num_match:
         frequency = num_match.group(0).strip()
         remaining = working[:num_match.start()] + working[num_match.end():]
-        parts = re.findall(r'\d+', frequency)
-        active_count = len([p for p in parts if int(p) > 0])
+        parts = re.split(r'[+\-xX]', frequency)
+        try:
+            
+            active_count = sum(1 for p in parts if int(re.sub(r'\D', '', p)) > 0)
+        except ValueError:
+            active_count=0
         mapping = {1: "Once a day", 2: "Twice a day", 3: "Three times a day"}
         tpd = mapping.get(active_count, "As directed")
         return frequency, tpd, remaining

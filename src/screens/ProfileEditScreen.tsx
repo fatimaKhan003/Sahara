@@ -67,9 +67,7 @@ const ProfileEditScreen = () => {
       } catch (err) {
         console.error("Error loading user data:", err);
 
-        setProfileImage(
-          Image.resolveAssetSource(DefaultPFP).uri,
-        );
+        setProfileImage(Image.resolveAssetSource(DefaultPFP).uri);
       } finally {
         setLoading(false);
       }
