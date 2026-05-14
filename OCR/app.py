@@ -7,7 +7,10 @@ import asyncio
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-load_dotenv()
+import os
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(env_path)
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -404,6 +407,8 @@ async def ocr_api(file: UploadFile = File(...)):
                 asyncio.to_thread(extract_medicines_structured, img),
                 timeout=60.0
             )
+            if not medicines or len(medicines) == 0:
+                raise ValueError("Qwen returned empty medicines")
         except Exception as qwen_error:
             if isinstance(qwen_error, asyncio.TimeoutError):
                 print("\n[WARNING] Qwen model timed out after 60 seconds! Triggering Gemini fallback...")
