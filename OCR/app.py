@@ -136,6 +136,7 @@ def extract_medicines_structured(img: Image.Image) -> tuple[str, list]:
         "Rules:\n"
         "- Output ONLY the JSON array. No explanation, no markdown, no code fences.\n"
         "- Strip ALL prefixes from name: Take, Use, Tab, Cap, Syp, Syrup, Inj, Tablet, Capsule, Dr, Rx, numbers.\n"
+"- CRITICAL: If a dosage (e.g., 500mg, 10ml) is part of the name, MOVE it to the 'dose' field and keep only the brand name in 'name'."
         "- Recognize word frequencies: once=Once a day, twice=Twice a day, three times=Three times a day.\n"
         "- Recognize shorthand: OD=Once a day, BD=Twice a day, TDS=Three times a day.\n"
         "- Recognize numeric: 1+0+0=Once a day, 1+0+1=Twice a day, 1+1+1=Three times a day.\n"
@@ -253,25 +254,45 @@ def sanitize_medicines(data: list) -> list:
     """Validate fields and normalize times_per_day."""
     valid_tpd = {"Once a day", "Twice a day", "Three times a day", "As directed"}
     result = []
+    
     for item in data:
         if not isinstance(item, dict):
             continue
+            
         name = str(item.get("name", "")).strip()
+        dose = str(item.get("dose", "")).strip()
+        frequency = str(item.get("frequency", "")).strip()
+        
+        # --- NEW FIX: Extract dose from name if name contains it ---
+        if name:
+            # Look for patterns like '180mg' or '500 mg' inside the name string
+            found_dose = re.search(DOSE_PATTERN, name, re.IGNORECASE)
+            if found_dose:
+                detected_dose = found_dose.group(0).strip()
+                # Only move it if the dose field is currently empty
+                if not dose:
+                    dose = detected_dose
+                # Remove the dose from the name
+                name = name.replace(detected_dose, "").strip(' ,.-')
+        # -----------------------------------------------------------
+
         if not name:
             continue
+
+        # Normalize times_per_day based on frequency
         tpd = str(item.get("times_per_day", "As directed")).strip()
-        frequency=str(item.get("frequency","")).strip()
-        num_match = re.match(r'^(\d+)[+\-xX](\d+)(?:[+\-xX](\d+))?$', frequency.strip())
+        num_match = re.match(r'^(\d+)[+\-xX](\d+)(?:[+\-xX](\d+))?$', frequency)
         if num_match:
             parts = [int(g) for g in num_match.groups() if g is not None]
             active_count = sum(1 for p in parts if p > 0)
             tpd = {1: "Once a day", 2: "Twice a day", 3: "Three times a day"}.get(active_count, "As directed")
         elif tpd not in valid_tpd:
             tpd = "As directed"
+
         result.append({
             "name": name,
-            "dose": str(item.get("dose", "")).strip(),
-            "frequency": str(item.get("frequency", "")).strip(),
+            "dose": dose,
+            "frequency": frequency,
             "times_per_day": tpd,
         })
     return result
@@ -391,6 +412,11 @@ async def ocr_api(file: UploadFile = File(...)):
                 
             raw_output, medicines = await extract_medicines_gemini(img)
             used_model = "gemini-1.5-flash"
+            if not medicines or len(medicines) == 0:
+                return JSONResponse({"status": "invalid_prescription",
+                "message": "No valid medications found. Please scan a correct prescription.",
+                "model": used_model
+            }, status_code=200)
 
         print(f"Extracted {len(medicines)} medicine(s): {medicines}")
 
