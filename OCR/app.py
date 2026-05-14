@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import os
 import asyncio
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 import os
@@ -12,8 +12,7 @@ env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 load_dotenv(env_path)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from contextlib import asynccontextmanager
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, BitsAndBytesConfig
@@ -188,39 +187,31 @@ def extract_medicines_structured(img: Image.Image) -> tuple[str, list]:
 
 
 # ── GEMINI FALLBACK ──────────────────────────────────────────────
-async def extract_medicines_gemini(img: Image.Image) -> tuple[str, list]:
-    print("=== Using Gemini Fallback ===")
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set in .env")
-        
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    
+async def extract_medicines_gemini(img: Image.Image, qwen_data=None):
+
+    print("=== Using Gemini ===")
+
     system_prompt = (
-        "You are a medical prescription parser.\n"
-        "Look at the prescription image and extract ALL medications.\n"
-        "Return ONLY a JSON array with this exact structure:\n"
-        "[\n"
-        "  {\n"
-        '    "name": "medication name only — no prefix like Tab/Cap/Take/Use",\n'
-        '    "dose": "dose with unit e.g. 50mg, 500mg, 5ml — empty string if not visible",\n'
-        '    "frequency": "as written e.g. 1+0+1 or once or twice — empty string if not visible",\n'
-        '    "times_per_day": "must be exactly: Once a day | Twice a day | Three times a day | As directed"\n'
-        "  }\n"
-        "]\n"
-        "Rules:\n"
-        "- Output ONLY the JSON array. No explanation, no markdown, no code fences.\n"
-        "- Strip ALL prefixes from name: Take, Use, Tab, Cap, Syp, Syrup, Inj, Tablet, Capsule, Dr, Rx, numbers.\n"
-        "- Recognize word frequencies: once=Once a day, twice=Twice a day, three times=Three times a day.\n"
-        "- Recognize shorthand: OD=Once a day, BD=Twice a day, TDS=Three times a day.\n"
-        "- Recognize numeric: 1+0+0=Once a day, 1+0+1=Twice a day, 1+1+1=Three times a day.\n"
-        "- If frequency is not visible, use empty string and As directed for times_per_day.\n"
+    "You are a medical prescription OCR system.\n"
+    "IMPORTANT RULES:\n"
+    "- DO NOT guess medicine names.\n"
+    "- If text is unclear, return the closest visible spelling ONLY.\n"
+    "- Never replace drug names with similar real drugs.\n"
+    "- Prefer preserving original OCR text exactly as seen.\n"
+    "- If uncertain, keep it unchanged.\n\n"
+    "Extract ALL medicines from image.\n"
+    "Return ONLY JSON array."
+)
+
+    response = await client.aio.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[system_prompt, img]
     )
 
-    response = await model.generate_content_async([system_prompt, img])
-    
     raw = response.text.strip()
-    print(f"\n=== GEMINI RAW OUTPUT ===\n{raw}\n========================\n")
-    
+
+    print("\n=== GEMINI OUTPUT ===\n", raw)
+
     medicines = parse_json_output(raw)
     return raw, medicines
 
@@ -393,6 +384,8 @@ def regex_fallback(raw: str) -> list:
 
 
 # ── FASTAPI ENDPOINT ──────────────────────────────────────────
+# ... (rest of your imports and model loading remains the same)
+
 @app.post("/ocr")
 async def ocr_api(file: UploadFile = File(...)):
     try:
@@ -400,34 +393,63 @@ async def ocr_api(file: UploadFile = File(...)):
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         img = preprocess(img)
 
-        used_model = "Qwen2-VL-7B"
+        final_medicines = []
+        raw_final = ""
+        used_model = "qwen"
+
+        # --- STEP 1: QWEN EXTRACTION ---
         try:
-            # Run Qwen with a 60-second timeout
-            raw_output, medicines = await asyncio.wait_for(
+            raw_qwen, qwen_medicines = await asyncio.wait_for(
                 asyncio.to_thread(extract_medicines_structured, img),
                 timeout=60.0
             )
-            if not medicines or len(medicines) == 0:
-                raise ValueError("Qwen returned empty medicines")
-        except Exception as qwen_error:
-            if isinstance(qwen_error, asyncio.TimeoutError):
-                print("\n[WARNING] Qwen model timed out after 60 seconds! Triggering Gemini fallback...")
-            else:
-                print(f"\n[WARNING] Qwen model failed: {str(qwen_error)}. Triggering Gemini fallback...")
-                
-            raw_output, medicines = await extract_medicines_gemini(img)
-            used_model = "gemini-1.5-flash"
-            if not medicines or len(medicines) == 0:
-                return JSONResponse({"status": "invalid_prescription",
-                "message": "No valid medications found. Please scan a correct prescription.",
-                "model": used_model
-            }, status_code=200)
+            final_medicines = qwen_medicines
+            raw_final = raw_qwen
+        except Exception as e:
+            print(f"[QWEN FAILED/TIMEOUT]: {e}")
+            final_medicines = []
 
-        print(f"Extracted {len(medicines)} medicine(s): {medicines}")
+        # --- STEP 2: GEMINI LOGIC (REFINEMENT OR FALLBACK) ---
+        try:
+            if final_medicines:
+                # Qwen succeeded, try to REFINE with Gemini
+                print("Attempting Gemini Refinement...")
+                raw_gemini, gemini_medicines = await extract_medicines_gemini(img, final_medicines)
+                
+                # If Gemini successfully returns data, use it
+                if gemini_medicines:
+                    final_medicines = gemini_medicines
+                    raw_final = raw_gemini
+                    used_model = "qwen + gemini"
+            else:
+                # Qwen failed, try Gemini as PRIMARY OCR
+                print("Qwen empty. Attempting Gemini Direct OCR...")
+                raw_gemini, gemini_medicines = await extract_medicines_gemini(img, None)
+                
+                if gemini_medicines:
+                    final_medicines = gemini_medicines
+                    raw_final = raw_gemini
+                    used_model = "gemini-fallback"
+                else:
+                    raise ValueError("Gemini returned empty results.")
+
+        except Exception as gemini_err:
+            # This catches Quota full, API keys issues, or Network timeouts
+            print(f"[GEMINI BYPASSED]: {gemini_err}")
+            # used_model remains whatever it was before Gemini failed
+            if not final_medicines:
+                return JSONResponse({
+                    "error": "Both Qwen and Gemini failed to extract data.",
+                    "details": str(gemini_err)
+                }, status_code=500)
+
+        # --- STEP 3: FINAL CLEANING ---
+        # Ensure we always run the final sanitization on whatever data survived
+        sanitized_data = sanitize_medicines(final_medicines)
 
         return JSONResponse({
-            "text": raw_output,
-            "medicines": medicines,
+            "text": raw_final,
+            "medicines": sanitized_data,
             "status": "success",
             "model": used_model,
         })
