@@ -11,7 +11,7 @@ if (debuggerHost) {
 }
 
 if (!host) {
-  host = "192.168.1.100"; // fallback
+  host = "192.168.18.61"; // fallback
 }
 
 export const API_BASE = `http://${host}:5000`;

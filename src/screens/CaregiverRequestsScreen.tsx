@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -11,14 +11,15 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from "../../api";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons,MaterialCommunityIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemeContext } from "../context/ThemeContext";
 const CaregiverRequestsScreen = () => {
+  const { theme } = useContext(ThemeContext);
+  const isDark = theme === "dark";
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
-  const { theme } = useContext(ThemeContext);
-const isDark = theme === "dark";
+  const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState<any[]>([]);
   const [medDeleteRequests, setMedDeleteRequests] = useState<any[]>([]);
   const [themeRequests, setThemeRequests] = useState<any[]>([]);
@@ -159,12 +160,36 @@ const renderSectionHeader = (title: string, icon: any) => (
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? "#121212" : "#F8FAFC" }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: isDark ? "#1E1E1E" : "#FFFFFF" }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color={isDark ? "#F8FAFC" : "#1E293B"} />
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          backgroundColor: isDark ? "#1E1E1E" : "#F6F8FF",
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? "#333" : "#eee",
+          paddingTop: insets.top + 10,
+        }}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={isDark ? "#fff" : "#000"}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? "#FFFFFF" : "#1E293B" }]}>Request Center</Text>
-        <View style={{ width: 28 }} /> 
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "700",
+            color: isDark ? "#fff" : "#000",
+          }}
+        >
+          Request Center
+        </Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
