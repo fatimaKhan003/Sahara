@@ -73,7 +73,7 @@ const markExpiredDosesAsMissed = async (userId) => {
 
 const deleteImageFile = (imageUri) => {
   if (!imageUri || !imageUri.startsWith("/uploads/")) return;
-  const filePath = imageUri.slice(1); // strip leading slash → "uploads/filename.jpg"
+  const filePath = imageUri.slice(1); 
   fs.unlink(filePath, (err) => {
     if (err && err.code !== "ENOENT") {
       console.error("Failed to delete image file:", err.message);
@@ -160,24 +160,23 @@ router.get("/image/:filename", async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: No userId" });
     }
 
-    // Check if medication exists with this image and if user has access
-    // 1. Find medication(s) using this image
+   
     const meds = await Medication.find({ imageUri: new RegExp(filename) });
     
     if (meds.length === 0) {
-      // Also check MedicationRequest (for pending approval images)
+      
       const requests = await MedicationRequest.find({ imageUri: new RegExp(filename) });
       if (requests.length === 0) {
         return res.status(404).json({ message: "Image not found in records" });
       }
       
-      // Authorization check for Request
+      
       const hasAccess = requests.some(r => 
         r.dependent.toString() === userId || r.caregiver.toString() === userId
       );
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
     } else {
-      // Authorization check for Medication: user is owner or caregiver
+      
       const ownerId = meds[0].user.toString();
       if (ownerId !== userId) {
         const isCaregiver = await Caregiver.findOne({ user: userId, dependents: ownerId });
@@ -383,7 +382,7 @@ router.patch("/mark-notification/:medId/:logId", async (req, res) => {
   }
 });
 
-//--------CAREGIVER/DEPENDENT REQUESTS
+
 router.get("/requests/:caregiverId", async (req, res) => {
   try {
     const requests = await MedicationRequest.find({
@@ -458,7 +457,7 @@ router.post("/request-delete", async (req, res) => {
         .json({ message: "Missing userId or medicationId" });
     }
 
-    // To find caregiver for this dependent
+    
     const caregiver = await Caregiver.findOne({ dependents: userId });
     if (!caregiver) {
       const med = await Medication.findByIdAndDelete(medicationId);
@@ -468,7 +467,7 @@ router.post("/request-delete", async (req, res) => {
         .json({ message: "Medication deleted directly (no caregiver)" });
     }
 
-    // Checking if a pending delete request already exists
+    
     const existing = await MedicationRequest.findOne({
       dependent: userId,
       medicationId,
@@ -481,7 +480,7 @@ router.post("/request-delete", async (req, res) => {
         .json({ message: "Delete request already pending" });
     }
 
-    // Creating delete request
+    
     await MedicationRequest.create({
       dependent: userId,
       caregiver: caregiver.user,

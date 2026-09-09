@@ -41,59 +41,7 @@ const SettingsScreen = () => {
   const [hasDependents, setHasDependents] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
-  /** Load user + caregiver mode */
-  // const loadData = useCallback(async () => {
-  //   try {
-  //     const userData = await AsyncStorage.getItem("user");
-  //     if (!userData) return;
-  //     const parsedUser = JSON.parse(userData);
-  //     setUser(parsedUser);
-
-  //     const caregiver = await AsyncStorage.getItem(CAREGIVER_KEY);
-  //     if (caregiver === null) {
-  //       setCaregiverEnabled(false);
-  //       await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(false));
-  //     } else {
-  //       setCaregiverEnabled(JSON.parse(caregiver));
-  //     }
-
-  //     const depRes = await fetch(
-  //       `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
-  //     );
-  //     const depData = await depRes.json();
-  //     setIsDependent(depData.isDependent);
-
-  //     // Fetch approved theme requests (if dependent)
-  //     if (depData.isDependent) {
-  //       const themeRes = await fetch(
-  //         `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
-  //       );
-  //       const themeRequests = await themeRes.json();
-  //       const approved = themeRequests.find(
-  //         (r: any) => r.status === "approved",
-  //       );
-  //       if (approved) applyTheme(approved.requestedTheme);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error loading settings:", err);
-  //     setCaregiverEnabled(false);
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   loadData();
-
-  //   const userHandler = (u: any) => setUser(u);
-  //   EventBus.on("userUpdated", userHandler);
-
-  //   const langHandler = () => setCurrentLanguage(i18n.language);
-  //   i18n.on("languageChanged", langHandler);
-
-  //   return () => {
-  //     EventBus.off("userUpdated", userHandler);
-  //     i18n.off("languageChanged", langHandler);
-  //   };
-  // }, [loadData]);
+  
 
   const loadCaregiverState = useCallback(async () => {
     try {
@@ -102,7 +50,7 @@ const SettingsScreen = () => {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
 
-      // 1. Check if user is caregiver
+      
       const caregiverRes = await fetch(
         `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
       );
@@ -110,7 +58,7 @@ const SettingsScreen = () => {
       const isCaregiver = caregiverData.isCaregiver;
       setCaregiverEnabled(isCaregiver);
 
-      // 2. If caregiver, check if they have dependents
+      
       let hasDependents = false;
       if (isCaregiver) {
         const dependentsRes = await fetch(
@@ -121,17 +69,17 @@ const SettingsScreen = () => {
         setHasDependents(hasDependents);
       }
 
-      // Store caregiver toggle in AsyncStorage
+      
       await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(isCaregiver));
 
-      // 3. Check if user is dependent
+      
       const dependentRes = await fetch(
         `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
       );
       const dependentData = await dependentRes.json();
       setIsDependent(dependentData.isDependent);
 
-      // 4. If dependent, fetch approved theme requests and apply theme
+      
       if (dependentData.isDependent) {
         const themeRes = await fetch(
           `${API_BASE}/api/caregiver/my-theme-requests/${parsedUser._id}`,
@@ -163,7 +111,7 @@ const SettingsScreen = () => {
   }, [loadCaregiverState]);
 
   const toggleCaregiver = async () => {
-    // If user is caregiver with dependents, prevent toggle
+    
     if (caregiverEnabled && hasDependents) {
       console.log("Cannot change caregiver status: dependents exist");
       return;
@@ -174,7 +122,7 @@ const SettingsScreen = () => {
     await AsyncStorage.setItem(CAREGIVER_KEY, JSON.stringify(newValue));
     if (!newValue) return;
 
-    // Only create caregiver if user is not already a caregiver
+    
     if (!caregiverEnabled) {
       try {
         const storedUser = await AsyncStorage.getItem("user");
@@ -279,7 +227,7 @@ const SettingsScreen = () => {
         ]}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Profile Section */}
+        
         <View style={styles.section}>
           <Text
             style={[
@@ -299,7 +247,7 @@ const SettingsScreen = () => {
             <Text style={styles.link}>{t("common.editProfile")}</Text>
           </TouchableOpacity>
 
-          {/* Logout Moved to Top */}
+          
           <TouchableOpacity
             style={[
               styles.logoutButton,
@@ -337,7 +285,7 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* General */}
+        
         <View style={styles.section}>
           <Text style={[styles.title, { color: darkMode ? "#fff" : "#000" }]}>
             {t("settings.general")}
@@ -403,13 +351,13 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Reminders & Alarm */}
+        
         <View style={styles.section}>
           <Text style={[styles.title, { color: darkMode ? "#fff" : "#000" }]}>
             {t("settings.reminders")}
           </Text>
 
-          {/* Voice Reminder Switch */}
+          
           <View
             style={[
               styles.cardRow,
@@ -487,7 +435,7 @@ const SettingsScreen = () => {
           )}
         </View>
 
-        {/* Caregiver Account */}
+        
         <View style={styles.section}>
           <Text style={[styles.title, { color: darkMode ? "#fff" : "#000" }]}>
             {t("settings.caregiverAccount")}

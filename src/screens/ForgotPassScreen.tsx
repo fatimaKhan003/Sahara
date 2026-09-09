@@ -62,7 +62,7 @@ const handleVerifyOtp = () => {
   setStep('newPassword');
 };
 
-  // Step 3 — update password
+  
   const handleResetPassword = async () => {
   if (!newPassword) {
     Alert.alert(t("common.error"), t("errors.fillAllFields")); return;
@@ -81,7 +81,7 @@ const handleVerifyOtp = () => {
     if (res.ok) {
       setSuccessModalVisible(true);
     } else {
-      // If OTP expired or wrong, send them back to OTP step
+      
       if (data.message.includes("expired") || data.message.includes("Incorrect")) {
         setStep('otp');
         setOtp('');
@@ -107,7 +107,7 @@ const handleVerifyOtp = () => {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
 
-      {/* Back Button */}
+      
       <TouchableOpacity style={styles.backButton} onPress={() => {
         if (step === 'otp') { setStep('email'); return; }
         if (step === 'newPassword') { setStep('otp'); return; }
@@ -117,14 +117,14 @@ const handleVerifyOtp = () => {
         <Ionicons name="arrow-back" size={24} color={textColor} />
       </TouchableOpacity>
 
-      {/* Step indicator */}
+     
       <View style={styles.stepRow}>
         {(['email', 'otp', 'newPassword'] as Step[]).map((s, i) => (
           <View key={s} style={[styles.stepDot, { backgroundColor: step === s ? '#3B5BFF' : darkMode ? '#444' : '#ddd' }]} />
         ))}
       </View>
 
-      {/* ── Step 1: Email ── */}
+      
       {step === 'email' && (
         <>
           <Text style={[styles.title, { color: textColor }]}>{t("forgotPassword.title")}</Text>
@@ -156,7 +156,7 @@ const handleVerifyOtp = () => {
         </>
       )}
 
-      {/* ── Step 2: OTP ── */}
+     
       {step === 'otp' && (
         <>
           <Text style={[styles.title, { color: textColor }]}>Check your email</Text>
@@ -192,7 +192,7 @@ const handleVerifyOtp = () => {
         </>
       )}
 
-      {/* ── Step 3: New Password ── */}
+      
       {step === 'newPassword' && (
         <>
           <Text style={[styles.title, { color: textColor }]}>New Password</Text>
@@ -221,7 +221,7 @@ const handleVerifyOtp = () => {
         </>
       )}
 
-      {/* Sign in / Sign up links */}
+      
       <View style={styles.signInContainer}>
         <Text style={[styles.signInText, { color: textColor }]}>{t("forgotPassword.wantToLogin")} </Text>
         <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
@@ -235,7 +235,7 @@ const handleVerifyOtp = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Success Modal */}
+      
       <Modal transparent animationType="fade" visible={successModalVisible}>
         <View style={styles.modalBackground}>
           <View style={[styles.modalContainer, { backgroundColor: modalBg }]}>

@@ -24,7 +24,7 @@ const AddDependentsScreen = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // New States for Creating a User
+ 
   const [creationModalVisible, setCreationModalVisible] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -72,7 +72,7 @@ const AddDependentsScreen = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        // If user doesn't exist, offer to create one
+        
         if (data.error === "User not found" || res.status === 404) {
           Alert.alert(
             t("addDependents.accountNotFoundTitle"),
@@ -119,7 +119,7 @@ const AddDependentsScreen = () => {
 
     try {
       setLoading(true);
-      // Calls new endpoint that handles Registration + Linking in one go
+      
       const res = await fetch(
         `${API_BASE}/api/caregiver/register-and-add-dependent`,
         {
@@ -191,7 +191,7 @@ const AddDependentsScreen = () => {
           />
         </View>
 
-        {/* MODAL 1: LINK BY EMAIL */}
+        
         <Modal visible={modalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
@@ -230,7 +230,7 @@ const AddDependentsScreen = () => {
           </View>
         </Modal>
 
-        {/* MODAL 2: CREATE NEW DEPENDENT */}
+        
         <Modal visible={creationModalVisible} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>

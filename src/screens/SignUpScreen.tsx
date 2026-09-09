@@ -27,7 +27,7 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // OTP and Success modal state
+  
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [otp, setOtp] = useState('');
@@ -149,7 +149,7 @@ const SignUpScreen = () => {
 
   return (
     <View style={dynamicStyles.container}>
-      {/* Top Bar */}
+      
       <View style={{ position: 'absolute', top: 60, left: 25, right: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('OnboardingScreen', { goToLastSlide: true })}>
           <Ionicons name="arrow-back" size={24} color={dynamicStyles.topBarIcon.color} />
@@ -162,7 +162,7 @@ const SignUpScreen = () => {
       <Text style={[{ fontSize: 28, fontWeight: '600', marginTop: 20, marginBottom: 8 }, dynamicStyles.text]}>{t("signup.title")}</Text>
       <Text style={[{ fontSize: 14, marginBottom: 40 }, dynamicStyles.subText]}>{t("signup.subtitle")}</Text>
 
-      {/* Inputs */}
+      
       <View style={{ marginBottom: 20 }}>
         <Text style={[{ fontWeight: "500", marginBottom: 8 }, dynamicStyles.text]}>{t("common.name")}</Text>
         <View style={dynamicStyles.inputWrapper}>
@@ -219,7 +219,7 @@ const SignUpScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* OTP Modal */}
+      
       <Modal transparent animationType="fade" visible={otpModalVisible}>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContainer}>
@@ -243,7 +243,7 @@ const SignUpScreen = () => {
         </View>
       </Modal>
 
-      {/* Success Modal */}
+      
       <Modal transparent animationType="fade" visible={successModalVisible}>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContainer}>

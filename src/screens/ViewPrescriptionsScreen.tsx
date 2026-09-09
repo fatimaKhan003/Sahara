@@ -507,7 +507,7 @@ export default function ViewPrescriptionsScreen() {
         { backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" },
       ]}
     >
-      {/* Header */}
+      
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons

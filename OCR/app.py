@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import os
 import asyncio
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 import os
@@ -12,15 +12,14 @@ env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 load_dotenv(env_path)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from contextlib import asynccontextmanager
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, BitsAndBytesConfig
 from peft import PeftModel
 from OCR.qwen_vl_utils.qwen_vl_utils import process_vision_info
 
-# ── FASTAPI LIFECYCLE ─────────────────────────────────────────
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("=== Qwen OCR Server Starting... ===")
@@ -30,7 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# ── IMAGE PREPROCESSING ────────────────────────────────────────
+
 def preprocess(img: Image.Image) -> Image.Image:
     img = img.rotate(-2, expand=True, fillcolor=(255, 255, 255))
     img = ImageEnhance.Sharpness(img).enhance(1.8)
@@ -39,9 +38,9 @@ def preprocess(img: Image.Image) -> Image.Image:
     img = img.filter(ImageFilter.MedianFilter(size=3))
     return img
 
-# ── LOAD QWEN 7B MODEL ─────────────────────────────────────────
+
 MODEL_ID = "Qwen/Qwen2-VL-7B-Instruct"
-ADAPTER_PATH = "./final_prescription_adapter" # UPDATE THIS TO YOUR ACTUAL ADAPTER FOLDER IF DIFFERENT
+ADAPTER_PATH = "./final_prescription_adapter" 
 
 def load_qwen_model():
     bnb_config = BitsAndBytesConfig(
@@ -76,14 +75,12 @@ def load_qwen_model():
 
 model, processor = load_qwen_model()
 
-# ── SHARED CONSTANTS ──────────────────────────────────────────
-# Words to strip from the beginning of any line before extracting name
 NOISE_PREFIX_PATTERN = r'^(?:[\d]+[\.\)]\s*|(?:Take|Use|Apply|Tab|Cap|Syp|Syrup|Inj|Tablet|INJ|CAP|Capsule|Dr\.?|Rx\.?)[\s\.\:]*)'
 
-# Numeric frequency: 1+1+0, 1-0-1, 1x1x1
+
 FREQ_NUMERIC_PATTERN = r'\b\d+(?:[+\-xX]\d+){1,3}\b'
 
-# Word frequency: once, twice, three times, 1 time, 2 times, daily, BD, TDS, OD
+
 FREQ_WORD_PATTERN = (
     r'\b(once\s*(?:a\s*day|daily)?'
     r'|twice\s*(?:a\s*day|daily)?'
@@ -92,11 +89,11 @@ FREQ_WORD_PATTERN = (
     r'|two\s+times?\s*(?:a\s*day)?'
     r'|3\s+times?\s*(?:a\s*day)?'
     r'|once\s+daily|twice\s+daily'
-    r'|BD|TDS|OD|QID'  # medical shorthand
+    r'|BD|TDS|OD|QID' 
     r')\b'
 )
 
-# Word → times_per_day map (keys are lowercased + whitespace-normalized)
+
 WORD_TO_TPD = {
     "once":              "Once a day",
     "once a day":        "Once a day",
@@ -118,11 +115,11 @@ WORD_TO_TPD = {
     "qid":               "Three times a day",
 }
 
-# Dose: 500mg, 50 mg, 5ml, 1g, 2tab etc.
+
 DOSE_PATTERN = r'\b\d+(?:\.\d+)?\s*(?:mg|mcg|ml|g|tab|tabs|cap|caps|u)\b'
 
 
-# ── STRUCTURED EXTRACTION VIA PROMPT ─────────────────────────
+
 def extract_medicines_structured(img: Image.Image) -> tuple[str, list]:
     system_prompt = (
         "You are a medical prescription parser.\n"
@@ -187,51 +184,53 @@ def extract_medicines_structured(img: Image.Image) -> tuple[str, list]:
     return raw, medicines
 
 
-# ── GEMINI FALLBACK ──────────────────────────────────────────────
-async def extract_medicines_gemini(img: Image.Image) -> tuple[str, list]:
-    print("=== Using Gemini Fallback ===")
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not set in .env")
-        
-    model = genai.GenerativeModel('gemini-1.5-flash')
+
+async def extract_medicines_gemini(img: Image.Image, qwen_data=None):
+    print("=== Using Gemini Stage ===")
     
+    
+    refinement_context = ""
+    if qwen_data:
+        refinement_context = (
+            f"\nPRELIMINARY DATA TO REFINE:\n{json.dumps(qwen_data)}\n"
+            "Use the image to verify the above data. Fix any spelling errors (e.g., 'Ocuma' -> 'Ocumax') "
+            "and ensure dose and frequency are correctly mapped."
+        )
+
     system_prompt = (
-        "You are a medical prescription parser.\n"
-        "Look at the prescription image and extract ALL medications.\n"
-        "Return ONLY a JSON array with this exact structure:\n"
+        "You are a medical prescription OCR refiner."
+        f"{refinement_context}"
+        "\n\nExtract ALL medicines from the image. Return ONLY a JSON array with this structure:\n"
         "[\n"
         "  {\n"
-        '    "name": "medication name only — no prefix like Tab/Cap/Take/Use",\n'
-        '    "dose": "dose with unit e.g. 50mg, 500mg, 5ml — empty string if not visible",\n'
-        '    "frequency": "as written e.g. 1+0+1 or once or twice — empty string if not visible",\n'
-        '    "times_per_day": "must be exactly: Once a day | Twice a day | Three times a day | As directed"\n'
+        '    "name": "Medication Name",\n'
+        '    "dose": "Dose (e.g. 500mg)",\n'
+        '    "frequency": "Frequency (e.g. 1+0+1)",\n'
+        '    "times_per_day": "Once a day | Twice a day | Three times a day | As directed"\n'
         "  }\n"
         "]\n"
-        "Rules:\n"
-        "- Output ONLY the JSON array. No explanation, no markdown, no code fences.\n"
-        "- Strip ALL prefixes from name: Take, Use, Tab, Cap, Syp, Syrup, Inj, Tablet, Capsule, Dr, Rx, numbers.\n"
-        "- Recognize word frequencies: once=Once a day, twice=Twice a day, three times=Three times a day.\n"
-        "- Recognize shorthand: OD=Once a day, BD=Twice a day, TDS=Three times a day.\n"
-        "- Recognize numeric: 1+0+0=Once a day, 1+0+1=Twice a day, 1+1+1=Three times a day.\n"
-        "- If frequency is not visible, use empty string and As directed for times_per_day.\n"
+        "Rules: Output ONLY the JSON array. No markdown, no fences, no explanations."
     )
 
-    response = await model.generate_content_async([system_prompt, img])
     
+    response = await client.aio.models.generate_content(
+        model="gemini-2.5-flash", 
+        contents=[system_prompt, img]
+    )
+
     raw = response.text.strip()
-    print(f"\n=== GEMINI RAW OUTPUT ===\n{raw}\n========================\n")
-    
+    print("\n=== GEMINI OUTPUT ===\n", raw)
+
     medicines = parse_json_output(raw)
     return raw, medicines
 
 
-# ── JSON PARSING ──────────────────────────────────────────────
 def parse_json_output(raw: str) -> list:
-    # 1. Strip markdown fences
+   
     cleaned = re.sub(r"```(?:json)?", "", raw, flags=re.IGNORECASE).strip()
     cleaned = cleaned.replace("```", "").strip()
 
-    # 2. Find JSON array anywhere in output
+    
     match = re.search(r'\[.*\]', cleaned, re.DOTALL)
     if match:
         try:
@@ -241,7 +240,7 @@ def parse_json_output(raw: str) -> list:
         except json.JSONDecodeError as e:
             print(f"JSON parse error: {e}")
 
-    # 3. Try whole cleaned string
+    
     try:
         data = json.loads(cleaned)
         if isinstance(data, list):
@@ -266,23 +265,23 @@ def sanitize_medicines(data: list) -> list:
         dose = str(item.get("dose", "")).strip()
         frequency = str(item.get("frequency", "")).strip()
         
-        # --- NEW FIX: Extract dose from name if name contains it ---
+       
         if name:
-            # Look for patterns like '180mg' or '500 mg' inside the name string
+            
             found_dose = re.search(DOSE_PATTERN, name, re.IGNORECASE)
             if found_dose:
                 detected_dose = found_dose.group(0).strip()
-                # Only move it if the dose field is currently empty
+                
                 if not dose:
                     dose = detected_dose
-                # Remove the dose from the name
+                
                 name = name.replace(detected_dose, "").strip(' ,.-')
-        # -----------------------------------------------------------
+        
 
         if not name:
             continue
 
-        # Normalize times_per_day based on frequency
+        
         tpd = str(item.get("times_per_day", "As directed")).strip()
         num_match = re.match(r'^(\d+)[+\-xX](\d+)(?:[+\-xX](\d+))?$', frequency)
         if num_match:
@@ -301,13 +300,13 @@ def sanitize_medicines(data: list) -> list:
     return result
 
 
-# ── REGEX FALLBACK ────────────────────────────────────────────
+
 def extract_frequency(working: str) -> tuple[str, str, str]:
     """
     Try numeric then word frequency patterns.
     Returns (frequency_str, times_per_day, remaining_text).
     """
-    # 1. Numeric: 1+1+0
+    
     num_match = re.search(FREQ_NUMERIC_PATTERN, working, re.IGNORECASE)
     if num_match:
         frequency = num_match.group(0).strip()
@@ -322,7 +321,7 @@ def extract_frequency(working: str) -> tuple[str, str, str]:
         tpd = mapping.get(active_count, "As directed")
         return frequency, tpd, remaining
 
-    # 2. Word-based: once, twice, BD, TDS etc.
+    
     word_match = re.search(FREQ_WORD_PATTERN, working, re.IGNORECASE)
     if word_match:
         frequency = word_match.group(0).strip()
@@ -341,7 +340,7 @@ def regex_fallback(raw: str) -> list:
     """
     medicines = []
 
-    # Split on newlines or where a new med entry likely starts
+    
     lines = re.split(
         r'\n|(?=\b(?:Take|Tab|Cap|Syp|Syrup|Inj|Tablet|Capsule)\b)',
         raw,
@@ -357,19 +356,19 @@ def regex_fallback(raw: str) -> list:
 
         working = original
 
-        # 1. Extract frequency (numeric or word)
+        
         frequency, times_per_day, working = extract_frequency(working)
 
-        # 2. Extract dose
+        
         dose_match = re.search(DOSE_PATTERN, working, re.IGNORECASE)
         dose = ""
         if dose_match:
             dose = dose_match.group(0).strip()
             working = working[:dose_match.start()] + working[dose_match.end():]
 
-        # 3. Strip noise prefixes and clean name
+        
         name = working
-        # Strip repeatedly until no more prefixes match (handles "Take Tab Panadol")
+        
         while True:
             stripped = re.sub(NOISE_PREFIX_PATTERN, '', name, flags=re.IGNORECASE).strip()
             if stripped == name:
@@ -400,34 +399,51 @@ async def ocr_api(file: UploadFile = File(...)):
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         img = preprocess(img)
 
-        used_model = "Qwen2-VL-7B"
+        final_medicines = []
+        raw_final = ""
+        used_model = "qwen"
+
+        
         try:
-            # Run Qwen with a 60-second timeout
-            raw_output, medicines = await asyncio.wait_for(
+            raw_qwen, qwen_medicines = await asyncio.wait_for(
                 asyncio.to_thread(extract_medicines_structured, img),
                 timeout=60.0
             )
-            if not medicines or len(medicines) == 0:
-                raise ValueError("Qwen returned empty medicines")
-        except Exception as qwen_error:
-            if isinstance(qwen_error, asyncio.TimeoutError):
-                print("\n[WARNING] Qwen model timed out after 60 seconds! Triggering Gemini fallback...")
+            final_medicines = qwen_medicines
+            raw_final = raw_qwen
+        except Exception as e:
+            print(f"[QWEN FAILED]: {e}")
+            final_medicines = []
+
+       
+        try:
+            
+            raw_gem, gem_meds = await extract_medicines_gemini(img, final_medicines if final_medicines else None)
+            
+            if gem_meds and len(gem_meds) > 0:
+                print("Gemini successfully refined the data.")
+                final_medicines = gem_meds
+                raw_final = raw_gem
+                used_model = "qwen + gemini" if raw_final else "gemini-fallback"
             else:
-                print(f"\n[WARNING] Qwen model failed: {str(qwen_error)}. Triggering Gemini fallback...")
+                print("Gemini refinement returned no data, sticking with Qwen.")
                 
-            raw_output, medicines = await extract_medicines_gemini(img)
-            used_model = "gemini-1.5-flash"
-            if not medicines or len(medicines) == 0:
-                return JSONResponse({"status": "invalid_prescription",
-                "message": "No valid medications found. Please scan a correct prescription.",
-                "model": used_model
+        except Exception as gemini_err:
+            print(f"[GEMINI ERROR]: {gemini_err}")
+           
+
+        
+        if not final_medicines:
+            return JSONResponse({
+                "status": "error",
+                "message": "No medications could be extracted by any model."
             }, status_code=200)
 
-        print(f"Extracted {len(medicines)} medicine(s): {medicines}")
+        sanitized_data = sanitize_medicines(final_medicines)
 
         return JSONResponse({
-            "text": raw_output,
-            "medicines": medicines,
+            "text": raw_final,
+            "medicines": sanitized_data,
             "status": "success",
             "model": used_model,
         })

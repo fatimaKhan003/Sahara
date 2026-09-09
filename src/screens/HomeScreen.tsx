@@ -53,6 +53,7 @@ const HomeScreen = () => {
     const names = allDependents.map((d) => d.name);
     return ["all", ...new Set(names)];
   }, [allDependents]);
+
   const [dashboardMode, setDashboardMode] = useState<"personal" | "caregiver">(
     "personal",
   );
@@ -119,7 +120,6 @@ const HomeScreen = () => {
     });
   }
 
-  // FETCH USER + MODE + MEDS
   const fetchUserData = useCallback(async () => {
     try {
       const userData = await AsyncStorage.getItem("user");
@@ -131,12 +131,10 @@ const HomeScreen = () => {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
 
-      // SYNC MISSED DOSES
       await fetch(`${API_BASE}/api/medications/sync-missed/${parsedUser._id}`, {
         method: "POST",
       });
 
-      // DEPENDENT
       try {
         const depRes = await fetch(
           `${API_BASE}/api/caregiver/is-dependent/${parsedUser._id}`,
@@ -176,13 +174,14 @@ const HomeScreen = () => {
         console.log("Theme logic error:", err);
       }
 
-      // CAREGIVER
       const caregiverRes = await fetch(
         `${API_BASE}/api/caregiver/${parsedUser._id}/is-caregiver`,
       );
       const caregiverData = await caregiverRes.json();
       setIsCaregiver(caregiverData.isCaregiver);
+
       const storedMode = await AsyncStorage.getItem("dashboardMode");
+
       if (storedMode === "caregiver" && caregiverData.isCaregiver) {
         setDashboardMode("caregiver");
       } else {
@@ -195,6 +194,7 @@ const HomeScreen = () => {
         );
         const fullDepList = await depListRes.json();
         setAllDependents(Array.isArray(fullDepList) ? fullDepList : []);
+
         const medRes = await fetch(
           `${API_BASE}/api/medications/requests/${parsedUser._id}`,
         );
@@ -215,7 +215,6 @@ const HomeScreen = () => {
         const data = await res.json();
         const dependents = Array.isArray(data) ? data : [];
 
-        // MARK EXPIRED DOSES FOR EACH DEPENDENT
         await Promise.all(
           dependents.map((med) =>
             fetch(`${API_BASE}/api/medications/expire-doses/${med.user}`, {
@@ -246,6 +245,7 @@ const HomeScreen = () => {
     const handler = (u: any) => {
       setUser(u);
     };
+
     EventBus.on("userUpdated", handler);
 
     return () => EventBus.off("userUpdated", handler);
@@ -260,6 +260,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const updateLanguage = () => setCurrentLanguage(i18n.language);
     i18n.on("languageChanged", updateLanguage);
+
     return () => i18n.off("languageChanged", updateLanguage);
   }, []);
 
@@ -272,69 +273,75 @@ const HomeScreen = () => {
             : med.dependentName === selectedDependent,
         );
 
-  function getLatestLog(doseLogs: any[]) {
-    if (!doseLogs || doseLogs.length === 0) return null;
-    return doseLogs.reduce((latest: any, current: any) => {
-      return new Date(current.scheduledAt) > new Date(latest.scheduledAt) ? current : latest;
+  /*
+   * IMPORTANT:
+   * Each dose log is now treated as an individual dashboard item.
+   * Previously the dashboard looked only at the latest dose log
+   * of each medication.
+   */
+
+  const getDateKey = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      "0",
+    )}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+
+  const selectedDateKey = getDateKey(selectedDate);
+
+  const doseItems = useMemo(() => {
+    const items: any[] = [];
+
+    medsToShow.forEach((med) => {
+      if (!med.doseLogs || !Array.isArray(med.doseLogs)) return;
+
+      med.doseLogs.forEach((log: any) => {
+        if (!log.scheduledAt) return;
+
+        const logDate = new Date(log.scheduledAt);
+
+        // Only show doses belonging to the selected date.
+        if (getDateKey(logDate) !== selectedDateKey) return;
+
+        items.push({
+          ...log,
+          medication: med,
+          medicationId: med._id,
+        });
+      });
     });
-  }
 
-  const totalCount = medsToShow.length;
-  const takenCount = medsToShow.filter((med) => {
-    const lastLog = getLatestLog(med.doseLogs);
-    return lastLog?.status === "taken";
-  }).length;
+    // Sort individual doses by scheduled time.
+    return items.sort(
+      (a, b) =>
+        new Date(a.scheduledAt).getTime() -
+        new Date(b.scheduledAt).getTime(),
+    );
+  }, [medsToShow, selectedDateKey]);
 
-  const missedCount = medsToShow.filter((med) => {
-    const lastLog = getLatestLog(med.doseLogs);
-    return lastLog?.status === "missed";
-  }).length;
+  const totalCount = doseItems.length;
 
-  const filteredMeds = medsToShow.filter((med) => {
-    if (!med.doseLogs?.length) return false;
+  const takenCount = doseItems.filter(
+    (dose) => dose.status === "taken" || !!dose.takenAt,
+  ).length;
 
+  const missedCount = doseItems.filter(
+    (dose) => dose.status === "missed",
+  ).length;
+
+  const filteredDoses = doseItems.filter((dose) => {
     if (selectedTab === "all") return true;
 
-    const lastLog = getLatestLog(med.doseLogs);
-    if (!lastLog) return false;
-
     if (selectedTab === "taken") {
-      return lastLog.status === "taken";
+      return dose.status === "taken" || !!dose.takenAt;
     }
 
     if (selectedTab === "missed") {
-      return lastLog.status === "missed";
+      return dose.status === "missed";
     }
 
-    return true; // fallback
+    return true;
   });
-
-  // const updateStatus = async (id: string, status: string) => {
-  //   try {
-  //     const res = await fetch(
-  //       `${API_BASE}/api/medications/update-status/${id}`,
-  //       {
-  //         method: "PATCH",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({ status }),
-  //       },
-  //     );
-
-  //     const updated = await res.json();
-
-  //     if (dashboardMode === "personal") {
-  //       setMedications((prev) =>
-  //         prev.map((m) => (m._id === updated._id ? updated : m)),
-  //       );
-  //     } else {
-  //       setDependentsMeds((prev) =>
-  //         prev.map((m) => (m._id === updated._id ? updated : m)),
-  //       );
-  //     }
-  //   } catch (error) {
-  //     Alert.alert(t("common.error") || "Error", t("medication.updateError"));
-  //   }
-  // };
 
   const deleteMedication = async (id: string) => {
     Alert.alert(
@@ -351,12 +358,17 @@ const HomeScreen = () => {
                 `${API_BASE}/api/caregiver/is-dependent/${user._id}`,
               );
               const data = await res.json();
+
               if (data.isDependent) {
                 await fetch(`${API_BASE}/api/medications/request-delete`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ medicationId: id, userId: user._id }),
+                  body: JSON.stringify({
+                    medicationId: id,
+                    userId: user._id,
+                  }),
                 });
+
                 Alert.alert(
                   t("home.requestSentTitle"),
                   t("home.requestSentMessage"),
@@ -365,11 +377,17 @@ const HomeScreen = () => {
                 await fetch(`${API_BASE}/api/medications/${id}`, {
                   method: "DELETE",
                 });
+
                 await cancelMedicationNotifications(id);
+
                 if (dashboardMode === "personal") {
-                  setMedications((prev) => prev.filter((m) => m._id !== id));
+                  setMedications((prev) =>
+                    prev.filter((m) => m._id !== id),
+                  );
                 } else {
-                  setDependentsMeds((prev) => prev.filter((m) => m._id !== id));
+                  setDependentsMeds((prev) =>
+                    prev.filter((m) => m._id !== id),
+                  );
                 }
               }
             } catch (err) {
@@ -387,18 +405,26 @@ const HomeScreen = () => {
       onUpdate: (updatedMed: any) => {
         if (!updatedMed) {
           if (dashboardMode === "personal") {
-            setMedications((prev) => prev.filter((m) => m._id !== med._id));
+            setMedications((prev) =>
+              prev.filter((m) => m._id !== med._id),
+            );
           } else {
-            setDependentsMeds((prev) => prev.filter((m) => m._id !== med._id));
+            setDependentsMeds((prev) =>
+              prev.filter((m) => m._id !== med._id),
+            );
           }
         } else {
           if (dashboardMode === "personal") {
             setMedications((prev) =>
-              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m)),
+              prev.map((m) =>
+                m._id === updatedMed._id ? updatedMed : m,
+              ),
             );
           } else {
             setDependentsMeds((prev) =>
-              prev.map((m) => (m._id === updatedMed._id ? updatedMed : m)),
+              prev.map((m) =>
+                m._id === updatedMed._id ? updatedMed : m,
+              ),
             );
           }
         }
@@ -407,9 +433,11 @@ const HomeScreen = () => {
   };
 
   const toggleDashboard = async () => {
-    if (!isCaregiver) return; // block non-caregiver users
+    if (!isCaregiver) return;
 
-    const newMode = dashboardMode === "personal" ? "caregiver" : "personal";
+    const newMode =
+      dashboardMode === "personal" ? "caregiver" : "personal";
+
     setDashboardMode(newMode);
     await AsyncStorage.setItem("dashboardMode", newMode);
     fetchUserData();
@@ -426,10 +454,10 @@ const HomeScreen = () => {
   const getCurrentScheduledDose = (med: any) => {
     const now = new Date();
 
-    // Find a dose within +/- 30 minutes of current time
     const currentDose = med.doseLogs.find((log: any) => {
       const sched = new Date(log.scheduledAt).getTime();
       const diff = now.getTime() - sched;
+
       return Math.abs(diff) <= 30 * 60 * 1000;
     });
 
@@ -438,27 +466,33 @@ const HomeScreen = () => {
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return "";
+
     const [h, m] = timeStr.split(":");
     let hour = parseInt(h, 10);
+
     const ampm = hour >= 12 ? "PM" : "AM";
     hour = hour % 12 || 12;
+
     return `${hour.toString().padStart(2, "0")}:${m} ${ampm}`;
   };
 
   const toSentenceCase = (str: string) => {
     if (!str) return "";
+
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF" }}
+      style={{
+        flex: 1,
+        backgroundColor: darkMode ? "#1E1E1E" : "#F6F8FF",
+      }}
     >
       <ScrollView
         style={{ flex: 1, padding: 20 }}
         contentContainerStyle={{ paddingBottom: 30 }}
       >
-        {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.navigate("ProfileEditScreen")}
@@ -478,10 +512,14 @@ const HomeScreen = () => {
 
           <View style={{ flex: 1 }}>
             <Text
-              style={[styles.helloText, { color: darkMode ? "#fff" : "#000" }]}
+              style={[
+                styles.helloText,
+                { color: darkMode ? "#fff" : "#000" },
+              ]}
             >
               {t("common.hello")}, {user?.name}
             </Text>
+
             <Text
               style={[
                 styles.welcomeText,
@@ -491,12 +529,15 @@ const HomeScreen = () => {
               {t("common.welcomeBack")}
             </Text>
 
-            {/* DASHBOARD SWITCH */}
             {isCaregiver && (
               <>
                 <TouchableOpacity onPress={toggleDashboard}>
                   <Text
-                    style={{ color: "#007AFF", fontSize: 13, marginTop: 4 }}
+                    style={{
+                      color: "#007AFF",
+                      fontSize: 13,
+                      marginTop: 4,
+                    }}
                   >
                     {dashboardMode === "personal"
                       ? t("home.openCaregiverDashboard")
@@ -505,10 +546,17 @@ const HomeScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("CaregiverRequestsScreen")}
+                  onPress={() =>
+                    navigation.navigate("CaregiverRequestsScreen")
+                  }
                   style={{ marginTop: 6 }}
                 >
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
                     <Ionicons
                       name="notifications-outline"
                       size={22}
@@ -545,12 +593,13 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* CAREGIVER LABEL */}
         {dashboardMode === "caregiver" && (
           <View
             style={[
               styles.caregiverBadge,
-              { backgroundColor: darkMode ? "#4A1C1C" : "#FADDDD" },
+              {
+                backgroundColor: darkMode ? "#4A1C1C" : "#FADDDD",
+              },
             ]}
           >
             <Text
@@ -563,8 +612,10 @@ const HomeScreen = () => {
               {t("home.dependentsMedication")}
             </Text>
 
-            {/* DEPENDENTS DROPDOWN */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
               {dependentList.map((dep, index) => (
                 <TouchableOpacity
                   key={index}
@@ -592,7 +643,9 @@ const HomeScreen = () => {
                             : "#000",
                     }}
                   >
-                    {dep === "all" ? t("home.allDependents") : dep}
+                    {dep === "all"
+                      ? t("home.allDependents")
+                      : dep}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -600,12 +653,23 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {/* TABS */}
         <View style={styles.tabs}>
           {[
-            { key: "all", label: t("home.all"), count: totalCount },
-            { key: "taken", label: t("home.taken"), count: takenCount },
-            { key: "missed", label: t("home.missed"), count: missedCount },
+            {
+              key: "all",
+              label: t("home.all"),
+              count: totalCount,
+            },
+            {
+              key: "taken",
+              label: t("home.taken"),
+              count: takenCount,
+            },
+            {
+              key: "missed",
+              label: t("home.missed"),
+              count: missedCount,
+            },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.key}
@@ -638,117 +702,194 @@ const HomeScreen = () => {
           ))}
         </View>
 
-        {/* MEDICATION LIST */}
-        {filteredMeds.map((med) => (
-          <View key={med._id} style={styles.medItemWrapper}>
-            <Swipeable
-              renderRightActions={() => (
-                <TouchableOpacity
-                  onPress={() => deleteMedication(med._id)}
-                  style={styles.deleteBox}
-                >
-                  <Ionicons name="trash" size={24} color="#fff" />
-                </TouchableOpacity>
-              )}
+        {filteredDoses.map((dose) => {
+          const med = dose.medication;
+
+          const doseTime = new Date(dose.scheduledAt);
+
+          const formattedDoseTime = formatTime(
+            `${String(doseTime.getHours()).padStart(2, "0")}:${String(
+              doseTime.getMinutes(),
+            ).padStart(2, "0")}`,
+          );
+
+          const isTaken =
+            dose.status === "taken" || !!dose.takenAt;
+
+          const isMissed = dose.status === "missed";
+
+          return (
+            <View
+              key={dose._id}
+              style={styles.medItemWrapper}
             >
-              <TouchableOpacity
-                style={[
-                  styles.savedMedContainer,
-                  {
-                    backgroundColor: darkMode ? "#2C2C2C" : "#fff",
-                    borderColor: darkMode ? "#444" : "#E8E8E8",
-                  },
-                ]}
-                onPress={() => goToDetail(med)}
-              >
-                {dashboardMode === "caregiver" && (
-                  <Text style={styles.dependentName}>{med.dependentName}</Text>
+              <Swipeable
+                renderRightActions={() => (
+                  <TouchableOpacity
+                    onPress={() => deleteMedication(med._id)}
+                    style={styles.deleteBox}
+                  >
+                    <Ionicons
+                      name="trash"
+                      size={24}
+                      color="#fff"
+                    />
+                  </TouchableOpacity>
                 )}
-                <Text
+              >
+                <TouchableOpacity
                   style={[
-                    styles.medName,
-                    { color: darkMode ? "#fff" : "#000" },
+                    styles.savedMedContainer,
+                    {
+                      backgroundColor: darkMode
+                        ? "#2C2C2C"
+                        : "#fff",
+                      borderColor: darkMode
+                        ? "#444"
+                        : "#E8E8E8",
+                    },
                   ]}
+                  onPress={() => goToDetail(med)}
                 >
-                  {med.name}
-                </Text>
-                <Text style={{ color: darkMode ? "#ccc" : "#333", marginBottom: 2 }}>
-                  {med.dose}
-                </Text>
-                <Text style={{ color: darkMode ? "#aaa" : "gray", marginBottom: 8 }}>
-                  {(med.schedule?.times || []).map(formatTime).join(", ")} | {toSentenceCase(med.schedule?.repeat)}
-                </Text>
+                  {dashboardMode === "caregiver" && (
+                    <Text style={styles.dependentName}>
+                      {med.dependentName}
+                    </Text>
+                  )}
 
-                {(() => {
-                  const currentDose = getCurrentScheduledDose(med);
-                  return currentDose?.status === "missed" ? (
-                    <Text style={styles.missed}>MISSED</Text>
-                  ) : null;
-                })()}
+                  <Text
+                    style={[
+                      styles.medName,
+                      {
+                        color: darkMode ? "#fff" : "#000",
+                      },
+                    ]}
+                  >
+                    {med.name}
+                  </Text>
 
-                {/* CURRENT PENDING DOSE BUTTON */}
-                {(() => {
-                  const currentDose = getCurrentScheduledDose(med);
+                  <Text
+                    style={{
+                      color: darkMode ? "#ccc" : "#333",
+                      marginBottom: 2,
+                    }}
+                  >
+                    {med.dose}
+                  </Text>
 
-                  let disableButton = false;
-                  let buttonLabel = t("home.take");
+                  <Text
+                    style={{
+                      color: darkMode ? "#aaa" : "gray",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {formattedDoseTime} |{" "}
+                    {toSentenceCase(
+                      med.schedule?.repeat,
+                    )}
+                  </Text>
 
-                  if (currentDose) {
-                    const sched = new Date(currentDose.scheduledAt).getTime();
-                    const diffMins = (new Date().getTime() - sched) / 60000;
+                  {isMissed && (
+                    <Text style={styles.missed}>
+                      MISSED
+                    </Text>
+                  )}
 
-                    if (currentDose.takenAt) {
+                  {isTaken && (
+                    <Text style={styles.taken}>
+                      TAKEN
+                    </Text>
+                  )}
+
+                  {(() => {
+                    let disableButton = false;
+                    let buttonLabel = t("home.take");
+
+                    if (isTaken) {
                       disableButton = true;
                       buttonLabel = t("home.taken");
+                    } else if (isMissed) {
+                      disableButton = true;
+                      buttonLabel = t("home.missed");
                     }
-                  } else {
-                    disableButton = true;
-                  }
 
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.takeButton,
-                        disableButton && { opacity: 0.5 },
-                      ]}
-                      disabled={disableButton}
-                      onPress={async () => {
-                        if (!currentDose) return;
+                    return (
+                      <TouchableOpacity
+                        style={[
+                          styles.takeButton,
+                          disableButton && {
+                            opacity: 0.5,
+                          },
+                        ]}
+                        disabled={disableButton}
+                        onPress={async () => {
+                          try {
+                            const res = await fetch(
+                              `${API_BASE}/api/medications/dose-log/${med._id}/${dose._id}`,
+                              {
+                                method: "PATCH",
+                                headers: {
+                                  "Content-Type":
+                                    "application/json",
+                                },
+                                body: JSON.stringify({
+                                  status: "taken",
+                                }),
+                              },
+                            );
 
-                        try {
-                          const res = await fetch(
-                            `${API_BASE}/api/medications/dose-log/${med._id}/${currentDose._id}`,
-                            {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ status: "taken" }),
-                            },
-                          );
+                            if (!res.ok) {
+                              throw new Error(
+                                "Failed to update dose",
+                              );
+                            }
 
-                          const updatedMed = await res.json();
-                          setMedications((prev) =>
-                            prev.map((m) =>
-                              m._id === updatedMed._id ? updatedMed : m,
-                            ),
-                          );
-                        } catch (error) {
-                          Alert.alert(
-                            t("common.error") || "Error",
-                            t("medication.updateError"),
-                          );
-                        }
-                      }}
-                    >
-                      <Text style={{ color: "#fff" }}>{buttonLabel}</Text>
-                    </TouchableOpacity>
-                  );
-                })()}
-              </TouchableOpacity>
-            </Swipeable>
-          </View>
-        ))}
+                            const updatedMed =
+                              await res.json();
 
-        {/* ADD BUTTON */}
+                            if (
+                              dashboardMode === "personal"
+                            ) {
+                              setMedications((prev) =>
+                                prev.map((m) =>
+                                  m._id ===
+                                  updatedMed._id
+                                    ? updatedMed
+                                    : m,
+                                ),
+                              );
+                            } else {
+                              setDependentsMeds((prev) =>
+                                prev.map((m) =>
+                                  m._id ===
+                                  updatedMed._id
+                                    ? updatedMed
+                                    : m,
+                                ),
+                              );
+                            }
+                          } catch (error) {
+                            Alert.alert(
+                              t("common.error") || "Error",
+                              t(
+                                "medication.updateError",
+                              ),
+                            );
+                          }
+                        }}
+                      >
+                        <Text style={{ color: "#fff" }}>
+                          {buttonLabel}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
+                </TouchableOpacity>
+              </Swipeable>
+            </View>
+          );
+        })}
+
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
@@ -760,25 +901,42 @@ const HomeScreen = () => {
                 );
                 return;
               }
+
               const target = allDependents.find(
                 (d) => d.name === selectedDependent,
               );
+
               if (!target) {
-                Alert.alert("Error", "Could not find dependent information.");
+                Alert.alert(
+                  "Error",
+                  "Could not find dependent information.",
+                );
                 return;
               }
 
-              navigation.navigate("ScanPrescriptionScreen", {
-                forDependentId: target._id,
-                forDependentName: selectedDependent,
-              });
+              navigation.navigate(
+                "ScanPrescriptionScreen",
+                {
+                  forDependentId: target._id,
+                  forDependentName: selectedDependent,
+                },
+              );
             } else {
-              navigation.navigate("ScanPrescriptionScreen");
+              navigation.navigate(
+                "ScanPrescriptionScreen",
+              );
             }
           }}
         >
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.addButtonText}>{t("home.addMedication")}</Text>
+          <Ionicons
+            name="add"
+            size={20}
+            color="#fff"
+          />
+
+          <Text style={styles.addButtonText}>
+            {t("home.addMedication")}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -788,11 +946,34 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
-  avatar: { width: 70, height: 70, borderRadius: 35, marginRight: 15 },
-  helloText: { fontSize: 18, fontWeight: "700" },
-  welcomeText: { fontSize: 14, color: "gray" },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 15,
+  },
+
+  helloText: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  welcomeText: {
+    fontSize: 14,
+    color: "gray",
+  },
 
   caregiverBadge: {
     backgroundColor: "#FADDDD",
@@ -806,7 +987,11 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     justifyContent: "space-between",
   },
-  tabButton: { padding: 10, borderRadius: 10 },
+
+  tabButton: {
+    padding: 10,
+    borderRadius: 10,
+  },
 
   savedMedContainer: {
     backgroundColor: "#fff",
@@ -826,7 +1011,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  medName: { fontSize: 18, fontWeight: "bold" },
+  medName: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 
   takeButton: {
     backgroundColor: "#34C759",
@@ -835,7 +1023,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  missed: { fontWeight: "bold", color: "red", marginVertical: 4 },
+  missed: {
+    fontWeight: "bold",
+    color: "red",
+    marginVertical: 4,
+  },
+
+  taken: {
+    fontWeight: "bold",
+    color: "#34C759",
+    marginVertical: 4,
+  },
 
   deleteBox: {
     backgroundColor: "#C62828",
@@ -857,5 +1055,10 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
 
-  addButtonText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
+  addButtonText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontWeight: "600",
+  },
 });
+

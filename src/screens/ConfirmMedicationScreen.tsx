@@ -186,7 +186,7 @@ const ConfirmMedicationScreen = () => {
           return;
         }
 
-        // Mark expired doses
+        
         await fetch(`${API_BASE}/api/medications/sync-missed/${user._id}`, {
           method: "POST",
         });
@@ -396,7 +396,7 @@ const ConfirmMedicationScreen = () => {
           />
         ) : null}
 
-        {/* OCR auto-fill notice */}
+        
         {ocrMedicines && ocrMedicines.length > 0 && (
           <View style={dynamicStyles.ocrBadge}>
             <Ionicons
@@ -421,7 +421,7 @@ const ConfirmMedicationScreen = () => {
                 `Medication ${idx + 1}`}
             </Text>
 
-            {/* Name */}
+            
             <Text style={dynamicStyles.label}>
               {t("common.name") || "Name"}
             </Text>
@@ -433,7 +433,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "name", text)}
             />
 
-            {/* Dose */}
+            
             <Text style={dynamicStyles.label}>
               {t("medication.dose") || "Dose"}
             </Text>
@@ -445,7 +445,7 @@ const ConfirmMedicationScreen = () => {
               onChangeText={(text) => updateMed(idx, "dose", text)}
             />
 
-            {/* Frequency */}
+            
             <Text style={dynamicStyles.label}>
               {t("medication.frequency") || "Frequency"}
             </Text>
@@ -462,7 +462,7 @@ const ConfirmMedicationScreen = () => {
               <Picker.Item label="Weekly" value="weekly" />
             </Picker>
 
-            {/* Times */}
+            
             <Text style={dynamicStyles.label}>
               {t("medication.timePlaceholder") || "Time"}
             </Text>
@@ -494,9 +494,9 @@ const ConfirmMedicationScreen = () => {
                     is24Hour={false}
                     display="spinner"
                     onChange={(event, selectedDate) => {
-                      updateMed(idx, "showPickerIndex", -1); // close picker
+                      updateMed(idx, "showPickerIndex", -1); 
                       if (event.type === "set" && selectedDate) {
-                        // Convert selected time to ISO string on today’s date
+                        
                         const now = new Date();
                         now.setHours(
                           selectedDate.getHours(),
@@ -532,7 +532,7 @@ const ConfirmMedicationScreen = () => {
               <Text style={{ color: "#007AFF" }}>+ Add Time</Text>
             </TouchableOpacity>
 
-            {/* Active Switch */}
+            
             <View style={dynamicStyles.switchContainer}>
               <Text style={dynamicStyles.switchLabel}>
                 {t("medication.active") || "Active Schedule"}
@@ -551,7 +551,7 @@ const ConfirmMedicationScreen = () => {
           </View>
         ))}
 
-        {/* Bottom Buttons */}
+        
         <View
           style={{
             flexDirection: "row",

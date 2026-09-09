@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ── POST /api/signup ── sends OTP, does NOT save to DB yet
+
 router.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -65,7 +65,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// ── POST /api/verify-otp ── verifies OTP and saves user to MongoDB
+
 router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -94,7 +94,7 @@ router.post("/verify-otp", async (req, res) => {
     await user.save();
     pendingUsers.delete(email);
 
-    console.log(`✅ User saved to MongoDB: ${email}`);
+    console.log(`User saved to MongoDB: ${email}`);
     res.status(201).json({ message: "User registered successfully!", user });
   } catch (err) {
     console.error("Verify OTP error:", err);
@@ -102,7 +102,7 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-// ── POST /api/reset-password ── unchanged
+
 router.post("/reset-password", async (req, res) => {
   try {
     const { email, newPassword } = req.body;
@@ -124,7 +124,7 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// ── POST /api/login ── unchanged
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -155,7 +155,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ── PUT /api/update-profile/:id ── unchanged
+
 router.put("/update-profile/:id", async (req, res) => {
   try {
     const { name, phone, profileImage } = req.body;
@@ -178,7 +178,7 @@ router.put("/update-profile/:id", async (req, res) => {
   }
 });
 
-// ── POST /api/upload-profile ── unchanged
+
 router.post("/upload-profile", upload.single("image"), async (req, res) => {
   try {
     if (!req.file)
@@ -191,7 +191,7 @@ router.post("/upload-profile", upload.single("image"), async (req, res) => {
     res.status(500).json({ message: "Failed to upload profile image" });
   }
 });
-// ── POST /api/forgot-password ── sends OTP to email
+
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -234,7 +234,7 @@ router.post("/forgot-password", async (req, res) => {
       `,
     });
 
-    console.log(`📧 Reset OTP for ${email}: ${otp}`);
+    console.log(`Reset OTP for ${email}: ${otp}`);
     res.status(200).json({ message: "Reset code sent to your email." });
   } catch (err) {
     console.error("Forgot password error:", err);
@@ -242,7 +242,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// ── POST /api/verify-reset-otp ── verifies OTP then updates password
+
 router.post("/verify-reset-otp", async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -272,7 +272,7 @@ router.post("/verify-reset-otp", async (req, res) => {
     await user.save();
     pendingUsers.delete(`reset_${email}`);
 
-    console.log(`✅ Password reset for: ${email}`);
+    console.log(`Password reset for: ${email}`);
     res.status(200).json({ success: true, message: "Password reset successfully." });
   } catch (err) {
     console.error("Verify reset OTP error:", err);

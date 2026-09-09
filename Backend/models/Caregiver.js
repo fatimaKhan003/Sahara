@@ -1,4 +1,3 @@
-// models/Caregiver.js
 import mongoose from "mongoose";
 
 const caregiverSchema = new mongoose.Schema(

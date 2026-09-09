@@ -1,4 +1,3 @@
-// controllers/caregiverController.js
 import Caregiver from "../models/Caregiver.js";
 import User from "../models/User.js";
 import express from "express";
@@ -32,16 +31,16 @@ const createCaregiverIfNotExists = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-//to add a dependent if not registered before
+
 const registerAndAddDependent = async (req, res) => {
   try {
     const { caregiverUserId, email, name, password } = req.body;
 
-    // 1. Double check if user exists (to be safe)
+    
     let dependentUser = await User.findOne({ email: email.toLowerCase() });
 
     if (!dependentUser) {
-      // 2. Create the new user account
+     
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -54,13 +53,13 @@ const registerAndAddDependent = async (req, res) => {
       console.log("NEW USER CREATED (HASHED):", dependentUser._id);
     }
 
-    // 3. Find the caregiver record
+    
     const caregiver = await Caregiver.findOne({ user: caregiverUserId });
     if (!caregiver) {
       return res.status(404).json({ error: "Caregiver profile not found" });
     }
 
-    // 4. Link the new user to the caregiver's dependents array
+    
     if (!caregiver.dependents.includes(dependentUser._id)) {
       caregiver.dependents.push(dependentUser._id);
       await caregiver.save();
@@ -165,7 +164,7 @@ router.get("/:userId/dependents-meds", getDependentsMeds);
 router.post("/add-dependent", addDependent);
 router.post("/register-and-add-dependent", registerAndAddDependent);
 
-// DEPENDENT REQUEST THEME CHANGE
+
 router.post("/request-theme", async (req, res) => {
   try {
     const { userId, theme } = req.body;

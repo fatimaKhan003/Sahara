@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const scheduleSchema = new mongoose.Schema(
   {
     times: {
-      type: [String], // ["08:00", "20:00"], in 24 hour format
+      type: [String], 
       required: true,
     },
 
@@ -14,7 +14,7 @@ const scheduleSchema = new mongoose.Schema(
     },
 
     daysOfWeek: {
-      type: [Number], // 0=Sunday … 6=Saturday
+      type: [Number], 
       default: [],
     },
 
@@ -27,7 +27,7 @@ const scheduleSchema = new mongoose.Schema(
       type: Date,
     },
   },
-  { _id: false }, // no id field needed
+  { _id: false }, 
 );
 
 export default scheduleSchema;

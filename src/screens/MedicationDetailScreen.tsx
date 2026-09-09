@@ -96,7 +96,7 @@ const MedicationDetailScreen = () => {
       if (!userData || !med.imageUri) return;
       const parsed = JSON.parse(userData);
 
-      // Convert /uploads/filename.jpg to /api/medications/image/filename.jpg?userId=...
+      
       if (med.imageUri.startsWith("/uploads/")) {
         const filename = med.imageUri.split("/").pop();
         setImageUri(

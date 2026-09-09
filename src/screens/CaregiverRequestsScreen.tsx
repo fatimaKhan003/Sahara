@@ -196,7 +196,7 @@ const CaregiverRequestsScreen = () => {
         { backgroundColor: isDark ? "#121212" : "#F8FAFC" },
       ]}
     >
-      {/* Header */}
+      
       <View
         style={{
           flexDirection: "row",
@@ -239,7 +239,7 @@ const CaregiverRequestsScreen = () => {
           />
         }
       >
-        {/* Medication Additions */}
+        
         {renderSectionHeader(t("caregiverRequests.medAcceptance"), "pill")}
         {requests.length === 0 && renderEmpty()}
         {requests.map((req) => (
@@ -303,7 +303,7 @@ const CaregiverRequestsScreen = () => {
           </View>
         ))}
 
-        {/* Medication Deletions */}
+        
         {renderSectionHeader(
           t("caregiverRequests.medDeletion"),
           "trash-can-outline",
@@ -367,7 +367,7 @@ const CaregiverRequestsScreen = () => {
           </View>
         ))}
 
-        {/* Theme Requests */}
+        
         {renderSectionHeader(
           t("caregiverRequests.themeChange"),
           "palette-outline",

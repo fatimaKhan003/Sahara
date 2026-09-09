@@ -42,11 +42,7 @@ export default function App() {
     setupNotificationActions();
     setupForegroundNotificationListener();
     setupNotificationResponseListener();
-    // Notifications.getNotificationChannelsAsync().then(channels=>
-    // {
-    //   console.log('CHANNELS:', JSON.stringify(channels, null, 2));
-    // }
-    // );
+  
   }, []);
 
   return (

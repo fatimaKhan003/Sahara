@@ -119,17 +119,14 @@ export default function ScanPrescriptionScreen() {
     }
   }, [isProcessing]);
 
-  /**
-   * fullUri  — original uncropped image (saved to AsyncStorage + sent to server)
-   * croppedUri — tightly cropped version sent to OCR for faster processing
-   */
+ 
   const processImage = async (fullUri: string, croppedUri: string) => {
     setIsProcessing(true);
-    // Save the FULL image locally (AsyncStorage)
+   
     
 
     try {
-      // Send only the CROPPED image to OCR for speed
+      
       const ocrFormData = new FormData();
       ocrFormData.append("image", {
         uri: croppedUri,
@@ -166,7 +163,7 @@ await savePrescription(fullUri, forDependentId, forDependentName);
         );
       }
 
-      // Pass the FULL image to ConfirmMedicationScreen for display + server upload
+     
       navigation.navigate("ConfirmMedicationScreen", {
         imageUri: fullUri,
         backendImageUri: "",
@@ -200,13 +197,13 @@ await savePrescription(fullUri, forDependentId, forDependentName);
       Alert.alert(t("scan.permissionRequired"), t("scan.cameraPermission"));
       return;
     }
-    // Step 1: capture full image without cropping
+    
     const result = await ImagePicker.launchCameraAsync({ quality: 1 });
     if (result.canceled) return;
 
     const fullUri = result.assets[0].uri;
 
-    // Step 2: open cropper on the full image — user crops for OCR optimisation
+
     try {
       const cropped = await ImageCropPicker.openCropper({
         path: fullUri,
@@ -218,7 +215,7 @@ await savePrescription(fullUri, forDependentId, forDependentName);
       });
       await processImage(fullUri, cropped.path);
     } catch {
-      // User dismissed the cropper — use the full image for OCR too
+      
       await processImage(fullUri, fullUri);
     }
   };
@@ -229,7 +226,7 @@ await savePrescription(fullUri, forDependentId, forDependentName);
       Alert.alert(t("scan.permissionRequired"), t("scan.galleryPermission"));
       return;
     }
-    // Step 1: pick full image from gallery without cropping
+   
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
@@ -238,7 +235,7 @@ await savePrescription(fullUri, forDependentId, forDependentName);
 
     const fullUri = result.assets[0].uri;
 
-    // Step 2: open cropper on the full image — user crops for OCR optimisation
+    
     try {
       const cropped = await ImageCropPicker.openCropper({
         path: fullUri,
@@ -250,7 +247,7 @@ await savePrescription(fullUri, forDependentId, forDependentName);
       });
       await processImage(fullUri, cropped.path);
     } catch {
-      // User dismissed the cropper — use the full image for OCR too
+      
       await processImage(fullUri, fullUri);
     }
   };

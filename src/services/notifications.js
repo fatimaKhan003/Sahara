@@ -4,7 +4,7 @@ import { API_BASE } from "../../api";
 import { speakMedication } from "./tts";
 import { getVoiceReminderEnabled } from "../context/SettingsContext";
 
-/*--Notification characteristics---*/
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -14,7 +14,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/*--Notification permissions---*/
+
 export async function registerForNotifications() {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
 
@@ -43,7 +43,7 @@ export async function registerForNotifications() {
   return token;
 }
 
-/*--Notification actions*/
+
 export async function setupNotificationActions() {
   await Notifications.setNotificationCategoryAsync("MEDICATION_REMINDER", [
     {
@@ -112,7 +112,7 @@ export function setupNotificationResponseListener() {
   });
 }
 
-/*--Schedule notifications--*/
+
 export async function scheduleMedicationNotifications(medications) {
   // clear all existing scheduled notifications to avoid duplicates or stale reminders
   await Notifications.cancelAllScheduledNotificationsAsync();
